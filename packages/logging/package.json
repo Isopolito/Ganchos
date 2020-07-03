@@ -1,0 +1,10 @@
+{
+  "name": "ganchas-logging",
+  "version": "0.0.1",
+  "description": "Logging of messages and statuses throughout ganchas",
+  "main": "src/index.js",
+  "private": true,
+  "dependencies": {
+    "ganchas-contracts": "../contracts/"
+  }
+}

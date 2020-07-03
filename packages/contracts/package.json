@@ -1,0 +1,9 @@
+{
+  "name": "ganchas-contracts",
+  "version": "0.0.1",
+  "description": "Interfaces, models, constants used throughout the application",
+  "main": "src/index.js",
+  "private": true,
+  "dependencies": {
+  }
+}
