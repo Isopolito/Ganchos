@@ -2,8 +2,9 @@ import * as path from 'path';
 import { promises as fs } from 'fs';
 import * as properLockFile from 'proper-lockfile';
 import * as generalConstants from '../contracts/constants/general';
-import * as shell from 'shelljs';
 import * as os from 'os';
+
+import { doesPathExist, touch } from '../common/files';
 
 /*========================================================================================*/
 
@@ -31,20 +32,9 @@ const isConfigInMemoryMostRecent = async (configPath: string): Promise<Boolean> 
   return stats.mtime.getTime() <= inMemoryConfig.lastUpdatedTimeStamp;
 }
 
-const doesConfigFileExist = async (configPath: string) => {
-  if (!configPath) return false;
-
-  try { await fs.stat(configPath); }
-  catch (e) { if (e.code === 'ENOENT') return false; }
-
-  return true;
-}
-
-const configFileDoesNotExist = async (configPath: string) => !await doesConfigFileExist(configPath);
-
 const getAndCreateDefaultIfNotExist = async (): Promise<GeneralConfig|null> => {
   const configPath = getConfigPath();
-  if (await doesConfigFileExist(configPath)) return await get();
+  if (doesPathExist(configPath)) return await get();
 
   const config: GeneralConfig = {
     heartBeatPollIntervalInSeconds: 5,
@@ -58,7 +48,7 @@ const getAndCreateDefaultIfNotExist = async (): Promise<GeneralConfig|null> => {
 
 const get = async (): Promise<GeneralConfig|null> => {
   const configPath = getConfigPath();
-  if (await configFileDoesNotExist(configPath)) return null;
+  if (!doesPathExist(configPath)) return null;
 
   if (await isConfigInMemoryMostRecent(configPath)) return inMemoryConfig;
 
@@ -71,17 +61,12 @@ const get = async (): Promise<GeneralConfig|null> => {
   return config;
 }
 
-const touchFile = async (configPath: string) => {
-  shell.mkdir('-p', path.dirname(configPath));
-  shell.touch(configPath);
-}
-
 const save = async (config: GeneralConfig) => {
   if (config === null) return null;
-  const configPath = getConfigPath();
 
   try {
-    await configFileDoesNotExist(configPath) && await touchFile(configPath);
+    const configPath = getConfigPath();
+    doesPathExist(configPath) || await touch(configPath);
 
     const release = await properLockFile.lock(configPath);
     await fs.writeFile(configPath, JSON.stringify(config));
