@@ -1,7 +1,9 @@
 import * as path from 'path';
-import * as fs from 'fs';
-import * as lockFile from 'lockfile';
+import { promises as fs } from 'fs';
+import * as properLockFile from 'proper-lockfile';
 import * as generalConstants from '../contracts/constants/general';
+import * as shell from 'shelljs';
+import * as os from 'os';
 
 /*========================================================================================*/
 
@@ -18,23 +20,31 @@ let inMemoryConfig: GeneralConfig;
 
 /*========================================================================================*/
 
-const getConfigPath = (): string => path.join(generalConstants.AppDirName, '.config', 'general');
+const getConfigPath = (): string => path.join(os.homedir(), generalConstants.AppDirName, 'config', 'general');
 
-const configInMemoryIsMostRecent = (path: string): Boolean  => {
+const isConfigInMemoryMostRecent = async (configPath: string): Promise<Boolean> => {
   if (!inMemoryConfig) return false;
 
-  const stats = fs.statSync(path);
+  const stats = await fs.stat(configPath);
 
   // True if inMemoryConfig was updated after the config file was last written to disk
   return stats.mtime.getTime() <= inMemoryConfig.lastUpdatedTimeStamp;
 }
 
-const doesConfigAlreadyExist = (path: string) => path && fs.existsSync(path);
-const configDoesNotAlreadyExist = (path: string) => !doesConfigAlreadyExist(path);
+const doesConfigFileExist = async (configPath: string) => {
+  if (!configPath) return false;
 
-const getAndCreateDefaultIfNotExist = (): GeneralConfig | null => {
-  const path = getConfigPath();
-  if (doesConfigAlreadyExist(path)) return get();
+  try { await fs.stat(configPath); }
+  catch (e) { if (e.code === 'ENOENT') return false; }
+
+  return true;
+}
+
+const configFileDoesNotExist = async (configPath: string) => !await doesConfigFileExist(configPath);
+
+const getAndCreateDefaultIfNotExist = async (): Promise<GeneralConfig|null> => {
+  const configPath = getConfigPath();
+  if (await doesConfigFileExist(configPath)) return await get();
 
   const config: GeneralConfig = {
     heartBeatPollIntervalInSeconds: 5,
@@ -46,13 +56,13 @@ const getAndCreateDefaultIfNotExist = (): GeneralConfig | null => {
   return config;
 }
 
-const get = (): GeneralConfig | null => {
-  const path = getConfigPath();
-  if (configDoesNotAlreadyExist(path)) return null;
+const get = async (): Promise<GeneralConfig|null> => {
+  const configPath = getConfigPath();
+  if (await configFileDoesNotExist(configPath)) return null;
 
-  if (configInMemoryIsMostRecent(path)) return inMemoryConfig;
+  if (await isConfigInMemoryMostRecent(configPath)) return inMemoryConfig;
 
-  let rawData = fs.readFileSync(path);
+  let rawData = await fs.readFile(configPath);
   let config: GeneralConfig = JSON.parse(rawData.toString());  
   
   inMemoryConfig = config;
@@ -61,26 +71,28 @@ const get = (): GeneralConfig | null => {
   return config;
 }
 
-const save = (config: GeneralConfig) => {
+const touchFile = async (configPath: string) => {
+  shell.mkdir('-p', path.dirname(configPath));
+  shell.touch(configPath);
+}
+
+const save = async (config: GeneralConfig) => {
   if (config === null) return null;
-  const path = getConfigPath();
+  const configPath = getConfigPath();
 
-  lockFile.lock(path, err => {
-    // If the err happens, then it failed to acquire a lock.
-    if (err) {
-      // TODO: Log for real
-      console.log(`An error occurred locking general config file: ${err}`)
-      return;
-    }
-   
-    fs.writeFileSync(path, JSON.stringify(config));
+  try {
+    await configFileDoesNotExist(configPath) && await touchFile(configPath);
 
-    // TODO: Log for real instead of using console 
-    lockFile.unlock(path, err => console.log(`An error occurred unlocking general config file: ${err}`));
-  });
+    const release = await properLockFile.lock(configPath);
+    await fs.writeFile(configPath, JSON.stringify(config));
+    release();
 
-  inMemoryConfig = config;
-  inMemoryConfig.lastUpdatedTimeStamp = Date.now();
+    inMemoryConfig = config;
+    inMemoryConfig.lastUpdatedTimeStamp = Date.now();
+  } catch (e) {
+    // TODO: log
+    console.log(`Error saving log file ${e}`);
+  }
 }
 
 /*========================================================================================*/

@@ -9,16 +9,19 @@
     "build": "tsc"
   },
   "dependencies": {
+    "@types/proper-lockfile": "^4.1.1",
     "file-system": "^2.2.2",
     "fs": "0.0.1-security",
-    "lockfile": "^1.0.4",
     "nconf": "^0.10.0",
     "os": "^0.1.1",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "proper-lockfile": "^4.1.1",
+    "shelljs": "^0.8.4"
   },
   "devDependencies": {
     "@types/lockfile": "^1.0.1",
     "@types/node": "^14.0.14",
+    "@types/shelljs": "^0.8.8",
     "typescript": "^3.9.6"
   }
 }
