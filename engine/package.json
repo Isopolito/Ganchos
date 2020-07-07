@@ -16,6 +16,7 @@
     "typescript": "^3.9.5"
   },
   "dependencies": {
+    "chokidar": "^3.4.0",
     "ganchas-shared": "file:../shared"
   }
 }
