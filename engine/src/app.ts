@@ -1,9 +1,10 @@
-import { generalConfig } from 'ganchas-shared'
+import { generalLogger, generalConfig, SeverityEnum } from 'ganchas-shared'
 
 (async () => {
   try {
     process.on('SIGINT', () => {
-      // Log message stating that the app is getting shutdown
+      generalLogger.write(SeverityEnum.Info, "main", "Application has been shut down");
+      console.log("Application has been shutdown")
     });
 
     //logger.log(logConst.levels.info, 'Engine starting...');

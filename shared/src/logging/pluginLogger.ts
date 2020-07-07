@@ -1,6 +1,8 @@
 import { write as writeMessage } from './genericLogger';
 import { makeTimeStamp } from '../util/logs';
 import * as generalConstants from '../constants/names';
+import { SeverityEnum } from './SeverityEnum';
+import { PluginLogMessage } from './PluginLogMessage';
 
 /*========================================================================================*/
 

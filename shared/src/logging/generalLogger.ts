@@ -1,6 +1,8 @@
 import { write as writeMessage } from './genericLogger';
 import { makeTimeStamp } from '../util/logs';
-import * as generalConstants from '../constants/names';
+import * as constants from '../constants/names';
+import { SeverityEnum } from './SeverityEnum';
+import { GeneralLogMessage } from './GeneralLogMessage';
 
 /*========================================================================================*/
 
@@ -12,7 +14,7 @@ const write = (severity: SeverityEnum, area: string, message: string): Promise<v
     Message: message,
   };
 
-  return writeMessage(generalConstants.General, JSON.stringify(logMessage));
+  return writeMessage(constants.General, JSON.stringify(logMessage));
 }
 
 /*========================================================================================*/
