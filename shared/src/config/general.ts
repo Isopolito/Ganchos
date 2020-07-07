@@ -1,10 +1,10 @@
 import * as path from 'path';
 import { promises as fs } from 'fs';
 import * as properLockFile from 'proper-lockfile';
-import * as generalConstants from '../contracts/constants/general';
 import * as os from 'os';
 
-import { doesPathExist, touch } from '../common/files';
+import * as generalConstants from '../constants/names';
+import { doesPathExist, touch } from '../util/files';
 
 /*========================================================================================*/
 
@@ -21,7 +21,7 @@ let inMemoryConfig: GeneralConfig;
 
 /*========================================================================================*/
 
-const getConfigPath = (): string => path.join(os.homedir(), generalConstants.AppDirName, 'config', 'general');
+const getConfigPath = (): string => path.join(os.homedir(), generalConstants.AppDir, generalConstants.Config, generalConstants.Config);
 
 const isConfigInMemoryMostRecent = async (configPath: string): Promise<Boolean> => {
   if (!inMemoryConfig) return false;
@@ -69,7 +69,7 @@ const save = async (config: GeneralConfig) => {
     doesPathExist(configPath) || await touch(configPath);
 
     const release = await properLockFile.lock(configPath);
-    await fs.writeFile(configPath, JSON.stringify(config));
+    await fs.writeFile(configPath, JSON.stringify(config,null, 4));
     release();
 
     inMemoryConfig = config;
