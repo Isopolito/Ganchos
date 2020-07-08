@@ -1,22 +1,17 @@
-import generalConfig from 'ganchas-shared';
+import { generalLogger, SeverityEnum } from 'ganchas-shared'
+import { run, stop } from './EventListener/eventListener'
 
-try {
-	process.on('SIGINT', () => {
-		// Log message stating that the app is getting shutdown
-	});
+(async () => {
+	try {
+		process.on('SIGINT', async () => {
+			stop();
+			await generalLogger.write(SeverityEnum.Info, "main", "SIGINT - Application will shut down", true);
+		});
 
-	//logger.log(logConst.levels.info, 'Engine starting...');
-  const config = generalConfig.generalConfig.default.getAndCreateDefaultIfNotExist();
-  console.log(JSON.stringify(config));
-
-  debugger;
-
-	// Start up event eventListener
-	console.log("Started Event Listener...");
-} catch (e) {
-	//logger.log(logConst.levels.error, `Fatal error: ${e}`);
-
-	// eslint-disable-next-line no-console
-	console.log(`Fatal Error: ${e}`);
-	process.exit(1);
-}
+		await generalLogger.write(SeverityEnum.Info, "main", "Started Event Listener", true);
+		await run();
+	} catch (e) {
+		await generalLogger.write(SeverityEnum.Error, "main", `Error from main: ${e}`, true);
+		process.exit(1);
+	}
+})();

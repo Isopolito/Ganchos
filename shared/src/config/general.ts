@@ -1,14 +1,18 @@
 import * as path from 'path';
-import * as fs from 'fs';
-import * as lockFile from 'lockfile';
-import * as generalConstants from '../contracts/constants/general';
+import { promises as fs } from 'fs';
+import * as properLockFile from 'proper-lockfile';
+import * as os from 'os';
+
+import * as generalConstants from '../constants/names';
+import { doesPathExist, touch } from '../util/files';
+import { generalLogger, SeverityEnum } from '../';
 
 /*========================================================================================*/
 
 interface GeneralConfig {
-  lastUpdatedTimeStamp: Number;
-  watchPaths: Array<string>;
-  heartBeatPollIntervalInSeconds: Number;
+	lastUpdatedTimeStamp: Number;
+	watchPaths: Array<string>;
+	heartBeatPollIntervalInSeconds: Number;
 }
 
 /*========================================================================================*/
@@ -18,75 +22,74 @@ let inMemoryConfig: GeneralConfig;
 
 /*========================================================================================*/
 
-const getConfigPath = (): string => path.join(generalConstants.AppDirName, '.config', 'general');
+const getConfigPath = (): string => path.join(os.homedir(), generalConstants.AppDir, generalConstants.Config, generalConstants.General);
 
-const configInMemoryIsMostRecent = (path: string): Boolean  => {
-  if (!inMemoryConfig) return false;
+const isConfigInMemoryMostRecent = async (configPath: string): Promise<Boolean> => {
+	if (!inMemoryConfig) return false;
 
-  const stats = fs.statSync(path);
+	const stats = await fs.stat(configPath);
 
-  // True if inMemoryConfig was updated after the config file was last written to disk
-  return stats.mtime.getTime() <= inMemoryConfig.lastUpdatedTimeStamp;
+	// True if inMemoryConfig was updated after the config file was last written to disk
+	return stats.mtime.getTime() <= inMemoryConfig.lastUpdatedTimeStamp;
 }
 
-const doesConfigAlreadyExist = (path: string) => path && fs.existsSync(path);
-const configDoesNotAlreadyExist = (path: string) => !doesConfigAlreadyExist(path);
+const getAndCreateDefaultIfNotExist = async (): Promise<GeneralConfig | null> => {
+	const configPath = getConfigPath();
+	if (doesPathExist(configPath)) return await get();
 
-const getAndCreateDefaultIfNotExist = (): GeneralConfig | null => {
-  const path = getConfigPath();
-  if (doesConfigAlreadyExist(path)) return get();
+	const config: GeneralConfig = {
+		heartBeatPollIntervalInSeconds: 5,
+		watchPaths: [],
+		lastUpdatedTimeStamp: 0,
+	};
 
-  const config: GeneralConfig = {
-    heartBeatPollIntervalInSeconds: 5,
-    watchPaths: [],
-    lastUpdatedTimeStamp: 0,
-  }; 
-
-  save(config);
-  return config;
+	save(config);
+	return config;
 }
 
-const get = (): GeneralConfig | null => {
-  const path = getConfigPath();
-  if (configDoesNotAlreadyExist(path)) return null;
+const get = async (): Promise<GeneralConfig | null> => {
+	const configPath = getConfigPath();
+	if (!doesPathExist(configPath)) return null;
 
-  if (configInMemoryIsMostRecent(path)) return inMemoryConfig;
+	if (await isConfigInMemoryMostRecent(configPath)) return inMemoryConfig;
 
-  let rawData = fs.readFileSync(path);
-  let config: GeneralConfig = JSON.parse(rawData.toString());  
-  
-  inMemoryConfig = config;
-  inMemoryConfig.lastUpdatedTimeStamp = Date.now();
+	let rawData = await fs.readFile(configPath);
+	try {
+		let config: GeneralConfig = JSON.parse(rawData.toString());
 
-  return config;
+		inMemoryConfig = config;
+		inMemoryConfig.lastUpdatedTimeStamp = Date.now();
+
+		return config;
+	} catch (e) {
+		await generalLogger.write(SeverityEnum.Critical, "general config", `Error. Can't parse general config json: ${e}`, true);
+		return null;
+	}
 }
 
-const save = (config: GeneralConfig) => {
-  if (config === null) return null;
-  const path = getConfigPath();
+const save = async (config: GeneralConfig) => {
+	if (config === null) return null;
 
-  lockFile.lock(path, err => {
-    // If the err happens, then it failed to acquire a lock.
-    if (err) {
-      // TODO: Log for real
-      console.log(`An error occurred locking general config file: ${err}`)
-      return;
-    }
-   
-    fs.writeFileSync(path, JSON.stringify(config));
+	try {
+		const configPath = getConfigPath();
+		doesPathExist(configPath) || await touch(configPath);
 
-    // TODO: Log for real instead of using console 
-    lockFile.unlock(path, err => console.log(`An error occurred unlocking general config file: ${err}`));
-  });
+		const release = await properLockFile.lock(configPath);
+		await fs.writeFile(configPath, JSON.stringify(config, null, 4));
+		release();
 
-  inMemoryConfig = config;
-  inMemoryConfig.lastUpdatedTimeStamp = Date.now();
+		inMemoryConfig = config;
+		inMemoryConfig.lastUpdatedTimeStamp = Date.now();
+	} catch (e) {
+		// TODO: log
+		console.log(`Error saving log file ${e}`);
+	}
 }
 
 /*========================================================================================*/
 
 export {
-  save,
-  get,
-  getAndCreateDefaultIfNotExist,
+	save,
+	get,
+	getAndCreateDefaultIfNotExist,
 };
