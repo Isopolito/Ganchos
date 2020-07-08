@@ -7,18 +7,18 @@ import { makeLogFilePath } from '../util/logs';
 /*========================================================================================*/
 
 const write = async (name: string, messageJson: string): Promise<void> => {
-  if (!messageJson) return;
+	if (!messageJson) return;
 
-  const filePath = makeLogFilePath(name);
-  await touch(filePath);
+	const filePath = makeLogFilePath(name);
+	await touch(filePath);
 
-  const release = await properLockFile.lock(filePath);
-  await fs.appendFile(filePath, messageJson + '\n');
-  return release();
+	const release = await properLockFile.lock(filePath);
+	await fs.appendFile(filePath, messageJson + '\n');
+	return release();
 }
 
 /*========================================================================================*/
 
 export {
-  write,
+	write,
 }

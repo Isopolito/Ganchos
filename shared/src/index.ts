@@ -4,6 +4,7 @@ import * as pluginLogger from './logging/pluginLogger';
 import { SeverityEnum } from './logging/SeverityEnum';
 import { PluginLogMessage } from './logging/PluginLogMessage';
 import { GeneralLogMessage } from './logging/GeneralLogMessage';
+import * as fileUtil from './util/files';
 
 export {
   generalConfig,
@@ -12,4 +13,5 @@ export {
   SeverityEnum,
   PluginLogMessage,
   GeneralLogMessage,
+  fileUtil,
 }

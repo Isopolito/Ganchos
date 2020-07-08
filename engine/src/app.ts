@@ -1,15 +1,17 @@
 import { generalLogger, SeverityEnum } from 'ganchas-shared'
+import { run, stop } from './EventListener/eventListener'
 
 (async () => {
-  try {
-    process.on('SIGINT', () => {
-      // TODO: Do clean up
-      generalLogger.write(SeverityEnum.Info, "main", "Application has been shut down", true);
-    });
+	try {
+		process.on('SIGINT', async () => {
+			stop();
+			await generalLogger.write(SeverityEnum.Info, "main", "SIGINT - Application will shut down", true);
+		});
 
-    generalLogger.write(SeverityEnum.Info, "main", "Started Event Listener", true);
-  } catch (e) {
-    generalLogger.write(SeverityEnum.Error, "main", "Started Event Listener", true);
-    process.exit(1);
-  }
+		await generalLogger.write(SeverityEnum.Info, "main", "Started Event Listener", true);
+		await run();
+	} catch (e) {
+		await generalLogger.write(SeverityEnum.Error, "main", `Error from main: ${e}`, true);
+		process.exit(1);
+	}
 })();

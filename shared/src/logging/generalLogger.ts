@@ -6,19 +6,20 @@ import { GeneralLogMessage } from './GeneralLogMessage';
 
 /*========================================================================================*/
 
-const write = (severity: SeverityEnum, area: string, message: string): Promise<void> => {
-  const logMessage: GeneralLogMessage = {
-    TimeStamp: makeTimeStamp(),
-    Severity: severity,
-    Area: area,
-    Message: message,
-  };
+const write = (severity: SeverityEnum, area: string, message: string, shouldLogToConsole?: boolean): Promise<void> => {
+	const logMessage: GeneralLogMessage = {
+		TimeStamp: makeTimeStamp(),
+		Severity: severity,
+		Area: area,
+		Message: message,
+	};
 
-  return writeMessage(constants.General, JSON.stringify(logMessage));
+	shouldLogToConsole && console.log(message);
+	return writeMessage(constants.General, JSON.stringify(logMessage));
 }
 
 /*========================================================================================*/
 
 export {
-  write
+	write
 }
