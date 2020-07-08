@@ -11,7 +11,7 @@ import { generalLogger, SeverityEnum } from '../';
 
 interface GeneralConfig {
 	lastUpdatedTimeStamp: Number;
-	watchPaths: Array<string>;
+	watchPaths: string[];
 	heartBeatPollIntervalInSeconds: Number;
 }
 
@@ -62,7 +62,7 @@ const get = async (): Promise<GeneralConfig | null> => {
 
 		return config;
 	} catch (e) {
-		await generalLogger.write(SeverityEnum.Critical, "general config", `Error. Can't parse general config json: ${e}`, true);
+		await generalLogger.write(SeverityEnum.critical, "general config", `Error. Can't parse general config json: ${e}`, true);
 		return null;
 	}
 }

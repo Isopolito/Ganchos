@@ -8,12 +8,12 @@ import { PluginLogMessage } from './PluginLogMessage';
 
 const write = (severity: SeverityEnum, pluginName: string, category: string, areaInPlugin: string, message: string): Promise<void> => {
   const logMessage: PluginLogMessage = {
-    PluginName: pluginName,
-    TimeStamp: makeTimeStamp(),
-    Severity: severity,
-    Category: category,
-    AreaInPlugin: areaInPlugin,
-    Message: message,
+    pluginName: pluginName,
+    timeStamp: makeTimeStamp(),
+    severity: severity,
+    category: category,
+    areaInPlugin: areaInPlugin,
+    message: message,
   };
 
   return writeMessage(generalConstants.Plugin, JSON.stringify(logMessage));

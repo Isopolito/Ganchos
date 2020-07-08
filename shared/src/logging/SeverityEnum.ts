@@ -1,7 +1,7 @@
 export enum SeverityEnum {
-	Debug = 1,
-	Info,
-	Warning,
-	Error,
-	Critical
+	debug = 1,
+	info,
+	warning,
+	error,
+	critical
 } 

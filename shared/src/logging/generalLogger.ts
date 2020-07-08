@@ -8,10 +8,10 @@ import { GeneralLogMessage } from './GeneralLogMessage';
 
 const write = (severity: SeverityEnum, area: string, message: string, shouldLogToConsole?: boolean): Promise<void> => {
 	const logMessage: GeneralLogMessage = {
-		TimeStamp: makeTimeStamp(),
-		Severity: severity,
-		Area: area,
-		Message: message,
+		timeStamp: makeTimeStamp(),
+		severity: severity,
+		area: area,
+		message: message,
 	};
 
 	shouldLogToConsole && console.log(message);
