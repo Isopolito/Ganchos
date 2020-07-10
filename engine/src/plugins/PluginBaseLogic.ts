@@ -1,7 +1,7 @@
 import { Subject, Observable } from "threads/observable"
-import { PluginLogMessage } from "./PluginLogMessage";
+import { PluginLogMessage } from "./";
 
-export class PluginLogic {
+export class PluginBaseLogic {
     private subject: Subject<PluginLogMessage> = null;
 
     constructor() {

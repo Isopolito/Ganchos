@@ -1,36 +1,34 @@
+import { Observable } from "threads/observable"
 import { expose } from 'threads/worker'
 import { SeverityEnum } from 'ganchas-shared';
-import { PluginLogic } from '../PluginLogic';
-import { PluginArguments } from "../PluginArguments";
-import { GanchasPlugin } from "../GanchasPlugin";
+import { PluginBaseLogic, PluginLogMessage, PluginCategory, GanchasPlugin, PluginArguments } from "../";
 
-let pluginLogic: PluginLogic;
+let baseLogic: PluginBaseLogic;
 
 const templatePlugin: GanchasPlugin = {
-    name: 'TemplatePlugin',
-    category: 'System',
-    description: 'Description',
-    eventTypes: ['add', 'unlink'],
-    defaultConfigurationJson: ` 
+    // Configure this section. This is what shows up in the UI
+    getName: (): string => "TemplatePlugin",
+    getDescription: (): string => "Description",
+    getEventTypes: (): EventType[] => ["add", "unlink"],
+    getCategory: (): PluginCategory => 'System',
+    getDefaultConfigurationJson: (): string => ` 
     {
         foo: "bar"
     }
     `,
 
-    init: () => { pluginLogic = new PluginLogic() },
-    tearDown: () => pluginLogic.tearDown(),
-    getLogSubscription: () => pluginLogic.getLogSubscription(),
+    // This section shouldn't need to change
+    init: () => { baseLogic = new PluginBaseLogic() },
+    tearDown: () => baseLogic.tearDown(),
+    getLogSubscription: (): Observable<PluginLogMessage> => baseLogic.getLogSubscription(),
 
+    // Plugin logic goes in here
     run: (args: PluginArguments) => {
-
-        // **** PLUGIN LOGIC GOES HERE ****
-
         // Example of how to log a message
-        pluginLogic.Log({
+        baseLogic.Log({
             severity: SeverityEnum.info,
-            areaInPlugin: 'where in the plugin code is this happening',
-            message: 'TemplatePlugin message',
-            shouldLogToConsole: true
+            areaInPlugin: 'where in the code is this happening',
+            message: 'Template Plugin',
         });
     },
 }

@@ -1,6 +1,6 @@
 import chokidar from 'chokidar';
 import { fileUtil, generalConfig, generalLogger, SeverityEnum } from 'ganchas-shared';
-import { run as runPlugins } from '../plugins/pluginEventDispatcher';
+import { run as runPlugins } from '../eventProcessor/pluginEventDispatcher';
 
 /*========================================================================================*/
 
