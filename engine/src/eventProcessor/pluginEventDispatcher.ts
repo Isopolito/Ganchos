@@ -1,4 +1,5 @@
 import { spawn, Thread, Worker } from "threads";
+import { performance } from 'perf_hooks';
 import { generalLogger, pluginLogger, SeverityEnum } from 'ganchas-shared';
 import { fetchNodePlugins, PluginLogMessage, PluginArguments } from '../plugins';
 
@@ -8,7 +9,6 @@ const shouldPluginIgnoreEvent = (event: string, eventsToListenFor: EventType[]):
 
 const runNodePlugin = async (event: string, filePath: string, pluginPath: string): Promise<void> => {
     try {
-
         const thread = await spawn(new Worker(pluginPath));
         if (shouldPluginIgnoreEvent(event, await thread.getEventTypes())) return;
 
@@ -20,14 +20,17 @@ const runNodePlugin = async (event: string, filePath: string, pluginPath: string
             await pluginLogger.write(message.severity, name, category, message.areaInPlugin, message.message);
         });
     
-        await pluginLogger.write(SeverityEnum.info, name, category, "pre-run", `About to run plugin`);
         const args: PluginArguments = {
-            jsonConfig: 'FIXME',
             filePath,
+            jsonConfig: 'FIXME',
             eventType: event as EventType,
         }
+        const beforeTime = performance.now();
         await thread.run(args);
-        await pluginLogger.write(SeverityEnum.info, name, category, "pre-run", `Ran plugin`);
+        const afterTime = performance.now();
+
+        await pluginLogger.write(SeverityEnum.info, name, category, "run time",
+            `Plugin executed in ${beforeTime - afterTime}ms`);
 
         await Thread.terminate(thread);
     } catch (e) {
