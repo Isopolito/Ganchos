@@ -12,11 +12,14 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^14.0.14",
+    "ts-node": "^8.10.2",
     "tslint": "^6.1.2",
     "typescript": "^3.9.5"
   },
   "dependencies": {
     "chokidar": "^3.4.0",
-    "ganchas-shared": "file:../shared"
+    "ganchas-shared": "file:../shared",
+    "isomorphic-fetch": "^2.2.1",
+    "threads": "^1.6.3"
   }
 }

@@ -1,6 +1,6 @@
 import chokidar from 'chokidar';
 import { fileUtil, generalConfig, generalLogger, SeverityEnum } from 'ganchas-shared';
-import { run as runPlugins } from '../plugins/runPlugins';
+import { run as runPlugins } from '../plugins/pluginEventDispatcher';
 
 /*========================================================================================*/
 
@@ -25,7 +25,7 @@ const watchPaths = (pathsToWatch: string[]) => {
 		ignoreInitial: true,
 	});
 
-	watcher.on('all', async (event, filePath) => await runPlugins(event, filePath));
+	watcher.on('all', async (event: string, filePath: string) => await runPlugins(event, filePath));
 	watcher.on('error', async error => await generalLogger.write(SeverityEnum.error, "event listener", `Error in watcher: ${error}`));
 };
 
