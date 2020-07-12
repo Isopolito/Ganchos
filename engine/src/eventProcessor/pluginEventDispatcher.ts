@@ -1,6 +1,6 @@
 import { spawn, Thread, Worker } from "threads";
 import { performance } from 'perf_hooks';
-import { generalLogger, pluginLogger, SeverityEnum } from 'ganchas-shared';
+import { generalLogger, pluginLogger, SeverityEnum, pluginConfig } from 'ganchas-shared';
 import { fetchNodePlugins, PluginLogMessage, PluginArguments } from '../plugins';
 
 const shouldPluginIgnoreEvent = (event: string, eventsToListenFor: EventType[]): boolean => {
@@ -22,9 +22,10 @@ const runNodePlugin = async (event: string, filePath: string, pluginPath: string
     
         const args: PluginArguments = {
             filePath,
-            jsonConfig: 'FIXME',
+            jsonConfig: await pluginConfig.get(name) || await thread.getDefaultConfigJson(),
             eventType: event as EventType,
         }
+
         const beforeTime = performance.now();
         await thread.run(args);
         const afterTime = performance.now();
@@ -39,7 +40,7 @@ const runNodePlugin = async (event: string, filePath: string, pluginPath: string
 }
 
 const dispatch = async (event: string, filePath: string): Promise<void> => {
-    for (let file in fetchNodePlugins()) {
+    for (let file in await fetchNodePlugins()) {
         await runNodePlugin(event, filePath, file);
     }
 }

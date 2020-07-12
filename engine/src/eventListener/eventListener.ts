@@ -9,10 +9,10 @@ let watcher;
 /*========================================================================================*/
 
 const filterOutInvalidPaths = (paths: string[]): string[] => {
-	return paths.filter(async p => {
+	return paths.filter(p => {
 		if (fileUtil.doesPathExist(p)) return true;
 
-		await generalLogger.write(SeverityEnum.error, "event listener", `Watch Path ${p} is not accessible...skipping`);
+		generalLogger.writeSync(SeverityEnum.error, "event listener", `Watch Path ${p} is not accessible...skipping`);
 		return false;
 	});
 }

@@ -5,7 +5,7 @@ export interface GanchasPlugin {
     getName(): string;
     getDescription(): string;
     getEventTypes(): EventType[];
-    getDefaultConfigurationJson(): string;
+    getDefaultConfigJson(): string;
     getCategory(): PluginCategory;
     getLogSubscription(): Observable<PluginLogMessage>;
 

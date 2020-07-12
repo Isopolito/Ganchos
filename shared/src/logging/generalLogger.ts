@@ -18,8 +18,15 @@ const write = (severity: SeverityEnum, area: string, message: string, shouldLogT
 	return writeMessage(constants.General, JSON.stringify(logMessage));
 }
 
+const writeSync = (severity: SeverityEnum, area: string, message: string, shouldLogToConsole?: boolean): void => {
+    (async () => { 
+        await write(severity, area, message, shouldLogToConsole);
+    })();
+}
+
 /*========================================================================================*/
 
 export {
-	write
+	write,
+	writeSync,
 }

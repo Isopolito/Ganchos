@@ -1,10 +1,7 @@
-import * as path from 'path';
 import { promises as fs } from 'fs';
 import * as properLockFile from 'proper-lockfile';
-import * as os from 'os';
 
-import * as generalConstants from '../constants/names';
-import { doesPathExist, touch } from '../util/files';
+import { getConfigPath, doesPathExist, touch } from '../util/files';
 import { generalLogger, SeverityEnum } from '../';
 
 /*========================================================================================*/
@@ -21,8 +18,6 @@ interface GeneralConfig {
 let inMemoryConfig: GeneralConfig;
 
 /*========================================================================================*/
-
-const getConfigPath = (): string => path.join(os.homedir(), generalConstants.AppDir, generalConstants.Config, generalConstants.General);
 
 const isConfigInMemoryMostRecent = async (configPath: string): Promise<Boolean> => {
 	if (!inMemoryConfig) return false;
@@ -44,6 +39,7 @@ const getAndCreateDefaultIfNotExist = async (): Promise<GeneralConfig | null> =>
 	};
 
 	save(config);
+	//return config;
 	return config;
 }
 
@@ -68,7 +64,7 @@ const get = async (): Promise<GeneralConfig | null> => {
 }
 
 const save = async (config: GeneralConfig) => {
-	if (config === null) return null;
+	if (config === null) return;
 
 	try {
 		const configPath = getConfigPath();
@@ -81,8 +77,7 @@ const save = async (config: GeneralConfig) => {
 		inMemoryConfig = config;
 		inMemoryConfig.lastUpdatedTimeStamp = Date.now();
 	} catch (e) {
-		// TODO: log
-		console.log(`Error saving log file ${e}`);
+		await generalLogger.write(SeverityEnum.error, "general config - save", `${e}`, true);
 	}
 }
 
