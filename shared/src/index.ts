@@ -1,17 +1,9 @@
-import * as generalConfig from './config/general';
-import * as generalLogger from './logging/generalLogger';
-import * as pluginLogger from './logging/pluginLogger';
-import { SeverityEnum } from './logging/SeverityEnum';
-import { PluginLogMessage } from './logging/PluginLogMessage';
-import { GeneralLogMessage } from './logging/GeneralLogMessage';
-import * as fileUtil from './util/files';
-
-export {
-  generalConfig,
-  generalLogger,
-  pluginLogger,
-  SeverityEnum,
-  PluginLogMessage,
-  GeneralLogMessage,
-  fileUtil,
-}
+export * as generalConfig from './config/general';
+export * as pluginConfig from './config/plugin';
+export * as generalLogger from './logging/generalLogger';
+export * as pluginLogger from './logging/pluginLogger';
+export { SeverityEnum } from './logging/SeverityEnum';
+export { PluginLogMessage } from './logging/PluginLogMessage';
+export { GeneralLogMessage } from './logging/GeneralLogMessage';
+export * as fileUtil from './util/files';
+export * as validationUtil from './util/validation';

@@ -1,6 +1,6 @@
 import chokidar from 'chokidar';
 import { fileUtil, generalConfig, generalLogger, SeverityEnum } from 'ganchas-shared';
-import { run as runPlugins } from '../plugins/runPlugins';
+import { dispatch } from '../eventProcessor/pluginEventDispatcher';
 
 /*========================================================================================*/
 
@@ -9,10 +9,10 @@ let watcher;
 /*========================================================================================*/
 
 const filterOutInvalidPaths = (paths: string[]): string[] => {
-	return paths.filter(async p => {
+	return paths.filter(p => {
 		if (fileUtil.doesPathExist(p)) return true;
 
-		await generalLogger.write(SeverityEnum.error, "event listener", `Watch Path ${p} is not accessible...skipping`);
+		generalLogger.writeSync(SeverityEnum.error, "event listener", `Watch Path ${p} is not accessible...skipping`);
 		return false;
 	});
 }
@@ -25,7 +25,7 @@ const watchPaths = (pathsToWatch: string[]) => {
 		ignoreInitial: true,
 	});
 
-	watcher.on('all', async (event, filePath) => await runPlugins(event, filePath));
+	watcher.on('all', async (event: string, filePath: string) => await dispatch(event, filePath));
 	watcher.on('error', async error => await generalLogger.write(SeverityEnum.error, "event listener", `Error in watcher: ${error}`));
 };
 
