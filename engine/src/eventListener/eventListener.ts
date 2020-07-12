@@ -1,5 +1,5 @@
 import chokidar from 'chokidar';
-import { fileUtil, generalConfig, generalLogger, SeverityEnum } from 'ganchas-shared';
+import { fileUtil, generalConfig, generalLogger, SeverityEnum } from 'ganchos-shared';
 import { dispatch } from '../eventProcessor/pluginEventDispatcher';
 
 /*========================================================================================*/

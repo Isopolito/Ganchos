@@ -1,6 +1,6 @@
 import { spawn, Thread, Worker } from "threads";
 import { performance } from 'perf_hooks';
-import { generalLogger, pluginLogger, SeverityEnum, pluginConfig } from 'ganchas-shared';
+import { generalLogger, pluginLogger, SeverityEnum, pluginConfig } from 'ganchos-shared';
 import { fetchNodePlugins, PluginLogMessage, PluginArguments } from '../plugins';
 
 const shouldPluginIgnoreEvent = (event: string, eventsToListenFor: EventType[]): boolean => {

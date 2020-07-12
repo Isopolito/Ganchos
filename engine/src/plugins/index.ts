@@ -1,4 +1,4 @@
-export * from './GanchasPlugin';
+export * from './GanchosPlugin';
 export * from './PluginArguments';
 export * from './PluginBaseLogic';
 export * from './PluginCategory';

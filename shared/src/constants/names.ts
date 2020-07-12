@@ -1,9 +1,9 @@
-const Application = 'ganchas';
+const Application = 'ganchos';
 const Config = 'config';
 const General = 'general';
 const Plugin = 'plugins';
 const LogDir = 'logs';
-const AppDir = '.ganchas';
+const AppDir = '.ganchos';
 
 export {
   AppDir,

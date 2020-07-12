@@ -1,5 +1,5 @@
 import { promises as fs } from 'fs';
-import { generalLogger, SeverityEnum } from 'ganchas-shared'
+import { generalLogger, SeverityEnum } from 'ganchos-shared'
 import appRoot from 'app-root-path';
 
 const fetchNodePlugins = async (): Promise<string[]> => {

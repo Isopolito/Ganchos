@@ -1,7 +1,7 @@
 import { Observable } from "threads/observable"
 import { expose } from 'threads/worker'
-import { SeverityEnum } from 'ganchas-shared';
-import { PluginBaseLogic, PluginLogMessage, PluginCategory, GanchasPlugin, PluginArguments } from "../";
+import { SeverityEnum } from 'ganchos-shared';
+import { PluginBaseLogic, PluginLogMessage, PluginCategory, GanchosPlugin, PluginArguments } from "../";
 
 let baseLogic: PluginBaseLogic;
 
@@ -9,7 +9,7 @@ interface Config {
     foo: string;
 }
 
-const templatePlugin: GanchasPlugin = {
+const templatePlugin: GanchosPlugin = {
     // Configure this section. This is what shows up in the UI
     getName: (): string => "TemplatePlugin",
     getDescription: (): string => "Description",

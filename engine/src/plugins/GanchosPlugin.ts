@@ -1,7 +1,7 @@
 import { Observable } from "threads/observable"
-import { PluginCategory, PluginArguments, PluginLogMessage } from "./";
+import { PluginCategory, PluginArguments, PluginLogMessage } from ".";
 
-export interface GanchasPlugin {
+export interface GanchosPlugin {
     getName(): string;
     getDescription(): string;
     getEventTypes(): EventType[];

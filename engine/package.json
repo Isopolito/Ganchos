@@ -1,5 +1,5 @@
 {
-  "name": "ganchas",
+  "name": "ganchos",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -20,7 +20,7 @@
   "dependencies": {
     "app-root-path": "^3.0.0",
     "chokidar": "^3.4.0",
-    "ganchas-shared": "file:../shared",
+    "ganchos-shared": "file:../shared",
     "isomorphic-fetch": "^2.2.1",
     "threads": "^1.6.3"
   }
