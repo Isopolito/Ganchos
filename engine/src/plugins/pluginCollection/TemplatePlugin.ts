@@ -17,7 +17,7 @@ const templatePlugin: GanchosPlugin = {
     getCategory: (): PluginCategory => 'System',
     getDefaultConfigJson: (): string => ` 
     {
-        foo: "bar"
+        "foo": "bar"
     }
     `,
 
@@ -36,7 +36,7 @@ const templatePlugin: GanchosPlugin = {
         baseLogic.Log({
             severity: SeverityEnum.info,
             areaInPlugin: 'where in the code is this happening',
-            message: 'Template Plugin',
+            message: 'Hello from Template Plugin',
         });
     },
 }

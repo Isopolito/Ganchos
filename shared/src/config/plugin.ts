@@ -6,14 +6,14 @@ import { isJsonStringValid } from '../util/validation';
 
 // NOTE: If it became an necessary, plugin json config can be cached for each plugin
 
-const get = async (pluginName: string): Promise<string | null> => {
+const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<string | null> => {
     const configPath = getPluginConfigPath(pluginName);
     if (!doesPathExist(configPath)) return null;
 
     try {
         const rawData = await fs.readFile(configPath);
         const jsonString = rawData.toString();
-        if (isJsonStringValid(jsonString)) {
+        if (!shouldValidateJson || isJsonStringValid(jsonString)) {
             return jsonString;
         } else {
             await generalLogger.write(SeverityEnum.error, "plugin config - get", `Invalid json in plugin config file for '${pluginName}'`, true);

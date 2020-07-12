@@ -19,8 +19,16 @@ const write = (severity: SeverityEnum, pluginName: string, category: string, are
   return writeMessage(generalConstants.Plugin, JSON.stringify(logMessage));
 }
 
+const writeSync = (severity: SeverityEnum, pluginName: string, category: string, areaInPlugin: string, message: string): void => {
+    (async () => {
+        write(severity, pluginName, category, areaInPlugin, message);
+    })();
+
+}
+
 /*========================================================================================*/
 
 export {
-  write
+    write,
+    writeSync,
 }

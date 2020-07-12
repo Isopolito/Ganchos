@@ -12,7 +12,7 @@ const write = async (name: string, messageJson: string): Promise<void> => {
 	const filePath = makeLogFilePath(name);
 	await touch(filePath);
 
-	const release = await properLockFile.lock(filePath);
+	const release = await properLockFile.lock(filePath, { retries: 5});
 	await fs.appendFile(filePath, messageJson + '\n');
 	return release();
 }
