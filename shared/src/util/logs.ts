@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as os from 'os';
-import * as moment from 'moment';
+import moment from 'moment';
 
 import * as generalConstants from '../constants/names';
 

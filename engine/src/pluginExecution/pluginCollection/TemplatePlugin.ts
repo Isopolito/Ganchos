@@ -1,10 +1,9 @@
 import { Observable } from "threads/observable"
 import { expose } from 'threads/worker'
-import { SeverityEnum } from 'ganchos-shared';
 import {
-    PluginBaseLogic, PluginLogMessage, PluginCategory,
-    GanchosPlugin, PluginArguments, GanchosBaseConfig
-} from "../";
+    PluginBaseLogic, PluginLogMessage, PluginCategory, GanchosPlugin,
+    SeverityEnum, PluginArguments, GanchosBaseConfig, EventType
+} from 'ganchos-shared';
 
 let baseLogic: PluginBaseLogic;
 
@@ -14,11 +13,12 @@ interface Config extends GanchosBaseConfig {
 }
 
 const templatePlugin: GanchosPlugin = {
-    // Configure this section. This is what drives the config and shows up in the UI
+    // Configure this section
     getName: (): string => "TemplatePlugin",
     getDescription: (): string => "Description",
     getEventTypes: (): EventType[] => ["add", "unlink"],
     getCategory: (): PluginCategory => 'System',
+    isEligibleForSchedule: (): boolean => false,
     getDefaultConfigJson: (): string => ` 
     {
         "foo": "bar"

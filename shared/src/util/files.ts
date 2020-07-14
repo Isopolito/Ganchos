@@ -11,6 +11,8 @@ const touch = async (configPath: string) => {
 
 const doesPathExist = (pathToCheck: string) => sh.test('-f', pathToCheck) || sh.test('-d', pathToCheck);
 
+const getAppBaseDir = (): string => path.join(os.homedir(), generalConstants.AppDir);
+
 const getConfigPath = (): string => path.join(os.homedir(), generalConstants.AppDir, generalConstants.Config, generalConstants.General);
 
 const getPluginConfigPath = (pluginName: string): string => {
@@ -21,6 +23,7 @@ const getPluginConfigPath = (pluginName: string): string => {
 export {
   touch,
   getConfigPath,
+  getAppBaseDir,
   getPluginConfigPath,
   doesPathExist,
 }

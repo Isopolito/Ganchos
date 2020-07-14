@@ -1,8 +1,6 @@
 import { spawn, Thread, Worker } from "threads";
 import { performance } from 'perf_hooks';
 import { validationUtil, generalLogger, pluginLogger, SeverityEnum, pluginConfig } from 'ganchos-shared';
-import { fetchNodePlugins, PluginLogMessage, PluginArguments } from '../plugins';
-import { ObservablePromise } from "threads/dist/observable-promise";
 
 const runPluginAndReschedule = () => {
     // execute run method of plugin

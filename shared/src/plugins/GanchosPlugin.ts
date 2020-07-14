@@ -1,5 +1,5 @@
 import { Observable } from "threads/observable"
-import { PluginCategory, PluginArguments, PluginLogMessage } from ".";
+import { PluginCategory, PluginArguments, PluginLogMessage, EventType } from ".";
 
 export interface GanchosPlugin {
     getName(): string;
@@ -8,6 +8,7 @@ export interface GanchosPlugin {
     getDefaultConfigJson(): string;
     getCategory(): PluginCategory;
     getLogSubscription(): Observable<PluginLogMessage>;
+    isEligibleForSchedule(): boolean;
 
     init(): void;
     run(args: PluginArguments): void;

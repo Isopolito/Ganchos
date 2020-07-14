@@ -1,8 +1,11 @@
 import { spawn, Thread, Worker } from "threads";
 import { performance } from 'perf_hooks';
-import { validationUtil, generalLogger, pluginLogger, SeverityEnum, pluginConfig } from 'ganchos-shared';
-import { fetchUserPlugins, fetchNodePlugins, PluginLogMessage, PluginArguments } from '../plugins';
 import { ObservablePromise } from "threads/dist/observable-promise";
+import {
+    PluginLogMessage, PluginArguments, EventType, validationUtil, generalLogger,
+    pluginLogger, SeverityEnum, pluginConfig
+} from 'ganchos-shared';
+import { fetchNodePlugins, fetchUserPlugins } from "./pluginsFinder";
 
 const shouldPluginIgnoreEvent = (event: string, eventsToListenFor: EventType[]): boolean => {
     return !(eventsToListenFor && eventsToListenFor.includes(event as EventType));
@@ -25,7 +28,7 @@ const runNodePlugin = async (event: string, filePath: string, pluginName: string
     let name = 'n/a';
     try {
         // TODO: Find a way to new up Worker where the path doesn't have to be hard coded
-        const thread = await spawn(new Worker("../plugins/pluginCollection/" + pluginName));
+        const thread = await spawn(new Worker("./pluginCollection/" + pluginName));
         if (shouldPluginIgnoreEvent(event, await thread.getEventTypes())) return;
 
         await thread.init();

@@ -1,13 +1,15 @@
 import { promises as fs } from 'fs';
 import * as properLockFile from 'proper-lockfile';
+import * as path from 'path';
 
-import { getConfigPath, doesPathExist, touch } from '../util/files';
+import { getConfigPath, doesPathExist, touch, getAppBaseDir } from '../util/files';
 import { generalLogger, SeverityEnum } from '../';
 
 /*========================================================================================*/
 
 interface GeneralConfig {
-	lastUpdatedTimeStamp: Number;
+    lastUpdatedTimeStamp: Number;
+    customPluginPaths: string[];
 	watchPaths: string[];
 	heartBeatPollIntervalInSeconds: Number;
 }
@@ -32,15 +34,15 @@ const getAndCreateDefaultIfNotExist = async (): Promise<GeneralConfig | null> =>
 	const configPath = getConfigPath();
 	if (doesPathExist(configPath)) return await get();
 
-	const config: GeneralConfig = {
+	const defaultConfig: GeneralConfig = {
 		heartBeatPollIntervalInSeconds: 5,
 		watchPaths: [],
+		customPluginPaths: [path.join(getAppBaseDir(), 'plugins')],
 		lastUpdatedTimeStamp: 0,
 	};
 
-	save(config);
-	//return config;
-	return config;
+	save(defaultConfig);
+	return defaultConfig;
 }
 
 const get = async (): Promise<GeneralConfig | null> => {
