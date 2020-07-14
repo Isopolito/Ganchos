@@ -1,4 +1,5 @@
 export * from './GanchosPlugin';
+export * from './GanchosBaseConfig';
 export * from './PluginArguments';
 export * from './PluginBaseLogic';
 export * from './PluginCategory';

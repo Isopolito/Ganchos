@@ -1,10 +1,24 @@
 import { spawn, Thread, Worker } from "threads";
 import { performance } from 'perf_hooks';
 import { validationUtil, generalLogger, pluginLogger, SeverityEnum, pluginConfig } from 'ganchos-shared';
-import { fetchNodePlugins, PluginLogMessage, PluginArguments } from '../plugins';
+import { fetchUserPlugins, fetchNodePlugins, PluginLogMessage, PluginArguments } from '../plugins';
+import { ObservablePromise } from "threads/dist/observable-promise";
 
 const shouldPluginIgnoreEvent = (event: string, eventsToListenFor: EventType[]): boolean => {
     return !(eventsToListenFor && eventsToListenFor.includes(event as EventType));
+}
+
+const getJsonConfigString = async (pluginName: string, getDefaultJsonConfigFunc: () => ObservablePromise<string>): Promise<string> =>  {
+    let configString = await pluginConfig.get(pluginName);
+    const shouldWriteConfigToFileForFirstTime = !configString;
+    if (!configString) configString = await getDefaultJsonConfigFunc();
+    if (!validationUtil.isJsonStringValid(configString)) return null;
+    if (shouldWriteConfigToFileForFirstTime) pluginConfig.save(pluginName, configString);
+
+    return configString;
+};
+
+const runUserPlugin = async (event: string, filePath: string, pluginName: string): Promise<void> => {
 }
 
 const runNodePlugin = async (event: string, filePath: string, pluginName: string): Promise<void> => {
@@ -22,8 +36,8 @@ const runNodePlugin = async (event: string, filePath: string, pluginName: string
             pluginLogger.write(message.severity, name, category, message.areaInPlugin, message.message);
         });
     
-        const jsonConfigString = await pluginConfig.get(name) || await thread.getDefaultConfigJson();
-        if (!validationUtil.isJsonStringValid(jsonConfigString)) {
+        const jsonConfigString = await getJsonConfigString(name, thread.getDefaultConfigJson);
+        if (!jsonConfigString) {
             await pluginLogger.write(SeverityEnum.error, name, category, "event processor",
                 `Json configuration for plugin is invalid: ${jsonConfigString}`);
             return;
@@ -51,6 +65,10 @@ const runNodePlugin = async (event: string, filePath: string, pluginName: string
 const dispatch = async (event: string, filePath: string): Promise<void> => {
     for (let file of await fetchNodePlugins(true)) {
         await runNodePlugin(event, filePath, file);
+    }
+
+    for (let file of await fetchUserPlugins()) {
+        await runUserPlugin(event, filePath, file);
     }
 }
 

@@ -13,6 +13,11 @@ const fetchNodePlugins = async (convertExtensionToJs?: boolean): Promise<string[
     }
 }
 
+const fetchUserPlugins = async (): Promise<string[]> => {
+    return [''];
+}
+
 export {
-    fetchNodePlugins
+    fetchNodePlugins,
+    fetchUserPlugins,
 }
