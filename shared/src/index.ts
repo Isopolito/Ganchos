@@ -7,4 +7,5 @@ export { PluginLogFileMessage } from './logging/PluginLogFileMessage';
 export { GeneralLogFileMessage } from './logging/GeneralLogFileMessage';
 export * as fileUtil from './util/files';
 export * as validationUtil from './util/validation';
+export * as systemUtil from './util/system';
 export * from './plugins';

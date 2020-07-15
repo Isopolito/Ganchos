@@ -7,6 +7,8 @@ import {
 } from 'ganchos-shared';
 import { fetchNodePlugins, fetchUserPlugins } from "./pluginsFinder";
 
+const logArea = "event processor";
+
 const shouldPluginIgnoreEvent = (event: string, eventsToListenFor: EventType[]): boolean => {
     return !(eventsToListenFor && eventsToListenFor.includes(event as EventType));
 }
@@ -41,7 +43,7 @@ const runNodePlugin = async (event: string, filePath: string, pluginName: string
     
         const jsonConfigString = await getJsonConfigString(name, thread.getDefaultConfigJson);
         if (!jsonConfigString) {
-            await pluginLogger.write(SeverityEnum.error, name, category, "event processor",
+            await pluginLogger.write(SeverityEnum.error, name, category, logArea,
                 `Json configuration for plugin is invalid: ${jsonConfigString}`);
             return;
         }
@@ -58,21 +60,25 @@ const runNodePlugin = async (event: string, filePath: string, pluginName: string
 
         await Thread.terminate(thread);
 
-        await pluginLogger.write(SeverityEnum.info, name, category, "run time",
+        await pluginLogger.write(SeverityEnum.info, name, category, logArea,
             `Plugin executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
     } catch (e) {
-        await generalLogger.write(SeverityEnum.error, "event processor", `Error running plugin '${name}' - ${e}`, true);
+        await generalLogger.write(SeverityEnum.error, logArea, `Error running plugin '${name}' - ${e}`, true);
     }
 }
 
 const dispatch = async (event: string, filePath: string): Promise<void> => {
-    for (let file of await fetchNodePlugins(true)) {
-        await runNodePlugin(event, filePath, file);
+    const tasks = [];
+
+    for (const file of await fetchNodePlugins(true)) {
+        tasks.push(runNodePlugin(event, filePath, file));
     }
 
-    for (let file of await fetchUserPlugins()) {
-        await runUserPlugin(event, filePath, file);
+    for (const file of await fetchUserPlugins()) {
+        tasks.push(runUserPlugin(event, filePath, file));
     }
+
+    await Promise.all(tasks);
 }
 
 export {
