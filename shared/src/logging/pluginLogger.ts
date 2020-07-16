@@ -2,12 +2,12 @@ import { write as writeMessage } from './genericLogger';
 import { makeTimeStamp } from '../util/logs';
 import * as generalConstants from '../constants/names';
 import { SeverityEnum } from './SeverityEnum';
-import { PluginLogMessage } from './PluginLogMessage';
+import { PluginLogFileMessage } from './PluginLogFileMessage';
 
 /*========================================================================================*/
 
 const write = (severity: SeverityEnum, pluginName: string, category: string, areaInPlugin: string, message: string): Promise<void> => {
-  const logMessage: PluginLogMessage = {
+  const logMessage: PluginLogFileMessage = {
     pluginName: pluginName,
     timeStamp: makeTimeStamp(),
     severity: severity,

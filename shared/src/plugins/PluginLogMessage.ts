@@ -1,4 +1,4 @@
-import { SeverityEnum } from 'ganchos-shared';
+import { SeverityEnum } from "..";
 
 export interface PluginLogMessage {
     severity: SeverityEnum;

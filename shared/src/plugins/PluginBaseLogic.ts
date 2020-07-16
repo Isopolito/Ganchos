@@ -1,8 +1,8 @@
 import { Subject, Observable } from "threads/observable"
-import { PluginLogMessage } from "./";
+import { PluginLogMessage } from './';
 
 export class PluginBaseLogic {
-    private subject: Subject<PluginLogMessage> = null;
+    private subject: Subject<PluginLogMessage>;
 
     constructor() {
         this.subject = new Subject();
@@ -10,7 +10,7 @@ export class PluginBaseLogic {
         
     tearDown() {
         this.subject.complete();
-        this.subject = null;
+        (this.subject as any) = null;
     }
 
     Log(logMessage: PluginLogMessage) {

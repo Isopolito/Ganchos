@@ -6,6 +6,7 @@ import { isJsonStringValid } from '../util/validation';
 
 // NOTE: If it became an necessary, plugin json config can be cached for each plugin
 
+// TODO: Remove extensions from name when looking for file
 const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<string | null> => {
     const configPath = getPluginConfigPath(pluginName);
     if (!doesPathExist(configPath)) return null;
@@ -25,7 +26,8 @@ const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<st
     }
 }
 
-const save = async (pluginName: string, jsonConfig: string) => {
+// TODO: Remove extensions from name when saving
+const save = async (pluginName: string, jsonConfig: string, shouldEnable?: boolean) => {
     if (jsonConfig === null) {
         await generalLogger.write(SeverityEnum.error, "plugin config - save", `pluginName and jsonConfig required`, true);
         return null;
@@ -34,6 +36,12 @@ const save = async (pluginName: string, jsonConfig: string) => {
     try {
         const configPath = getPluginConfigPath(pluginName);
         doesPathExist(configPath) || await touch(configPath);
+
+        if (shouldEnable) {
+            const configObj = JSON.parse(jsonConfig);
+            configObj.enabled = true;
+            jsonConfig = JSON.stringify(configObj, null, 4);
+        }
 
         const release = await properLockFile.lock(configPath);
         await fs.writeFile(configPath, jsonConfig);
