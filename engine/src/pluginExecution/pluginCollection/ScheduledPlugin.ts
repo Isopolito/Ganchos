@@ -1,11 +1,11 @@
 import { Observable } from "threads/observable"
 import { expose } from 'threads/worker'
 import {
-    PluginBaseLogic, PluginLogMessage, PluginCategory, GanchosPlugin,
-    SeverityEnum, PluginArguments, GanchosBaseConfig, EventType
+    GanchosPluginBaseLogic, PluginLogMessage, PluginCategory, GanchosPlugin,
+    SeverityEnum, GanchosPluginArguments, GanchosBaseConfig, EventType
 } from 'ganchos-shared';
 
-let baseLogic: PluginBaseLogic;
+let baseLogic: GanchosPluginBaseLogic;
 
 // Should match the shape of json returned from getDefaultConfigJson()
 interface Config extends GanchosBaseConfig {
@@ -27,12 +27,12 @@ const templatePlugin: GanchosPlugin = {
     `,
 
     // This section shouldn't need to change
-    init: () => { baseLogic = new PluginBaseLogic() },
+    init: () => { baseLogic = new GanchosPluginBaseLogic() },
     tearDown: () => baseLogic.tearDown(),
     getLogSubscription: (): Observable<PluginLogMessage> => baseLogic.getLogSubscription(),
 
     // *** Plugin logic goes in here
-    run: (args: PluginArguments) => {
+    run: (args: GanchosPluginArguments) => {
         // Validated json string is passed in as config, if not available the default configuration defined above will be used
         const config: Config = JSON.parse(args.jsonConfig);
 

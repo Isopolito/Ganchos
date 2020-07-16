@@ -1,6 +1,6 @@
 import { spawn, Thread, Worker } from "threads";
 import { performance } from 'perf_hooks';
-import { validationUtil, systemUtil, generalLogger, pluginLogger, SeverityEnum, pluginConfig, PluginArguments, EventType, PluginLogMessage } from 'ganchos-shared';
+import { validationUtil, systemUtil, generalLogger, pluginLogger, SeverityEnum, pluginConfig, GanchosPluginArguments, EventType, PluginLogMessage } from 'ganchos-shared';
 import { fetchGanchosPlugins } from "./pluginsFinder";
 
 //======================================================================================================
@@ -43,7 +43,7 @@ const runGanchosPluginAndReschedule = async (plugin: SchedulePlugin): Promise<vo
             pluginLogger.write(message.severity, plugin.name, category, message.areaInPlugin, message.message);
         });
  
-        const args: PluginArguments = {
+        const args: GanchosPluginArguments = {
             filePath: 'n/a',
             jsonConfig: config || plugin.defaultConfigAsString,
             eventType: 'none',

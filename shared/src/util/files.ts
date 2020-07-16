@@ -5,9 +5,11 @@ import * as os from 'os';
 import * as generalConstants from '../constants/names';
 
 const touch = async (configPath: string) => {
-  sh.mkdir('-p', path.dirname(configPath));
-  sh.touch(configPath);
+    sh.mkdir('-p', path.dirname(configPath));
+    sh.touch(configPath);
 }
+
+const removeExtension = (fileName: string): string => fileName ? path.parse(fileName).name : '';
 
 const doesPathExist = (pathToCheck: string) => sh.test('-f', pathToCheck) || sh.test('-d', pathToCheck);
 
@@ -16,14 +18,15 @@ const getAppBaseDir = (): string => path.join(os.homedir(), generalConstants.App
 const getConfigPath = (): string => path.join(os.homedir(), generalConstants.AppDir, generalConstants.Config, generalConstants.General);
 
 const getPluginConfigPath = (pluginName: string): string => {
-    return path.join(os.homedir(),generalConstants.AppDir, generalConstants.Config,
-                     generalConstants.Plugin, pluginName);
+    return path.join(os.homedir(), generalConstants.AppDir, generalConstants.Config,
+        generalConstants.Plugin, pluginName);
 }
 
 export {
-  touch,
-  getConfigPath,
-  getAppBaseDir,
-  getPluginConfigPath,
-  doesPathExist,
+    removeExtension,
+    touch,
+    getConfigPath,
+    getAppBaseDir,
+    getPluginConfigPath,
+    doesPathExist,
 }

@@ -72,7 +72,7 @@ const save = async (config: GeneralConfig) => {
 		const configPath = getConfigPath();
 		doesPathExist(configPath) || await touch(configPath);
 
-		const release = await properLockFile.lock(configPath);
+        const release = await properLockFile.lock(configPath, { retries: 5 });
 		await fs.writeFile(configPath, JSON.stringify(config, null, 4));
 		release();
 

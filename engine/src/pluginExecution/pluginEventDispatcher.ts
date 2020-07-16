@@ -2,7 +2,7 @@ import { spawn, Thread, Worker } from "threads";
 import { performance } from 'perf_hooks';
 import { ObservablePromise } from "threads/dist/observable-promise";
 import {
-    PluginLogMessage, PluginArguments, EventType, validationUtil, generalLogger,
+    PluginLogMessage, GanchosPluginArguments, EventType, validationUtil, generalLogger,
     pluginLogger, SeverityEnum, pluginConfig
 } from 'ganchos-shared';
 import { fetchGanchosPlugins, fetchUserPlugins } from "./pluginsFinder";
@@ -48,7 +48,7 @@ const runGanchosPlugin = async (event: string, filePath: string, pluginName: str
             return;
         }
 
-        const args: PluginArguments = {
+        const args: GanchosPluginArguments = {
             filePath,
             jsonConfig: jsonConfigString,
             eventType: event as EventType,

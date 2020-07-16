@@ -1,7 +1,7 @@
 import { Subject, Observable } from "threads/observable"
-import { PluginLogMessage } from './';
+import { PluginLogMessage } from '.';
 
-export class PluginBaseLogic {
+export class GanchosPluginBaseLogic {
     private subject: Subject<PluginLogMessage>;
 
     constructor() {
