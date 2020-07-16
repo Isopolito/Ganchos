@@ -3,7 +3,7 @@ import * as appRoot from 'app-root-path'
 import * as path from 'path'
 import { generalLogger, SeverityEnum } from 'ganchos-shared';
 
-const fetchNodePlugins = async (convertExtensionToJs?: boolean): Promise<string[]> => {
+const fetchGanchosPlugins = async (convertExtensionToJs?: boolean): Promise<string[]> => {
     try {
         const dirPath = path.join(`${appRoot}`, '/src/pluginExecution/pluginCollection');
         return (await fs.readdir(dirPath))
@@ -19,6 +19,6 @@ const fetchUserPlugins = async (): Promise<string[]> => {
 }
 
 export {
-    fetchNodePlugins,
+    fetchGanchosPlugins,
     fetchUserPlugins,
 }

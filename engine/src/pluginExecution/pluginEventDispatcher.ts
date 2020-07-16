@@ -5,7 +5,7 @@ import {
     PluginLogMessage, PluginArguments, EventType, validationUtil, generalLogger,
     pluginLogger, SeverityEnum, pluginConfig
 } from 'ganchos-shared';
-import { fetchNodePlugins, fetchUserPlugins } from "./pluginsFinder";
+import { fetchGanchosPlugins, fetchUserPlugins } from "./pluginsFinder";
 
 const logArea = "event processor";
 
@@ -18,7 +18,7 @@ const getJsonConfigString = async (pluginName: string, getDefaultJsonConfigFunc:
     const shouldWriteConfigToFileForFirstTime = !configString;
     if (!configString) configString = await getDefaultJsonConfigFunc();
     if (!validationUtil.isJsonStringValid(configString)) return null;
-    if (shouldWriteConfigToFileForFirstTime) pluginConfig.save(pluginName, configString);
+    if (shouldWriteConfigToFileForFirstTime) pluginConfig.save(pluginName, configString, true);
 
     return configString;
 };
@@ -26,7 +26,7 @@ const getJsonConfigString = async (pluginName: string, getDefaultJsonConfigFunc:
 const runUserPlugin = async (event: string, filePath: string, pluginName: string): Promise<void> => {
 }
 
-const runNodePlugin = async (event: string, filePath: string, pluginName: string): Promise<void> => {
+const runGanchosPlugin = async (event: string, filePath: string, pluginName: string): Promise<void> => {
     let name = 'n/a';
     try {
         // TODO: Find a way to new up Worker where the path doesn't have to be hard coded
@@ -70,8 +70,8 @@ const runNodePlugin = async (event: string, filePath: string, pluginName: string
 const dispatch = async (event: string, filePath: string): Promise<void> => {
     const tasks = [];
 
-    for (const file of await fetchNodePlugins(true)) {
-        tasks.push(runNodePlugin(event, filePath, file));
+    for (const file of await fetchGanchosPlugins(true)) {
+        tasks.push(runGanchosPlugin(event, filePath, file));
     }
 
     for (const file of await fetchUserPlugins()) {
