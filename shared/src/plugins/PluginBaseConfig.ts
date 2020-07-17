@@ -1,5 +1,4 @@
-
-export interface GanchosBaseConfig {
+export interface PluginBaseConfig {
     enabled: boolean;
 
     // This will cause the plugin to run on a schedule
@@ -8,4 +7,11 @@ export interface GanchosBaseConfig {
     // The general config (option 'PluginWaitTimeFloorInMinutes') will prevent a plugin from being
     // scheduled at too low of a number
     runPluginEveryXMinutes: number;
+}
+
+export const implementsPluginBaseConfig = (object: any): object is PluginBaseConfig => {
+    const enabled = 'enabled' in object;
+    const runPluginEveryXMinutes = 'runPluginEveryXMinutes' in object;
+
+    return enabled && runPluginEveryXMinutes;
 }

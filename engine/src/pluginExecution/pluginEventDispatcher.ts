@@ -3,7 +3,7 @@ import { performance } from 'perf_hooks';
 import { ObservablePromise } from "threads/dist/observable-promise";
 import {
     PluginLogMessage, GanchosPluginArguments, EventType, validationUtil, generalLogger,
-    pluginLogger, SeverityEnum, pluginConfig
+    pluginLogger, SeverityEnum, pluginConfig, UserPlugin
 } from 'ganchos-shared';
 import { fetchGanchosPlugins, fetchUserPlugins } from "./pluginsFinder";
 
@@ -17,13 +17,13 @@ const getJsonConfigString = async (pluginName: string, getDefaultJsonConfigFunc:
     let configString = await pluginConfig.get(pluginName);
     const shouldWriteConfigToFileForFirstTime = !configString;
     if (!configString) configString = await getDefaultJsonConfigFunc();
-    if (!validationUtil.isJsonStringValid(configString)) return null;
+    if (!validationUtil.validateJson(configString)) return null;
     if (shouldWriteConfigToFileForFirstTime) pluginConfig.save(pluginName, configString, true);
 
     return configString;
 };
 
-const runUserPlugin = async (event: string, filePath: string, pluginName: string): Promise<void> => {
+const runUserPlugin = async (event: string, filePath: string, plugin: UserPlugin): Promise<void> => {
 }
 
 const runGanchosPlugin = async (event: string, filePath: string, pluginName: string): Promise<void> => {

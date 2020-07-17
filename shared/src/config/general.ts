@@ -9,7 +9,7 @@ import { generalLogger, SeverityEnum } from '../';
 
 interface GeneralConfig {
     lastUpdatedTimeStamp: Number;
-    customPluginPaths: string[];
+    userPluginPaths: string[];
 	watchPaths: string[];
 	heartBeatPollIntervalInSeconds: Number;
 }
@@ -37,7 +37,7 @@ const getAndCreateDefaultIfNotExist = async (): Promise<GeneralConfig | null> =>
 	const defaultConfig: GeneralConfig = {
 		heartBeatPollIntervalInSeconds: 5,
 		watchPaths: [],
-		customPluginPaths: [path.join(getAppBaseDir(), 'plugins')],
+		userPluginPaths: [path.join(getAppBaseDir(), 'plugins')],
 		lastUpdatedTimeStamp: 0,
 	};
 

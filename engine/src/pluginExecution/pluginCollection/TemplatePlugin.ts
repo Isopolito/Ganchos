@@ -2,13 +2,13 @@ import { Observable } from "threads/observable"
 import { expose } from 'threads/worker'
 import {
     GanchosPluginBaseLogic, PluginLogMessage, PluginCategory, GanchosPlugin,
-    SeverityEnum, GanchosPluginArguments, GanchosBaseConfig, EventType
+    SeverityEnum, GanchosPluginArguments, PluginBaseConfig, EventType
 } from 'ganchos-shared';
 
 let baseLogic: GanchosPluginBaseLogic;
 
 // Should match the shape of json returned from getDefaultConfigJson()
-interface Config extends GanchosBaseConfig {
+interface Config extends PluginBaseConfig {
     foo: string;
 }
 

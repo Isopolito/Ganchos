@@ -15,11 +15,3 @@ export interface GanchosPlugin {
     tearDown(): void;
 }
 
-export interface UserPlugin {
-    name: string;
-    description: string;
-    category: string;
-    isEligibleForSchedule: boolean;
-    eventTypes: EventType[],
-    defaultJsonConfig: any;
-}

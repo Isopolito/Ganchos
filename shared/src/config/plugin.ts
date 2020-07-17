@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import * as properLockFile from 'proper-lockfile';
 import { getPluginConfigPath, doesPathExist, touch, removeExtension } from '../util/files';
 import { generalLogger, SeverityEnum } from '..';
-import { isJsonStringValid } from '../util/validation';
+import { validateJson } from '../util/validation';
 
 // NOTE: If it became an necessary, plugin json config can be cached for each plugin
 
@@ -14,7 +14,7 @@ const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<st
     try {
         const rawData = await fs.readFile(configPath);
         const jsonString = rawData.toString();
-        if (!shouldValidateJson || isJsonStringValid(jsonString)) {
+        if (!shouldValidateJson || validateJson(jsonString)) {
             return jsonString;
         } else {
             await generalLogger.write(SeverityEnum.error, "plugin config - get", `Invalid json in plugin config file for '${pluginName}'`, true);
