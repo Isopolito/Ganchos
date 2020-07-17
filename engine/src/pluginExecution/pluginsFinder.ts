@@ -3,36 +3,44 @@ import * as appRoot from 'app-root-path'
 import * as path from 'path'
 import {
     fileUtil, validationUtil, generalLogger,
-    SeverityEnum, generalConfig, UserPlugin, pluginConfig
+    SeverityEnum, generalConfig, UserPlugin, pluginConfig, implementsUserPlugin
 } from 'ganchos-shared';
+
+const logArea = "pluginFinder";
 
 const fetchGanchosPlugins = async (convertExtensionToJs?: boolean): Promise<string[]> => {
     try {
         // TODO: Figure out how to avoid hard coding this path
         const dirPath = path.join(`${appRoot}`, '/src/pluginExecution/pluginCollection');
         return (await fs.readdir(dirPath))
-            .map(f => convertExtensionToJs ? f.replace(".ts", ".js") : f);
+            .map(file => convertExtensionToJs ? file.replace(".ts", ".js") : file);
     } catch (e) {
-        await generalLogger.write(SeverityEnum.critical, "plugins", `Unable to fetch list of plugins: ${e}`);
+        await generalLogger.write(SeverityEnum.critical, logArea, `Unable to fetch ganchos specific plugins: ${e}`);
         return [];
     }
 }
 
 const fetchUserPlugins = async (): Promise<UserPlugin[]> => {
-    const config = await generalConfig.getAndCreateDefaultIfNotExist();
-    if (!config.userPluginPaths) return [];
+    try {
+        const config = await generalConfig.getAndCreateDefaultIfNotExist();
+        if (!config.userPluginPaths) return [];
 
-    const plugins = [] as UserPlugin[];
-    for (const file in fileUtil.getAllFiles(config.userPluginPaths)) {
-        const rawData = await fs.readFile(file);
-        const plugin = validationUtil.validateJson(rawData.toString());
-        if (!plugin) {
+        const plugins = [];
+        for (const file in fileUtil.getAllFiles(config.userPluginPaths, ".meta")) {
+            const rawData = await fs.readFile(file);
+            const plugin = validationUtil.validateJson(rawData.toString());
+            if (!plugin || !implementsUserPlugin(plugin)) {
+                await generalLogger.write(SeverityEnum.error, logArea, `The JSON in meta file '${file} is a valid UserPlugin`);
+                continue;
+            }
+            plugin.path = path.dirname(file);
+            plugins.push(plugin);
         }
-
-        plugins.push(plugin);
+        return plugins;
+    } catch (e) {
+        await generalLogger.write(SeverityEnum.critical, logArea, `Unable to fetch user plugins: ${e}`);
+        return [];
     }
-
-    return plugins;
 }
 
 export {

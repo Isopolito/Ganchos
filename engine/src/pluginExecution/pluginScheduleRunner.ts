@@ -1,9 +1,9 @@
 import { spawn, Thread, Worker } from "threads";
 import { performance } from 'perf_hooks';
-import { fetchGanchosPlugins } from "./pluginsFinder";
+import { fetchGanchosPlugins, fetchUserPlugins } from "./pluginsFinder";
 import {
     implementsPluginBaseConfig, PluginBaseConfig, validationUtil, systemUtil, generalLogger, pluginLogger, SeverityEnum,
-    pluginConfig, GanchosPluginArguments, EventType, PluginLogMessage
+    pluginConfig, GanchosPluginArguments, EventType, PluginLogMessage, UserPlugin
 } from 'ganchos-shared';
 
 //======================================================================================================
@@ -32,6 +32,9 @@ const pluginWaitAndRun = async (plugin: SchedulePlugin, run: (plugin: SchedulePl
         await systemUtil.wait(waitTimeInMinutes * 60);
         await run(plugin);
     }
+}
+
+const runUserPluginAndReschedule = async (plugin: UserPlugin): Promise<void> => {
 }
 
 const runGanchosPluginAndReschedule = async (plugin: SchedulePlugin): Promise<void> => {
@@ -103,6 +106,10 @@ const beginScheduleMonitoring = async (): Promise<void> => {
         }
 
         // Do above for user plugins
+        const userPlugins = (await fetchUserPlugins()).filter(up => up.isEligibleForSchedule)
+        for (const plugin of userPlugins) {
+            tasks.push(runUserPluginAndReschedule(plugin));
+        }
 
         await Promise.all(tasks);
     } catch (e) {

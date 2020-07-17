@@ -1,12 +1,16 @@
 import { EventType } from ".";
 
 export interface UserPlugin {
+    binFileName: string;
     name: string;
     description: string;
     category: string;
     isEligibleForSchedule: boolean;
     eventTypes: EventType[];
     defaultJsonConfig: any;
+
+    // No need to put in .meta file, handled by ganchos
+    path: string;
 }
 
 export const implementsUserPlugin = (object: any): object is UserPlugin => {

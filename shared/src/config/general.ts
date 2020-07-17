@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import * as properLockFile from 'proper-lockfile';
 import * as path from 'path';
+import * as shelljs from 'shelljs';
 
 import { getConfigPath, doesPathExist, touch, getAppBaseDir } from '../util/files';
 import { generalLogger, SeverityEnum } from '../';
@@ -32,14 +33,16 @@ const isConfigInMemoryMostRecent = async (configPath: string): Promise<Boolean> 
 
 const getAndCreateDefaultIfNotExist = async (): Promise<GeneralConfig | null> => {
 	const configPath = getConfigPath();
-	if (doesPathExist(configPath)) return await get();
+	if (await doesPathExist(configPath)) return await get();
 
 	const defaultConfig: GeneralConfig = {
 		heartBeatPollIntervalInSeconds: 5,
 		watchPaths: [],
 		userPluginPaths: [path.join(getAppBaseDir(), 'plugins')],
 		lastUpdatedTimeStamp: 0,
-	};
+    };
+    
+    shelljs.test('-e', defaultConfig.userPluginPaths[0]) || shelljs.mkdir(defaultConfig.userPluginPaths[0]);
 
 	save(defaultConfig);
 	return defaultConfig;

@@ -3,7 +3,7 @@ import { performance } from 'perf_hooks';
 import { ObservablePromise } from "threads/dist/observable-promise";
 import {
     PluginLogMessage, GanchosPluginArguments, EventType, validationUtil, generalLogger,
-    pluginLogger, SeverityEnum, pluginConfig, UserPlugin
+    pluginLogger, SeverityEnum, pluginConfig, UserPlugin, fileUtil, generalConfig
 } from 'ganchos-shared';
 import { fetchGanchosPlugins, fetchUserPlugins } from "./pluginsFinder";
 
@@ -74,8 +74,8 @@ const dispatch = async (event: string, filePath: string): Promise<void> => {
         tasks.push(runGanchosPlugin(event, filePath, file));
     }
 
-    for (const file of await fetchUserPlugins()) {
-        tasks.push(runUserPlugin(event, filePath, file));
+    for (const userPlugin of await fetchUserPlugins()) {
+        tasks.push(runUserPlugin(event, filePath, userPlugin));
     }
 
     await Promise.all(tasks);
