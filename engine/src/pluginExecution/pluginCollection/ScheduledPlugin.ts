@@ -7,11 +7,6 @@ import {
 
 let baseLogic: GanchosPluginBaseLogic;
 
-// Should match the shape of json returned from getDefaultConfigJson()
-interface Config extends PluginBaseConfig {
-    foo: string;
-}
-
 const templatePlugin: GanchosPlugin = {
     // Configure this section
     getName: (): string => "ScheduledPlugin",
@@ -34,7 +29,7 @@ const templatePlugin: GanchosPlugin = {
     // *** Plugin logic goes in here
     run: (args: GanchosPluginArguments) => {
         // Validated json string is passed in as config, if not available the default configuration defined above will be used
-        const config: Config = JSON.parse(args.jsonConfig);
+        const config = JSON.parse(args.jsonConfig);
 
         // Example of how to log a message
         baseLogic.Log({

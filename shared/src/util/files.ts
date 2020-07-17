@@ -10,17 +10,17 @@ const touch = async (configPath: string) => {
     sh.touch(configPath);
 }
 
-const doesPathExist = async (pathToCheck: string) => sh.test('-f', pathToCheck) || sh.test('-d', pathToCheck);
+const doesPathExist = (pathToCheck: string) => sh.test('-f', pathToCheck) || sh.test('-d', pathToCheck);
 
 const getAllFiles = async (paths: string[], fileNameEndsWith?: string): Promise<string[]> => {
     const files = [] as string[];
 
-    for (const path of paths) {
-        if (!doesPathExist(path)) continue;
+    for (const filePath of paths) {
+        if (!doesPathExist(filePath)) continue;
 
-        for (const fileName of await fs.readdir(path)) {
+        for (const fileName of await fs.readdir(filePath)) {
             if (fileNameEndsWith && !fileName.endsWith(fileNameEndsWith)) continue;
-            files.push(fileName);
+            files.push(path.join(filePath, fileName));
         }
     }
 

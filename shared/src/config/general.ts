@@ -4,15 +4,31 @@ import * as path from 'path';
 import * as shelljs from 'shelljs';
 
 import { getConfigPath, doesPathExist, touch, getAppBaseDir } from '../util/files';
-import { generalLogger, SeverityEnum } from '../';
+import { generalLogger, SeverityEnum, validationUtil } from '../';
 
 /*========================================================================================*/
+
+const logArea = "general config";
 
 interface GeneralConfig {
     lastUpdatedTimeStamp: Number;
     userPluginPaths: string[];
-	watchPaths: string[];
-	heartBeatPollIntervalInSeconds: Number;
+    watchPaths: string[];
+    heartBeatPollIntervalInSeconds: Number;
+    userPluginMetaExtension: string;
+}
+
+const implementsGeneralConfig = (object: any): object is GeneralConfig => {
+    if (!object) return false;
+
+    const lastUpdatedTimeStamp = 'lastUpdatedTimeStamp' in object;
+    const userPluginPaths = 'userPluginPaths' in object;
+    const watchPaths = 'watchPaths' in object;
+    const heartBeatPollIntervalInSeconds = 'heartBeatPollIntervalInSeconds' in object;
+    const userPluginMetaExtension = 'userPluginMetaExtension' in object;
+
+    return lastUpdatedTimeStamp && userPluginMetaExtension
+        && watchPaths && userPluginPaths && heartBeatPollIntervalInSeconds;
 }
 
 /*========================================================================================*/
@@ -23,73 +39,78 @@ let inMemoryConfig: GeneralConfig;
 /*========================================================================================*/
 
 const isConfigInMemoryMostRecent = async (configPath: string): Promise<Boolean> => {
-	if (!inMemoryConfig) return false;
+    if (!inMemoryConfig) return false;
 
-	const stats = await fs.stat(configPath);
+    const stats = await fs.stat(configPath);
 
-	// True if inMemoryConfig was updated after the config file was last written to disk
-	return stats.mtime.getTime() <= inMemoryConfig.lastUpdatedTimeStamp;
+    // True if inMemoryConfig was updated after the config file was last written to disk
+    return stats.mtime.getTime() <= inMemoryConfig.lastUpdatedTimeStamp;
 }
 
 const getAndCreateDefaultIfNotExist = async (): Promise<GeneralConfig | null> => {
-	const configPath = getConfigPath();
-	if (await doesPathExist(configPath)) return await get();
+    const configPath = getConfigPath();
+    if (doesPathExist(configPath)) return await get();
 
-	const defaultConfig: GeneralConfig = {
-		heartBeatPollIntervalInSeconds: 5,
-		watchPaths: [],
-		userPluginPaths: [path.join(getAppBaseDir(), 'plugins')],
-		lastUpdatedTimeStamp: 0,
+    const defaultConfig: GeneralConfig = {
+        heartBeatPollIntervalInSeconds: 5,
+        watchPaths: [],
+        userPluginPaths: [path.join(getAppBaseDir(), 'plugins')],
+        lastUpdatedTimeStamp: 0,
+        userPluginMetaExtension: 'meta',
     };
-    
+
     shelljs.test('-e', defaultConfig.userPluginPaths[0]) || shelljs.mkdir(defaultConfig.userPluginPaths[0]);
 
-	save(defaultConfig);
-	return defaultConfig;
+    save(defaultConfig);
+    return defaultConfig;
 }
 
 const get = async (): Promise<GeneralConfig | null> => {
-	const configPath = getConfigPath();
-	if (!doesPathExist(configPath)) return null;
+    const generalConfigFilePath = getConfigPath();
+    try {
+        if (!doesPathExist(generalConfigFilePath)) return null;
 
-	if (await isConfigInMemoryMostRecent(configPath)) return inMemoryConfig;
+        if (await isConfigInMemoryMostRecent(generalConfigFilePath)) return inMemoryConfig;
 
-	let rawData = await fs.readFile(configPath);
-	try {
-		let config: GeneralConfig = JSON.parse(rawData.toString());
+        const rawData = await fs.readFile(generalConfigFilePath);
+        const config = validationUtil.validateJson(rawData.toString());
+        if (!implementsGeneralConfig(config)) {
+            await generalLogger.write(SeverityEnum.critical, logArea, `The JSON in ${generalConfigFilePath} is not a valid GeneralConfig type`, true);
+            return null;
+        }
 
-		inMemoryConfig = config;
-		inMemoryConfig.lastUpdatedTimeStamp = Date.now();
-
-		return config;
-	} catch (e) {
-		await generalLogger.write(SeverityEnum.critical, "general config", `Error. Can't parse general config json: ${e}`, true);
-		return null;
-	}
+        inMemoryConfig = config;
+        inMemoryConfig.lastUpdatedTimeStamp = Date.now();
+        return config;
+    } catch (e) {
+        await generalLogger.write(SeverityEnum.critical, logArea, `Can't create GeneralConfig with JSON from file - ${generalConfigFilePath}: ${e}`, true);
+        return null;
+    }
 }
 
 const save = async (config: GeneralConfig) => {
-	if (config === null) return;
+    if (config === null) return;
 
-	try {
-		const configPath = getConfigPath();
-		doesPathExist(configPath) || await touch(configPath);
+    try {
+        const configPath = getConfigPath();
+        doesPathExist(configPath) || await touch(configPath);
 
         const release = await properLockFile.lock(configPath, { retries: 5 });
-		await fs.writeFile(configPath, JSON.stringify(config, null, 4));
-		release();
+        await fs.writeFile(configPath, JSON.stringify(config, null, 4));
+        release();
 
-		inMemoryConfig = config;
-		inMemoryConfig.lastUpdatedTimeStamp = Date.now();
-	} catch (e) {
-		await generalLogger.write(SeverityEnum.error, "general config - save", `${e}`, true);
-	}
+        inMemoryConfig = config;
+        inMemoryConfig.lastUpdatedTimeStamp = Date.now();
+    } catch (e) {
+        await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `${e}`, true);
+    }
 }
 
 /*========================================================================================*/
 
 export {
-	save,
-	get,
-	getAndCreateDefaultIfNotExist,
+    save,
+    get,
+    getAndCreateDefaultIfNotExist,
+    implementsGeneralConfig,
 };

@@ -9,11 +9,13 @@ export interface UserPlugin {
     eventTypes: EventType[];
     defaultJsonConfig: any;
 
-    // No need to put in .meta file, handled by ganchos
+    // No need to put in meta file, handled by ganchos
     path: string;
 }
 
 export const implementsUserPlugin = (object: any): object is UserPlugin => {
+    if (!object) return false;
+
     const name = 'name' in object;
     const description = 'description' in object;
     const isEligibleForSchedule = 'isEligibleForSchedule' in object;

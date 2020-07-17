@@ -1,10 +1,7 @@
 import { promises as fs } from 'fs'
 import * as appRoot from 'app-root-path'
 import * as path from 'path'
-import {
-    fileUtil, validationUtil, generalLogger,
-    SeverityEnum, generalConfig, UserPlugin, pluginConfig, implementsUserPlugin
-} from 'ganchos-shared';
+import { fileUtil, validationUtil, generalLogger, SeverityEnum, generalConfig, UserPlugin, implementsUserPlugin } from 'ganchos-shared';
 
 const logArea = "pluginFinder";
 
@@ -26,11 +23,12 @@ const fetchUserPlugins = async (): Promise<UserPlugin[]> => {
         if (!config.userPluginPaths) return [];
 
         const plugins = [];
-        for (const file in fileUtil.getAllFiles(config.userPluginPaths, ".meta")) {
+        for (const file of await fileUtil.getAllFiles(config.userPluginPaths, config.userPluginMetaExtension)) {
             const rawData = await fs.readFile(file);
-            const plugin = validationUtil.validateJson(rawData.toString());
-            if (!plugin || !implementsUserPlugin(plugin)) {
-                await generalLogger.write(SeverityEnum.error, logArea, `The JSON in meta file '${file} is a valid UserPlugin`);
+            const plugin = validationUtil.validateJson(rawData.toString(), true);
+            delete plugin['//']; // Remove the comment hack from the meta file
+            if (!implementsUserPlugin(plugin)) {
+                await generalLogger.write(SeverityEnum.error, logArea, `The JSON in plugin meta file '${file}' is not a valid UserPlugin`);
                 continue;
             }
             plugin.path = path.dirname(file);
