@@ -6,12 +6,11 @@ import { PluginLogFileMessage } from './PluginLogFileMessage';
 
 /*========================================================================================*/
 
-const write = (severity: SeverityEnum, pluginName: string, category: string, areaInPlugin: string, message: string): Promise<void> => {
+const write = (severity: SeverityEnum, pluginName: string, areaInPlugin: string, message: string): Promise<void> => {
   const logMessage: PluginLogFileMessage = {
     pluginName: pluginName,
     timeStamp: makeTimeStamp(),
     severity: severity,
-    category: category,
     areaInPlugin: areaInPlugin,
     message: message,
   };
@@ -19,9 +18,9 @@ const write = (severity: SeverityEnum, pluginName: string, category: string, are
   return writeMessage(generalConstants.Plugin, JSON.stringify(logMessage));
 }
 
-const writeSync = (severity: SeverityEnum, pluginName: string, category: string, areaInPlugin: string, message: string): void => {
+const writeSync = (severity: SeverityEnum, pluginName: string, areaInPlugin: string, message: string): void => {
     (async () => {
-        write(severity, pluginName, category, areaInPlugin, message);
+        write(severity, pluginName, areaInPlugin, message);
     })();
 
 }

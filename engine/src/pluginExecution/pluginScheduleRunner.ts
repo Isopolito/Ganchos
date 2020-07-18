@@ -38,19 +38,17 @@ const runUserPluginAndReschedule = async (plugin: UserPlugin): Promise<void> => 
 }
 
 const runGanchosPluginAndReschedule = async (plugin: SchedulePlugin): Promise<void> => {
-    let category = "n/a";
     try {
         const thread = await spawn(new Worker(plugin.workerPath));
         await thread.init();
-        category = await thread.getCategory();
 
         thread.getLogSubscription().subscribe((message: PluginLogMessage) => {
-            pluginLogger.write(message.severity, plugin.name, category, message.areaInPlugin, message.message);
+            pluginLogger.write(message.severity, plugin.name, message.areaInPlugin, message.message);
         });
 
         const config = await pluginConfig.get(plugin.name) || plugin.defaultConfigAsString
         if (!validationUtil.validateJson(config)) {
-            await pluginLogger.write(SeverityEnum.error, plugin.name, category, logArea, "Invalid JSON in config file, or if that doesn't exist, then the default config for the plugin");
+            await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, "Invalid JSON in config file, or if that doesn't exist, then the default config for the plugin");
             await Thread.terminate(thread);
             return;
         }
@@ -64,12 +62,12 @@ const runGanchosPluginAndReschedule = async (plugin: SchedulePlugin): Promise<vo
         await thread.run(args);
         const afterTime = performance.now();
 
-        await pluginLogger.write(SeverityEnum.info, plugin.name, category, logArea, `Plugin executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
+        await pluginLogger.write(SeverityEnum.info, plugin.name, logArea, `Plugin executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
         await Thread.terminate(thread);
 
         await pluginWaitAndRun(plugin, runGanchosPluginAndReschedule);
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, plugin.name, category, logArea, e);
+        await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, e);
     }
 }
 
@@ -81,8 +79,7 @@ const getSchedulingEligibleGanchosPlugins = async (): Promise<SchedulePlugin[]> 
             const configAsString = await thread.getDefaultConfigJson();
             const config = validationUtil.validateJson(configAsString);
             if (!config) {
-                const category = await thread.getCategory();
-                await pluginLogger.write(SeverityEnum.error, pluginName, category, logArea, "Default JSON config is invalid...skipping plugin");
+                await pluginLogger.write(SeverityEnum.error, pluginName, logArea, "Default JSON config is invalid...skipping plugin");
                 continue;
             }
             plugins.push({

@@ -1,9 +1,10 @@
 import { promises as fs } from 'fs';
 import * as properLockFile from 'proper-lockfile';
 import { getPluginConfigPath, doesPathExist, touch, removeExtension } from '../util/files';
-import { generalLogger, SeverityEnum } from '..';
+import { generalLogger, SeverityEnum, pluginLogger } from '..';
 import { validateJson } from '../util/validation';
 
+const logArea = "plugin config";
 // NOTE: If it became an necessary, plugin json config can be cached for each plugin
 
 const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<string | null> => {
@@ -17,18 +18,18 @@ const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<st
         if (!shouldValidateJson || validateJson(jsonString)) {
             return jsonString;
         } else {
-            await generalLogger.write(SeverityEnum.error, "plugin config - get", `Invalid json in plugin config file for '${pluginName}'`, true);
+            await generalLogger.write(SeverityEnum.error, `${logArea} - get`, `Invalid json in plugin config file for '${pluginName}'`, true);
             return null;
         }
     } catch (e) {
-        await generalLogger.write(SeverityEnum.critical, "plugin config - get", `Error. Can't parse plugin config json: ${e}`, true);
+        await generalLogger.write(SeverityEnum.critical, `${logArea} - get`, `Error. Can't parse plugin config json: ${e}`, true);
         return null;
     }
 }
 
 const save = async (pluginName: string, jsonConfig: string, shouldEnable?: boolean) => {
     if (jsonConfig === null) {
-        await generalLogger.write(SeverityEnum.error, "plugin config - save", `pluginName and jsonConfig required`, true);
+        await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `pluginName and jsonConfig required`, true);
         return null;
     }
 
@@ -47,7 +48,7 @@ const save = async (pluginName: string, jsonConfig: string, shouldEnable?: boole
         await fs.writeFile(configPath, jsonConfig);
         release();
     } catch (e) {
-        await generalLogger.write(SeverityEnum.error, "plugin config - save", e, true);
+        await generalLogger.write(SeverityEnum.error, `${logArea} - save`, e, true);
     }
 }
 

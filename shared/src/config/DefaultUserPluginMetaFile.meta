@@ -26,17 +26,16 @@
     // to the plugin configuration file and can be modified to control the plugin
     "defaultJsonConfig": {},
 
-
     // *** Optional fields ***
-
-    // Will allow the plugin to be run on a schedule if 'runPluginEveryXMinutes' is a positive number. Defaults to false
-    "isEligibleForSchedule": false,
 
     // When false the plugin will not be run. Defaults to true
     "enabled": true,
 
     // Pause for a number of minutes before executing plugin (number can be less than 1). Defaults to 0
     "runDelayInMinutes": 0,
+
+    // Will allow the plugin to be run on a schedule if 'runPluginEveryXMinutes' is a positive number. Defaults to false
+    "isEligibleForSchedule": false,
 
     // This will cause the plugin to run on a schedule
     // The number can be fractional

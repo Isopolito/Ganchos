@@ -35,16 +35,14 @@ const runGanchosPlugin = async (event: string, filePath: string, pluginName: str
 
         await thread.init();
         name = await thread.getName();
-        const category = await thread.getCategory();
  
         thread.getLogSubscription().subscribe((message: PluginLogMessage) => {
-            pluginLogger.write(message.severity, name, category, message.areaInPlugin, message.message);
+            pluginLogger.write(message.severity, name, message.areaInPlugin, message.message);
         });
     
         const jsonConfigString = await getJsonConfigString(name, thread.getDefaultConfigJson);
         if (!jsonConfigString) {
-            await pluginLogger.write(SeverityEnum.error, name, category, logArea,
-                `Json configuration for plugin is invalid: ${jsonConfigString}`);
+            await pluginLogger.write(SeverityEnum.error, name, logArea, `Json configuration for plugin is invalid: ${jsonConfigString}`);
             return;
         }
 
@@ -60,7 +58,7 @@ const runGanchosPlugin = async (event: string, filePath: string, pluginName: str
 
         await Thread.terminate(thread);
 
-        await pluginLogger.write(SeverityEnum.info, name, category, logArea,
+        await pluginLogger.write(SeverityEnum.info, name, logArea,
             `Plugin executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
     } catch (e) {
         await generalLogger.write(SeverityEnum.error, logArea, `Error running plugin '${name}' - ${e}`, true);

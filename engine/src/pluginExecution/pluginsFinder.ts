@@ -26,7 +26,6 @@ const fetchUserPlugins = async (): Promise<UserPlugin[]> => {
         for (const file of await fileUtil.getAllFiles(config.userPluginPaths, config.userPluginMetaExtension)) {
             const rawData = await fs.readFile(file);
             const plugin = validationUtil.validateJson(rawData.toString(), true);
-            delete plugin['//']; // Remove the comment hack from the meta file
             if (!implementsUserPlugin(plugin)) {
                 await generalLogger.write(SeverityEnum.error, logArea, `The JSON in plugin meta file '${file}' is not a valid UserPlugin`);
                 continue;
