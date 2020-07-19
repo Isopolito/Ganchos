@@ -2,6 +2,11 @@
     // The meta file for a user plugin contains the information needed to run and display a plugin.
     // By default the extension for these types of files ends in '.meta', but this can be configured in general config.
 
+    // NOTE: When the application (binFileName) is executed the parameters passed in are:
+    //  1. The configuration for the plugin. JSON string in the shape of 'defaultJsonConfig'
+    //  2. The event type that triggered execution (if run on a schedule, this is 'none')
+    //  3. The file path that is part of the triggered execution (if run on a schedule, this is null)
+
     //  *** Mandatory fields ***
 
     // The name of the execution file to run

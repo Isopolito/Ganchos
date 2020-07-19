@@ -5,7 +5,7 @@ import {
     PluginLogMessage, GanchosPluginArguments, EventType, validationUtil, generalLogger,
     pluginLogger, SeverityEnum, pluginConfig, UserPlugin, fileUtil, generalConfig
 } from 'ganchos-shared';
-import { fetchGanchosPlugins, fetchUserPlugins } from "./pluginsFinder";
+import { fetchGanchosPluginNames, fetchUserPlugins } from "./pluginsFinder";
 
 const logArea = "event processor";
 
@@ -68,7 +68,7 @@ const runGanchosPlugin = async (event: string, filePath: string, pluginName: str
 const dispatch = async (event: string, filePath: string): Promise<void> => {
     const tasks = [];
 
-    for (const file of await fetchGanchosPlugins(true)) {
+    for (const file of await fetchGanchosPluginNames(true)) {
         tasks.push(runGanchosPlugin(event, filePath, file));
     }
 

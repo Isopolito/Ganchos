@@ -5,7 +5,7 @@ import { fileUtil, validationUtil, generalLogger, SeverityEnum, generalConfig, U
 
 const logArea = "pluginFinder";
 
-const fetchGanchosPlugins = async (convertExtensionToJs?: boolean): Promise<string[]> => {
+const fetchGanchosPluginNames = async (convertExtensionToJs?: boolean): Promise<string[]> => {
     try {
         // TODO: Figure out how to avoid hard coding this path
         const dirPath = path.join(`${appRoot}`, '/src/pluginExecution/pluginCollection');
@@ -41,6 +41,6 @@ const fetchUserPlugins = async (): Promise<UserPlugin[]> => {
 }
 
 export {
-    fetchGanchosPlugins,
+    fetchGanchosPluginNames,
     fetchUserPlugins,
 }

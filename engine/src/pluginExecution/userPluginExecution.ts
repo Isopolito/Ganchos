@@ -1,6 +1,6 @@
 import { UserPlugin, pluginConfig, EventType, pluginLogger, SeverityEnum } from "ganchos-shared"
 import { spawn, ChildProcessWithoutNullStreams } from "child_process";
-import path from "path";
+import path from "path"
 
 type CommandType = 'cmd' | 'bat' | 'nixShell' | 'exe' | 'nixEx';
 
@@ -13,32 +13,30 @@ const getCommandType = (binFileName: string): CommandType => {
     return 'nixEx';
 }
 
-const makeCommandParams = (userPlugin: UserPlugin): string[] => {
-
-    return [];
+const makeCommandParams = (userPlugin: UserPlugin, event: string, filePath: string): string[] => {
+    const config = pluginConfig.get(userPlugin.name, true) || userPlugin.defaultJsonConfig;
+    return [config, event, filePath];
 }
 
-const getStandardSpawn = (userPlugin: UserPlugin, jsonConfig: string, event: string, filePath: string): ChildProcessWithoutNullStreams => {
-    return spawn(`"${path.join(userPlugin.path, userPlugin.binFileName)}"`, makeCommandParams(userPlugin));
+const getStandardSpawn = (userPlugin: UserPlugin, event: string, filePath: string): ChildProcessWithoutNullStreams => {
+    return spawn(`"${path.join(userPlugin.path, userPlugin.binFileName)}"`, makeCommandParams(userPlugin, event, filePath));
 }
 
-const getWindowsBatchAndCmdSpawn = (userPlugin: UserPlugin, jsonConfig: string, event: EventType, filePath: string): ChildProcessWithoutNullStreams => {
-    return spawn(`"${path.join(userPlugin.path, userPlugin.binFileName)}"`, makeCommandParams(userPlugin), { shell: true });
+const getWindowsBatchAndCmdSpawn = (userPlugin: UserPlugin, event: EventType, filePath: string): ChildProcessWithoutNullStreams => {
+    return spawn(`"${path.join(userPlugin.path, userPlugin.binFileName)}"`, makeCommandParams(userPlugin, event, filePath), { shell: true });
 }
 
 const execute = async (userPlugin: UserPlugin, event: EventType, filePath: string): Promise<void> => {
     let spawned: ChildProcessWithoutNullStreams;
-    const config = pluginConfig.get(userPlugin.name, true) || userPlugin.defaultJsonConfig;
-
     switch (getCommandType(userPlugin.binFileName)) {
         case 'cmd':
         case 'bat':
-            spawned = getWindowsBatchAndCmdSpawn(userPlugin, config, event, filePath);
+            spawned = getWindowsBatchAndCmdSpawn(userPlugin, event, filePath);
             break;
         case 'exe':
         case 'nixEx':
         case 'nixShell':
-            spawned = getStandardSpawn(userPlugin, config, event, filePath);
+            spawned = getStandardSpawn(userPlugin, event, filePath);
             break;
     }
 

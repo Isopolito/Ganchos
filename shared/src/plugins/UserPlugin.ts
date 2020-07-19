@@ -1,15 +1,19 @@
 import { EventType } from ".";
 
 export interface UserPlugin {
+    // Mandatory
     binFileName: string;
     name: string;
     description: string;
     category: string;
-    isEligibleForSchedule: boolean;
     eventTypes: EventType[];
     defaultJsonConfig: any;
 
-    // No need to put in meta file, handled by ganchos
+    // Optional
+    isEligibleForSchedule?: boolean;
+    defaultWaitTimeInMinutes?: number;
+
+    // Handled by Ganchos - no need to put in meta file
     path: string;
 }
 
