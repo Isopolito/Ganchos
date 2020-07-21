@@ -20,15 +20,18 @@ const logArea = "schedule runner";
 
 //======================================================================================================
 
-const pluginWait = async (pluginName: string, defaultWaitTimeInMinutes: number): Promise<void> => {
+const pluginWait = async (pluginName: string, defaultWaitTimeInMinutes: number): Promise<boolean> => {
     // Attempt to grab the most recent plugin wait time from config file
     const config = JSON.parse(await pluginConfig.get(pluginName));
     const waitTimeInMinutes = (config && config.runPluginEveryXMinutes) || defaultWaitTimeInMinutes;
 
-    // Only take plugin 'enabled' into account if there is a user defined configuration file already for that plugin
-    if ((config && !config.enabled) || waitTimeInMinutes <= 0) return;
+    if (!waitTimeInMinutes || waitTimeInMinutes <= 0) {
+        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, 'Scheduled plugins must have a "runPluginEveryXMinutes" value greater than 0');
+        return false; 
+    }
 
     await systemUtil.wait(waitTimeInMinutes * 60);
+    return true;
 }
 
 const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defaultJsonConfig: string): Promise<string> => {
@@ -41,17 +44,21 @@ const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defa
         return null;
     }
 
-    if (shouldCreateConfigFile) pluginConfig.save(pluginName, config, true);
+    if (shouldCreateConfigFile) await pluginConfig.save(pluginName, config, true);
     return config;
 }
 
 const runUserPluginAndReschedule = async (plugin: UserPlugin): Promise<void> => {
     try {
-        await userPluginExecute.execute(plugin, 'none', null);
+        const mostRecentConfig = await getConfigJsonAndCreateConfigFileIfNeeded(plugin.name, JSON.stringify(plugin.defaultJsonConfig));
+        if (!mostRecentConfig) return;
 
-        const mostRecentConfig = await getConfigJsonAndCreateConfigFileIfNeeded(plugin.name, plugin.defaultJsonConfig);
         const configObj = JSON.parse(mostRecentConfig);
-        await pluginWait(plugin.name, configObj.defaultWaitTimeInMinutes || 0);
+        await systemUtil.wait((configObj.defaultWaitTimeInMinutes || 0) * 60);
+
+        if (configObj.enabled) await userPluginExecute.execute(plugin, 'none', null);
+
+        if (!await pluginWait(plugin.name, configObj.runPluginEveryXMinutes)) return;
 
         runUserPluginAndReschedule(plugin);
     } catch (e) {
@@ -87,7 +94,7 @@ const runGanchosPluginAndReschedule = async (plugin: GanchosScheduledPlugin): Pr
         await Thread.terminate(thread);
 
         const configObj = JSON.parse(config);
-        await pluginWait(plugin.name, configObj.defaultWaitTimeInMinutes || 0);
+        if (!await pluginWait(plugin.name, configObj.defaultWaitTimeInMinutes)) return;
         await runGanchosPluginAndReschedule(plugin);
     } catch (e) {
         await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, e);

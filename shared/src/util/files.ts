@@ -1,7 +1,7 @@
-import { promises as fs } from 'fs'
 import * as sh from 'shelljs';
 import * as path from 'path';
 import * as os from 'os';
+import recursive from 'recursive-readdir';
 
 import * as generalConstants from '../constants/names';
 
@@ -18,9 +18,9 @@ const getAllFiles = async (paths: string[], fileNameEndsWith?: string): Promise<
     for (const filePath of paths) {
         if (!doesPathExist(filePath)) continue;
 
-        for (const fileName of await fs.readdir(filePath)) {
+        for (const fileName of await recursive(filePath)) {
             if (fileNameEndsWith && !fileName.endsWith(fileNameEndsWith)) continue;
-            files.push(path.join(filePath, fileName));
+            files.push(fileName);
         }
     }
 

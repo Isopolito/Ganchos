@@ -1,11 +1,18 @@
 {
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // The meta file for a user plugin contains the information needed to run and display a plugin.
     // By default the extension for these types of files ends in '.meta', but this can be configured in general config.
 
-    // NOTE: When the application (binFileName) is executed the parameters passed in are:
+    // NOTE: When the application (binFileName) is executed the 3 parameters passed in are:
     //  1. The configuration for the plugin. JSON string in the shape of 'defaultJsonConfig'
     //  2. The event type that triggered execution (if run on a schedule, this is 'none')
     //  3. The file path that is part of the triggered execution (if run on a schedule, this is null)
+
+	// NOTE: Output to stderr from the program will be logged to the plugin log file as an error.
+	// Output to stdout gets logged as information. If |*| is in the message it will be split on that and 
+	// part 1 of the split string will be where in the file the message is coming from, the second part of
+	// the split string will be the message itself
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     //  *** Mandatory fields ***
 
@@ -45,8 +52,7 @@
     // This will cause the plugin to run on a schedule
     // The number can be fractional
     // A plugin can set this and still respond to events
-    // The general config (option 'PluginWaitTimeFloorInMinutes') will prevent a plugin from being
-    // scheduled at too low of a number
-    // Defaults to 0.
-    "runPluginEveryXMinutes": 0
+    // The general config (option 'PluginWaitTimeFloorInMinutes') will prevent a plugin from being scheduled at too low of a number
+	// Can't be <= 0 if 'isEligibleForSchedule' is true
+    "runPluginEveryXMinutes": 5
 }
