@@ -2,8 +2,8 @@ import { spawn, Thread, Worker } from "threads";
 import { performance } from 'perf_hooks';
 import { ObservablePromise } from "threads/dist/observable-promise";
 import {
-    PluginLogMessage, GanchosPluginArguments, EventType, validationUtil, generalLogger,
-    pluginLogger, SeverityEnum, pluginConfig, UserPlugin
+    PluginLogMessage, GanchosPluginArguments, EventType, validationUtil,
+    pluginLogger, SeverityEnum, pluginConfig, UserPlugin, systemUtil
 } from 'ganchos-shared';
 import { fetchGanchosPluginNames, fetchUserPlugins } from "./pluginsFinder";
 import * as userPluginExecute from './userPluginExecution';
@@ -28,6 +28,8 @@ const runUserPlugin = async (event: string, filePath: string, plugin: UserPlugin
     try {
         if (shouldPluginIgnoreEvent(event, plugin.eventTypes)) return;
 
+        await systemUtil.wait((plugin.runDelayInMinutes || 0) * 60);
+
         const beforeTime = performance.now();
         await userPluginExecute.execute(plugin, event as EventType, filePath);
         const afterTime = performance.now();
@@ -42,7 +44,20 @@ const runGanchosPlugin = async (event: string, filePath: string, pluginName: str
     try {
         // TODO: Find a way to new up Worker where the path doesn't have to be hard coded
         const thread = await spawn(new Worker("./pluginCollection/" + pluginName));
-        if (shouldPluginIgnoreEvent(event, await thread.getEventTypes())) return;
+        if (shouldPluginIgnoreEvent(event, await thread.getEventTypes())) {
+            await Thread.terminate(thread);
+            return;
+        }
+
+        const jsonConfigString = await getJsonConfigString(name, thread.getDefaultConfigJson);
+        if (!jsonConfigString) {
+            await pluginLogger.write(SeverityEnum.error, name, logArea, `Json configuration for plugin is invalid: ${jsonConfigString}`);
+            await Thread.terminate(thread);
+            return;
+        }
+        const configOb = JSON.parse(jsonConfigString);
+
+        await systemUtil.wait((configOb.runDelayInMinutes || 0) * 60);
 
         await thread.init();
         name = await thread.getName();
@@ -50,12 +65,6 @@ const runGanchosPlugin = async (event: string, filePath: string, pluginName: str
         thread.getLogSubscription().subscribe((message: PluginLogMessage) => {
             pluginLogger.write(message.severity, name, message.areaInPlugin, message.message);
         });
-
-        const jsonConfigString = await getJsonConfigString(name, thread.getDefaultConfigJson);
-        if (!jsonConfigString) {
-            await pluginLogger.write(SeverityEnum.error, name, logArea, `Json configuration for plugin is invalid: ${jsonConfigString}`);
-            return;
-        }
 
         const args: GanchosPluginArguments = {
             filePath,
@@ -66,11 +75,8 @@ const runGanchosPlugin = async (event: string, filePath: string, pluginName: str
         const beforeTime = performance.now();
         await thread.run(args);
         const afterTime = performance.now();
-
         await Thread.terminate(thread);
-
-        await pluginLogger.write(SeverityEnum.info, name, logArea,
-            `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
+        await pluginLogger.write(SeverityEnum.info, name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
     } catch (e) {
         await pluginLogger.write(SeverityEnum.error, pluginName, logArea, e);
     }
