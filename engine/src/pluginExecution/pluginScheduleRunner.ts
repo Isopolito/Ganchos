@@ -27,7 +27,7 @@ const pluginWait = async (pluginName: string, defaultWaitTimeInMinutes: number):
 
     if (!waitTimeInMinutes || waitTimeInMinutes <= 0) {
         await pluginLogger.write(SeverityEnum.error, pluginName, logArea, 'Scheduled plugins must have a "runPluginEveryXMinutes" value greater than 0');
-        return false; 
+        return false;
     }
 
     await systemUtil.wait(waitTimeInMinutes * 60);
@@ -56,7 +56,10 @@ const runUserPluginAndReschedule = async (plugin: UserPlugin): Promise<void> => 
         const configObj = JSON.parse(mostRecentConfig);
         await systemUtil.wait((configObj.defaultWaitTimeInMinutes || 0) * 60);
 
+        const beforeTime = performance.now();
         if (configObj.enabled) await userPluginExecute.execute(plugin, 'none', null);
+        const afterTime = performance.now();
+        await pluginLogger.write(SeverityEnum.info, plugin.name, logArea, `executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
 
         if (!await pluginWait(plugin.name, configObj.runPluginEveryXMinutes)) return;
 
@@ -90,7 +93,7 @@ const runGanchosPluginAndReschedule = async (plugin: GanchosScheduledPlugin): Pr
         await thread.run(args);
         const afterTime = performance.now();
 
-        await pluginLogger.write(SeverityEnum.info, plugin.name, logArea, `Plugin executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
+        await pluginLogger.write(SeverityEnum.info, plugin.name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
         await Thread.terminate(thread);
 
         const configObj = JSON.parse(config);

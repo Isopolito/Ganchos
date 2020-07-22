@@ -41,7 +41,6 @@ const prepareInputData = (data: any): string[] => {
 
 const execute = async (userPlugin: UserPlugin, event: EventType, filePath: string): Promise<void> => {
     try {
-
         let spawned: ChildProcessWithoutNullStreams;
         switch (getCommandType(userPlugin.binFileName)) {
             case 'cmd':
@@ -65,11 +64,6 @@ const execute = async (userPlugin: UserPlugin, event: EventType, filePath: strin
             const messageParts = prepareInputData(data);
             if (!messageParts) return;
             pluginLogger.write(SeverityEnum.info, userPlugin.name, messageParts[0], messageParts[1]);
-        });
-
-        // TODO: Measure and log plugin run time 
-        spawned.on('close', (code) => {
-            console.log(`child process exited with code ${code}`);
         });
     } catch (e) {
         pluginLogger.write(SeverityEnum.error, userPlugin.name, "execute", `Error running plugin: ${e}`);
