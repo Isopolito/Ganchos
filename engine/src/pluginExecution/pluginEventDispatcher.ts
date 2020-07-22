@@ -26,12 +26,14 @@ const getJsonConfigString = async (pluginName: string, getDefaultJsonConfigFunc:
 
 const runUserPlugin = async (event: string, filePath: string, plugin: UserPlugin): Promise<void> => {
     try {
+        if (shouldPluginIgnoreEvent(event, plugin.eventTypes)) return;
+
         const beforeTime = performance.now();
         await userPluginExecute.execute(plugin, event as EventType, filePath);
         const afterTime = performance.now();
-        await pluginLogger.write(SeverityEnum.info, name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
+        await pluginLogger.write(SeverityEnum.info, plugin.name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, e);
+        await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, e.toString());
     }
 }
 
