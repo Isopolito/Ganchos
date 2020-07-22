@@ -11,7 +11,7 @@ export interface UserPlugin {
 
     // Optional
     isEligibleForSchedule?: boolean;
-    defaultWaitTimeInMinutes?: number;
+    runDelayInMinutes?: number;
 
     // Handled by Ganchos - no need to put in meta file
     path: string;
