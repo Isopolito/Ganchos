@@ -17,6 +17,7 @@ const filterOutInvalidPaths = (paths: string[]): string[] => {
 	});
 }
 
+// TODO: Detect if WatchPaths config setting changes and restart this with new list of paths
 const watchPaths = (pathsToWatch: string[]) => {
 	watcher = chokidar.watch(pathsToWatch, {
 		ignored: /(^|[/\\])\../,

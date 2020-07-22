@@ -1,39 +1,40 @@
 import { promises as fs } from 'fs';
 import * as properLockFile from 'proper-lockfile';
-import { getPluginConfigPath, doesPathExist, touch } from '../util/files';
-import { generalLogger, SeverityEnum } from '..';
-import { isJsonStringValid } from '../util/validation';
+import { getPluginConfigPath, doesPathExist, touch, removeExtension } from '../util/files';
+import { generalLogger, SeverityEnum, pluginLogger } from '..';
+import { validateJson } from '../util/validation';
 
+const logArea = "plugin config";
 // NOTE: If it became an necessary, plugin json config can be cached for each plugin
 
-// TODO: Remove extensions from name when looking for file
 const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<string | null> => {
+    pluginName = removeExtension(pluginName);
     const configPath = getPluginConfigPath(pluginName);
     if (!doesPathExist(configPath)) return null;
 
     try {
         const rawData = await fs.readFile(configPath);
         const jsonString = rawData.toString();
-        if (!shouldValidateJson || isJsonStringValid(jsonString)) {
+        if (!shouldValidateJson || validateJson(jsonString)) {
             return jsonString;
         } else {
-            await generalLogger.write(SeverityEnum.error, "plugin config - get", `Invalid json in plugin config file for '${pluginName}'`, true);
+            await generalLogger.write(SeverityEnum.error, `${logArea} - get`, `Invalid json in plugin config file for '${pluginName}'`, true);
             return null;
         }
     } catch (e) {
-        await generalLogger.write(SeverityEnum.critical, "plugin config - get", `Error. Can't parse plugin config json: ${e}`, true);
+        await generalLogger.write(SeverityEnum.critical, `${logArea} - get`, `Error. Can't parse plugin config json: ${e}`, true);
         return null;
     }
 }
 
-// TODO: Remove extensions from name when saving
 const save = async (pluginName: string, jsonConfig: string, shouldEnable?: boolean) => {
     if (jsonConfig === null) {
-        await generalLogger.write(SeverityEnum.error, "plugin config - save", `pluginName and jsonConfig required`, true);
+        await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `pluginName and jsonConfig required`, true);
         return null;
     }
 
     try {
+        pluginName = removeExtension(pluginName);
         const configPath = getPluginConfigPath(pluginName);
         doesPathExist(configPath) || await touch(configPath);
 
@@ -43,11 +44,11 @@ const save = async (pluginName: string, jsonConfig: string, shouldEnable?: boole
             jsonConfig = JSON.stringify(configObj, null, 4);
         }
 
-        const release = await properLockFile.lock(configPath);
+        const release = await properLockFile.lock(configPath, { retries: 5 });
         await fs.writeFile(configPath, jsonConfig);
         release();
     } catch (e) {
-        await generalLogger.write(SeverityEnum.error, "plugin config - save", e, true);
+        await generalLogger.write(SeverityEnum.error, `${logArea} - save`, e, true);
     }
 }
 

@@ -1,15 +1,18 @@
 import { spawn, Thread, Worker } from "threads";
 import { performance } from 'perf_hooks';
-import { validationUtil, systemUtil, generalLogger, pluginLogger, SeverityEnum, pluginConfig, PluginArguments, EventType, PluginLogMessage } from 'ganchos-shared';
-import { fetchGanchosPlugins } from "./pluginsFinder";
+import { fetchGanchosPluginNames, fetchUserPlugins } from "./pluginsFinder";
+import {
+    validationUtil, systemUtil, generalLogger, pluginLogger, SeverityEnum,
+    pluginConfig, GanchosPluginArguments, PluginLogMessage, UserPlugin
+} from 'ganchos-shared';
+import * as userPluginExecute from './userPluginExecution';
 
 //======================================================================================================
 
-interface SchedulePlugin {
+interface GanchosScheduledPlugin {
     name: string;
-    workerPath: string;
-    defaultWaitTimeInMinutes: number;
-    defaultConfigAsString: string;
+    path: string;
+    defaultJsonConfig: string;
 }
 
 const pluginFolder = "./pluginCollection/";
@@ -17,69 +20,101 @@ const logArea = "schedule runner";
 
 //======================================================================================================
 
-const pluginWaitAndRun = async (plugin: SchedulePlugin, run: (plugin: SchedulePlugin) => Promise<void>): Promise<void> => {
-    const config = JSON.parse(await pluginConfig.get(plugin.name));
-    const waitTimeInMinutes = (config && config.runPluginEveryXMinutes) || plugin.defaultWaitTimeInMinutes;
-    
-    // If a plugin runs and there is not config file for it (usually that will be the first time it runs), create the config file
-    if (!config) pluginConfig.save(plugin.name, plugin.defaultConfigAsString, true);
+const pluginWait = async (pluginName: string, defaultWaitTimeInMinutes: number): Promise<boolean> => {
+    // Attempt to grab the most recent plugin wait time from config file
+    const config = JSON.parse(await pluginConfig.get(pluginName));
+    const waitTimeInMinutes = (config && config.runPluginEveryXMinutes) || defaultWaitTimeInMinutes;
 
-    // Only take plugin 'enabled' into account if there is a user defined configuration already for that plugin
-    if ((config.enabled || !config) && waitTimeInMinutes > 0) {
-        await systemUtil.wait(waitTimeInMinutes * 60);
-        await run(plugin);
+    if (!waitTimeInMinutes || waitTimeInMinutes <= 0) {
+        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, 'Scheduled plugins must have a "runPluginEveryXMinutes" value greater than 0');
+        return false;
+    }
+
+    await systemUtil.wait(waitTimeInMinutes * 60);
+    return true;
+}
+
+const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defaultJsonConfig: string): Promise<string> => {
+    let config = await pluginConfig.get(pluginName);
+    const shouldCreateConfigFile = !config;
+    if (shouldCreateConfigFile) config = defaultJsonConfig;
+
+    if (!validationUtil.validateJson(config)) {
+        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, "Invalid JSON in config file, or if that doesn't exist, then the default config for the plugin...skipping plugin");
+        return null;
+    }
+
+    if (shouldCreateConfigFile) await pluginConfig.save(pluginName, config, true);
+    return config;
+}
+
+const runUserPluginAndReschedule = async (plugin: UserPlugin): Promise<void> => {
+    try {
+        const mostRecentConfig = await getConfigJsonAndCreateConfigFileIfNeeded(plugin.name, JSON.stringify(plugin.defaultJsonConfig));
+        if (!mostRecentConfig) return;
+
+        const configObj = JSON.parse(mostRecentConfig);
+        await systemUtil.wait((configObj.defaultWaitTimeInMinutes || 0) * 60);
+
+        const beforeTime = performance.now();
+        if (configObj.enabled) await userPluginExecute.execute(plugin, 'none', null);
+        const afterTime = performance.now();
+        await pluginLogger.write(SeverityEnum.info, plugin.name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
+
+        if (!await pluginWait(plugin.name, configObj.runPluginEveryXMinutes)) return;
+
+        runUserPluginAndReschedule(plugin);
+    } catch (e) {
+        await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, e);
     }
 }
 
-const runGanchosPluginAndReschedule = async (plugin: SchedulePlugin): Promise<void> => {
-    let category = "n/a";
+const runGanchosPluginAndReschedule = async (plugin: GanchosScheduledPlugin): Promise<void> => {
     try {
-        const thread = await spawn(new Worker(plugin.workerPath));
+        const thread = await spawn(new Worker(plugin.path));
         await thread.init();
-        category = await thread.getCategory();
-        const config = await pluginConfig.get(plugin.name);
 
         thread.getLogSubscription().subscribe((message: PluginLogMessage) => {
-            pluginLogger.write(message.severity, plugin.name, category, message.areaInPlugin, message.message);
+            pluginLogger.write(message.severity, plugin.name, message.areaInPlugin, message.message);
         });
- 
-        const args: PluginArguments = {
+
+        const config = await getConfigJsonAndCreateConfigFileIfNeeded(plugin.name, plugin.defaultJsonConfig);
+        if (!config) {
+            await Thread.terminate(thread);
+            return;
+        }
+
+        const args: GanchosPluginArguments = {
             filePath: 'n/a',
-            jsonConfig: config || plugin.defaultConfigAsString,
+            jsonConfig: config,
             eventType: 'none',
         }
         const beforeTime = performance.now();
         await thread.run(args);
         const afterTime = performance.now();
 
-        await pluginLogger.write(SeverityEnum.info, plugin.name, category, logArea,
-            `Plugin executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
-
+        await pluginLogger.write(SeverityEnum.info, plugin.name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
         await Thread.terminate(thread);
-        await pluginWaitAndRun(plugin, runGanchosPluginAndReschedule);
+
+        const configObj = JSON.parse(config);
+        if (!await pluginWait(plugin.name, configObj.defaultWaitTimeInMinutes)) return;
+        await runGanchosPluginAndReschedule(plugin);
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, plugin.name, category, logArea, e);
+        await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, e);
     }
 }
 
-const getSchedulingEligibleGanchosPlugins = async (): Promise<SchedulePlugin[]> => {
+const getSchedulingEligibleGanchosPlugins = async (): Promise<GanchosScheduledPlugin[]> => {
     const plugins = [];
-    for (const pluginName of await fetchGanchosPlugins(true)) {
+    for (const pluginName of await fetchGanchosPluginNames(true)) {
         const thread = await spawn(new Worker(pluginFolder + pluginName));
         if (await thread.isEligibleForSchedule()) {
             const configAsString = await thread.getDefaultConfigJson();
-            if (!validationUtil.isJsonStringValid(configAsString)) {
-                const category = await thread.getCategory();
-                await pluginLogger.write(SeverityEnum.error, pluginName, category, logArea, "Default JSON config is invalid...skipping plugin");
-                continue;
-            }
-            const config = JSON.parse(configAsString);
             plugins.push({
                 name: pluginName,
-                workerPath: pluginFolder + pluginName,
-                defaultWaitTimeInMinutes: config.runPluginEveryXMinutes || 0,
-                defaultConfigAsString: configAsString,
-            } as SchedulePlugin);
+                path: pluginFolder + pluginName,
+                defaultJsonConfig: configAsString,
+            } as GanchosScheduledPlugin);
         }
         await Thread.terminate(thread);
     }
@@ -94,7 +129,10 @@ const beginScheduleMonitoring = async (): Promise<void> => {
             tasks.push(runGanchosPluginAndReschedule(plugin));
         }
 
-        // Do above for user plugins
+        const userPlugins = (await fetchUserPlugins()).filter(up => up.isEligibleForSchedule)
+        for (const plugin of userPlugins) {
+            tasks.push(runUserPluginAndReschedule(plugin));
+        }
 
         await Promise.all(tasks);
     } catch (e) {

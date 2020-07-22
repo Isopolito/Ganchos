@@ -2,10 +2,11 @@ import { spawn, Thread, Worker } from "threads";
 import { performance } from 'perf_hooks';
 import { ObservablePromise } from "threads/dist/observable-promise";
 import {
-    PluginLogMessage, PluginArguments, EventType, validationUtil, generalLogger,
-    pluginLogger, SeverityEnum, pluginConfig
+    PluginLogMessage, GanchosPluginArguments, EventType, validationUtil, generalLogger,
+    pluginLogger, SeverityEnum, pluginConfig, UserPlugin
 } from 'ganchos-shared';
-import { fetchGanchosPlugins, fetchUserPlugins } from "./pluginsFinder";
+import { fetchGanchosPluginNames, fetchUserPlugins } from "./pluginsFinder";
+import * as userPluginExecute from './userPluginExecution';
 
 const logArea = "event processor";
 
@@ -13,17 +14,27 @@ const shouldPluginIgnoreEvent = (event: string, eventsToListenFor: EventType[]):
     return !(eventsToListenFor && eventsToListenFor.includes(event as EventType));
 }
 
-const getJsonConfigString = async (pluginName: string, getDefaultJsonConfigFunc: () => ObservablePromise<string>): Promise<string> =>  {
+const getJsonConfigString = async (pluginName: string, getDefaultJsonConfigFunc: () => ObservablePromise<string>): Promise<string> => {
     let configString = await pluginConfig.get(pluginName);
     const shouldWriteConfigToFileForFirstTime = !configString;
     if (!configString) configString = await getDefaultJsonConfigFunc();
-    if (!validationUtil.isJsonStringValid(configString)) return null;
+    if (!validationUtil.validateJson(configString)) return null;
     if (shouldWriteConfigToFileForFirstTime) pluginConfig.save(pluginName, configString, true);
 
     return configString;
 };
 
-const runUserPlugin = async (event: string, filePath: string, pluginName: string): Promise<void> => {
+const runUserPlugin = async (event: string, filePath: string, plugin: UserPlugin): Promise<void> => {
+    try {
+        if (shouldPluginIgnoreEvent(event, plugin.eventTypes)) return;
+
+        const beforeTime = performance.now();
+        await userPluginExecute.execute(plugin, event as EventType, filePath);
+        const afterTime = performance.now();
+        await pluginLogger.write(SeverityEnum.info, plugin.name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
+    } catch (e) {
+        await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, e.toString());
+    }
 }
 
 const runGanchosPlugin = async (event: string, filePath: string, pluginName: string): Promise<void> => {
@@ -35,20 +46,18 @@ const runGanchosPlugin = async (event: string, filePath: string, pluginName: str
 
         await thread.init();
         name = await thread.getName();
-        const category = await thread.getCategory();
- 
+
         thread.getLogSubscription().subscribe((message: PluginLogMessage) => {
-            pluginLogger.write(message.severity, name, category, message.areaInPlugin, message.message);
+            pluginLogger.write(message.severity, name, message.areaInPlugin, message.message);
         });
-    
+
         const jsonConfigString = await getJsonConfigString(name, thread.getDefaultConfigJson);
         if (!jsonConfigString) {
-            await pluginLogger.write(SeverityEnum.error, name, category, logArea,
-                `Json configuration for plugin is invalid: ${jsonConfigString}`);
+            await pluginLogger.write(SeverityEnum.error, name, logArea, `Json configuration for plugin is invalid: ${jsonConfigString}`);
             return;
         }
 
-        const args: PluginArguments = {
+        const args: GanchosPluginArguments = {
             filePath,
             jsonConfig: jsonConfigString,
             eventType: event as EventType,
@@ -60,22 +69,22 @@ const runGanchosPlugin = async (event: string, filePath: string, pluginName: str
 
         await Thread.terminate(thread);
 
-        await pluginLogger.write(SeverityEnum.info, name, category, logArea,
-            `Plugin executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
+        await pluginLogger.write(SeverityEnum.info, name, logArea,
+            `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
     } catch (e) {
-        await generalLogger.write(SeverityEnum.error, logArea, `Error running plugin '${name}' - ${e}`, true);
+        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, e);
     }
 }
 
 const dispatch = async (event: string, filePath: string): Promise<void> => {
     const tasks = [];
 
-    for (const file of await fetchGanchosPlugins(true)) {
+    for (const file of await fetchGanchosPluginNames(true)) {
         tasks.push(runGanchosPlugin(event, filePath, file));
     }
 
-    for (const file of await fetchUserPlugins()) {
-        tasks.push(runUserPlugin(event, filePath, file));
+    for (const userPlugin of await fetchUserPlugins()) {
+        tasks.push(runUserPlugin(event, filePath, userPlugin));
     }
 
     await Promise.all(tasks);
