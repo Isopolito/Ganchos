@@ -1,6 +1,6 @@
 import { EventType } from ".";
 
-export type GanchosPluginArguments = {
+export type GanchosExecutionArguments = {
     jsonConfig: string;
     filePath: string;
     eventType: EventType;

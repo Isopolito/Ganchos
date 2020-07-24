@@ -1,5 +1,6 @@
 import * as properLockFile from 'proper-lockfile';
 import { promises as fs } from 'fs';
+import os from 'os';
 
 import { touch } from '../util/files';
 import { makeLogFilePath } from '../util/logs';
@@ -13,7 +14,7 @@ const write = async (name: string, messageJson: string): Promise<void> => {
 	await touch(filePath);
 
 	const release = await properLockFile.lock(filePath, { retries: 5});
-	await fs.appendFile(filePath, messageJson + '\n');
+	await fs.appendFile(filePath, messageJson + os.EOL);
 	return release();
 }
 

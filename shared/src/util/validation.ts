@@ -1,10 +1,14 @@
-const stripJsonComments = (json: string): string => json.split('\n')
+import os from 'os';
+
+const stripJsonComments = (json: string): string => json.split(os.EOL)
     // strip out comments, ignoring leading white space
     .filter(line => !line.match(/^\s*?\/\//))
-    .join('\n');
+    .join(os.EOL);
 
-const validateJson = (jsonString: string, stripComments?: boolean): any => {
+const validateJson = (jsonString: string|null, stripComments?: boolean): any => {
     try {
+        if (!jsonString) return false;
+
         if (stripComments) jsonString = stripJsonComments(jsonString);
         const parsedJson = JSON.parse(jsonString);
         if (parsedJson && typeof parsedJson === "object") return parsedJson;
