@@ -45,7 +45,7 @@
 		// A plugin can set this and still respond to events
 		// The general config (option 'PluginWaitTimeFloorInMinutes') will prevent a plugin from being scheduled at too low of a number
 		// Can't be <= 0 
-		"runPluginEveryXMinutes": 5
+		"runEveryXMinutes": 5
 	},
 
     // *** Optional fields ***
@@ -58,6 +58,6 @@
 	//"osRunOnly": [ 'aix', 'darwin', 'freebsd', 'linux', 'openbsd', 'sunos', 'win32' ],
 	"osRunOnly": [],
 
-    // Will allow the plugin to be run on a schedule if 'runPluginEveryXMinutes' is a positive number. Defaults to false
+    // Will allow the plugin to be run on a schedule if 'runEveryXMinutes' is a positive number. Defaults to false
     "isEligibleForSchedule": false
 }

@@ -7,6 +7,6 @@ export { GeneralLogFileMessage } from './logging/GeneralLogFileMessage';
 export * as fileUtil from './util/files';
 export * as validationUtil from './util/validation';
 export * as systemUtil from './util/system';
+export * as osUtil from './util/os';
 export { SeverityEnum } from './logging/SeverityEnum';
-export { OsTypes } from './types/OsTypes';
 export * from './plugins';

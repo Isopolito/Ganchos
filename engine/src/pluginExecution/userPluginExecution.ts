@@ -1,8 +1,15 @@
 import path from "path"
 import { spawn, ChildProcessWithoutNullStreams } from "child_process";
-import { UserPlugin, pluginConfig, EventType, pluginLogger, SeverityEnum } from "ganchos-shared"
+import { performance } from 'perf_hooks';
+import { UserPlugin, pluginConfig, EventType, pluginLogger, SeverityEnum, systemUtil, osUtil } from "ganchos-shared"
 
 type CommandType = 'cmd' | 'bat' | 'nixShell' | 'exe' | 'nixEx';
+
+const logArea = "userPluginExecute";
+
+const shouldPluginIgnoreEvent = (event: string, eventsToListenFor: EventType[]): boolean => {
+    return !(eventsToListenFor && eventsToListenFor.includes(event as EventType));
+}
 
 const getCommandType = (binFileName: string): CommandType => {
     if (binFileName.endsWith('.cmd')) return 'cmd';
@@ -13,17 +20,17 @@ const getCommandType = (binFileName: string): CommandType => {
     return 'nixEx';
 }
 
-const makeCommandParams = async (userPlugin: UserPlugin, event: string, filePath: string): Promise<string[]> => {
-    const config = await pluginConfig.get(userPlugin.name, true) || userPlugin.defaultJsonConfig;
-    return [`"${config}"`, `"${event}"`, `"${filePath}"`];
+const makeCommandParams = async (jsonConfig: string, userPlugin: UserPlugin, event: string, eventData: string): Promise<string[]> => {
+    const config = jsonConfig || userPlugin.defaultJsonConfig;
+    return [`"${config}"`, `"${event}"`, `"${eventData}"`];
 }
 
-const getStandardSpawn = async (userPlugin: UserPlugin, event: string, filePath: string): Promise<ChildProcessWithoutNullStreams> => {
-    return spawn(`"${path.join(userPlugin.path, userPlugin.binFileName)}"`, await makeCommandParams(userPlugin, event, filePath));
+const getStandardSpawn = async (jsonConfig: string, userPlugin: UserPlugin, event: string, eventData: string): Promise<ChildProcessWithoutNullStreams> => {
+    return spawn(`"${path.join(userPlugin.path, userPlugin.binFileName)}"`, await makeCommandParams(jsonConfig, userPlugin, event, eventData));
 }
 
-const getScriptSpawn = async (userPlugin: UserPlugin, event: EventType, filePath: string): Promise<ChildProcessWithoutNullStreams> => {
-    return spawn(`"${path.join(userPlugin.path, userPlugin.binFileName)}"`, await makeCommandParams(userPlugin, event, filePath), { shell: true });
+const getScriptSpawn = async (jsonConfig: string, userPlugin: UserPlugin, event: EventType, eventData: string): Promise<ChildProcessWithoutNullStreams> => {
+    return spawn(`"${path.join(userPlugin.path, userPlugin.binFileName)}"`, await makeCommandParams(jsonConfig, userPlugin, event, eventData), { shell: true });
 }
 
 const prepareInputData = (data: any): string[] => {
@@ -39,18 +46,28 @@ const prepareInputData = (data: any): string[] => {
     return ['n/a', dataString];
 }
 
-const execute = async (userPlugin: UserPlugin, event: EventType, filePath: string): Promise<void> => {
+const executeNoTimer = async (userPlugin: UserPlugin, event: EventType, eventData: string): Promise<void> => {
+    let spawned: ChildProcessWithoutNullStreams;
     try {
-        let spawned: ChildProcessWithoutNullStreams;
+        if (shouldPluginIgnoreEvent(event, userPlugin.eventTypes)) return;
+        if (!osUtil.isThisRunningOnOs(userPlugin.runOnlyOnOsTypes)) return;
+
+        const config = await pluginConfig.get(userPlugin.name, true) || userPlugin.defaultJsonConfig;
+        const configObj = JSON.parse(config);
+
+        if (configObj !== undefined && configObj.enabled === false) return;
+
+        await systemUtil.waitInMinutes(configObj.runDelayInMinutes || 0);
+
         switch (getCommandType(userPlugin.binFileName)) {
             case 'cmd':
             case 'nixShell':
             case 'bat':
-                spawned = await getScriptSpawn(userPlugin, event, filePath);
+                spawned = await getScriptSpawn(config, userPlugin, event, eventData);
                 break;
             case 'exe':
             case 'nixEx':
-                spawned = await getStandardSpawn(userPlugin, event, filePath);
+                spawned = await getStandardSpawn(config, userPlugin, event, eventData);
                 break;
         }
 
@@ -66,8 +83,17 @@ const execute = async (userPlugin: UserPlugin, event: EventType, filePath: strin
             pluginLogger.write(SeverityEnum.info, userPlugin.name, messageParts[0], messageParts[1]);
         });
     } catch (e) {
-        pluginLogger.write(SeverityEnum.error, userPlugin.name, "execute", `Error running plugin: ${e}`);
+        pluginLogger.write(SeverityEnum.error, userPlugin.name, logArea, e);
+    } finally {
+        (spawned as any) = null;
     }
+}
+
+const execute = async (userPlugin: UserPlugin, event: EventType, eventData: string): Promise<void> => {
+    const beforeTime = performance.now();
+    await executeNoTimer(userPlugin, event, eventData);
+    const afterTime = performance.now();
+    await pluginLogger.write(SeverityEnum.info, userPlugin.name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
 }
 
 export {

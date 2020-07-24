@@ -1,5 +1,5 @@
 import { EventType } from ".";
-import { OsTypes } from "..";
+import { OsType } from "../util/os";
 
 export interface UserPlugin {
     // Mandatory
@@ -14,7 +14,7 @@ export interface UserPlugin {
     isEligibleForSchedule?: boolean;
     enabled?: boolean;
     runDelayInMinutes?: number;
-    osRunOnly?: OsTypes[],
+    runOnlyOnOsTypes?: OsType[],
 
     // Handled by Ganchos - no need to put in meta file
     path: string;

@@ -1,118 +1,63 @@
 import { spawn, Thread, Worker } from "threads";
-import { performance } from 'perf_hooks';
+import { generalLogger, pluginLogger, SeverityEnum, pluginConfig, UserPlugin, GanchosExecutionArguments, systemUtil } from 'ganchos-shared';
 import { fetchGanchosPluginNames, fetchUserPlugins } from "./pluginsFinder";
-import {
-    validationUtil, systemUtil, generalLogger, pluginLogger, SeverityEnum,
-    pluginConfig, GanchosPluginArguments, PluginLogMessage, UserPlugin
-} from 'ganchos-shared';
-import * as userPluginExecute from './userPluginExecution';
+import { execute as executeUserPlugin } from './userPluginExecution';
+import { execute as executeGanchosPlugin } from './ganchosPluginExecution';
 
 //======================================================================================================
-
-interface GanchosScheduledPlugin {
-    name: string;
-    path: string;
-    defaultJsonConfig: string;
-}
 
 const pluginFolder = "./pluginCollection/";
 const logArea = "schedule runner";
 
 //======================================================================================================
 
-const pluginWait = async (pluginName: string, runDelayInMinutes: number): Promise<boolean> => {
-    // Attempt to grab the most recent plugin wait time from config file
-    const config = JSON.parse(await pluginConfig.get(pluginName));
-    const waitTimeInMinutes = (config && config.runPluginEveryXMinutes) || runDelayInMinutes;
-
-    if (!waitTimeInMinutes || waitTimeInMinutes <= 0) {
-        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, 'Scheduled plugins must have a "runPluginEveryXMinutes" value greater than 0');
-        return false;
-    }
-
-    await systemUtil.wait(waitTimeInMinutes * 60);
-    return true;
-}
-
-const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defaultJsonConfig: string): Promise<string> => {
-    let config = await pluginConfig.get(pluginName);
-    const shouldCreateConfigFile = !config;
-    if (shouldCreateConfigFile) config = defaultJsonConfig;
-
-    if (!validationUtil.validateJson(config)) {
-        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, "Invalid JSON in config file, or if that doesn't exist, then the default config for the plugin...skipping plugin");
-        return null;
-    }
-
-    if (shouldCreateConfigFile) await pluginConfig.save(pluginName, config, true);
-    return config;
-}
-
 const runUserPluginAndReschedule = async (plugin: UserPlugin): Promise<void> => {
     try {
-        const mostRecentConfig = await getConfigJsonAndCreateConfigFileIfNeeded(plugin.name, JSON.stringify(plugin.defaultJsonConfig));
+        const mostRecentConfig = await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(plugin.name, JSON.stringify(plugin.defaultJsonConfig));
         if (!mostRecentConfig) return;
 
         const configObj = JSON.parse(mostRecentConfig);
-        await systemUtil.wait((configObj.runDelayInMinutes || 0) * 60);
+        if (configObj.enabled) await executeUserPlugin(plugin, 'none', null);
 
-        const beforeTime = performance.now();
-        if (configObj.enabled) await userPluginExecute.execute(plugin, 'none', null);
-        const afterTime = performance.now();
-        await pluginLogger.write(SeverityEnum.info, plugin.name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
-
-        if (!await pluginWait(plugin.name, configObj.runPluginEveryXMinutes)) return;
-
+        if (!configObj.runEveryXMinutes || configObj.runEveryXMinutes <= 0) {
+            await pluginLogger.write(SeverityEnum.warning, plugin.name, logArea, "Either configuration for this plugin is missing or the 'runEveryXMinutes' option has been set to <= 0. Skipping...");
+            return;
+        }
+        await systemUtil.waitInMinutes(configObj.runEveryXMinutes);
+        
         runUserPluginAndReschedule(plugin);
     } catch (e) {
         await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, e);
     }
 }
 
-const runGanchosPluginAndReschedule = async (plugin: GanchosScheduledPlugin): Promise<void> => {
+const runGanchosPluginAndReschedule = async (pluginName: string): Promise<void> => {
     try {
-        const config = await getConfigJsonAndCreateConfigFileIfNeeded(plugin.name, plugin.defaultJsonConfig);
-        if (!config) return;
-        const configObj = JSON.parse(config);
-
-        await systemUtil.wait((configObj.runDelayInMinutes || 0) * 60);
-
-        const thread = await spawn(new Worker(plugin.path));
-        await thread.init();
-
-        thread.getLogSubscription().subscribe((message: PluginLogMessage) => {
-            pluginLogger.write(message.severity, plugin.name, message.areaInPlugin, message.message);
-        });
-
-        const args: GanchosPluginArguments = {
-            filePath: 'n/a',
-            jsonConfig: config,
+        const GanchosExecutionArguments: GanchosExecutionArguments = {
             eventType: 'none',
-        }
-        const beforeTime = performance.now();
-        await thread.run(args);
-        const afterTime = performance.now();
-        await pluginLogger.write(SeverityEnum.info, plugin.name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
-        await Thread.terminate(thread);
+            filePath: 'n/a',
+            jsonConfig: null,
+        };
 
-        if (!await pluginWait(plugin.name, configObj.runDelayInMinutes)) return;
-        await runGanchosPluginAndReschedule(plugin);
+        const configObj = await executeGanchosPlugin(pluginName, GanchosExecutionArguments);
+        if (!configObj.runEveryXMinutes || configObj.runEveryXMinutes <= 0) {
+            await pluginLogger.write(SeverityEnum.warning, pluginName, logArea, "Either configuration for this plugin is missing or the 'runEveryXMinutes' option has been set to <= 0. Skipping...");
+            return;
+        }
+        await systemUtil.waitInMinutes(configObj.runEveryXMinutes);
+
+        await runGanchosPluginAndReschedule(pluginName);
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, e);
+        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, e);
     }
 }
 
-const getSchedulingEligibleGanchosPlugins = async (): Promise<GanchosScheduledPlugin[]> => {
-    const plugins = [];
+const getSchedulingEligibleGanchosPlugins = async (): Promise<string[]> => {
+    const plugins = [] as string[];
     for (const pluginName of await fetchGanchosPluginNames(true)) {
         const thread = await spawn(new Worker(pluginFolder + pluginName));
         if (await thread.isEligibleForSchedule()) {
-            const configAsString = await thread.getDefaultConfigJson();
-            plugins.push({
-                name: pluginName,
-                path: pluginFolder + pluginName,
-                defaultJsonConfig: configAsString,
-            } as GanchosScheduledPlugin);
+            plugins.push(pluginName);
         }
         await Thread.terminate(thread);
     }
@@ -123,8 +68,8 @@ const beginScheduleMonitoring = async (): Promise<void> => {
     try {
         const tasks = [];
 
-        for (const plugin of await getSchedulingEligibleGanchosPlugins()) {
-            tasks.push(runGanchosPluginAndReschedule(plugin));
+        for (const pluginName of await getSchedulingEligibleGanchosPlugins()) {
+            tasks.push(runGanchosPluginAndReschedule(pluginName));
         }
 
         const userPlugins = (await fetchUserPlugins()).filter(up => up.isEligibleForSchedule)

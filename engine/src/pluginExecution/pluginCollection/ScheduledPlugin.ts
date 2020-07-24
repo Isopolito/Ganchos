@@ -2,7 +2,7 @@ import { Observable } from "threads/observable"
 import { expose } from 'threads/worker'
 import {
     GanchosPluginBaseLogic, PluginLogMessage, PluginCategory, GanchosPlugin,
-    SeverityEnum, GanchosPluginArguments, PluginBaseConfig, EventType
+    SeverityEnum, GanchosExecutionArguments, EventType
 } from 'ganchos-shared';
 
 let baseLogic: GanchosPluginBaseLogic;
@@ -17,7 +17,7 @@ const templatePlugin: GanchosPlugin = {
     getDefaultConfigJson: (): string => ` 
     {
         "foo": "bar",
-        "runPluginEveryXMinutes": 2
+        "runEveryXMinutes": 2
     }
     `,
 
@@ -27,7 +27,7 @@ const templatePlugin: GanchosPlugin = {
     getLogSubscription: (): Observable<PluginLogMessage> => baseLogic.getLogSubscription(),
 
     // *** Plugin logic goes in here
-    run: (args: GanchosPluginArguments) => {
+    run: (args: GanchosExecutionArguments) => {
         // Validated json string is passed in as config, if not available the default configuration defined above will be used
         const config = JSON.parse(args.jsonConfig);
 
@@ -35,7 +35,7 @@ const templatePlugin: GanchosPlugin = {
         baseLogic.Log({
             severity: SeverityEnum.info,
             areaInPlugin: 'blah',
-            message: `Hello from Scheduled Plugin. Config value for 'RunPluginEveryXMinutes' - '${config.runPluginEveryXMinutes}'`,
+            message: `Hello from Scheduled Plugin. Config value for 'runEveryXMinutes' - '${config.runEveryXMinutes}'`,
         });
     },
 }

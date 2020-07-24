@@ -1,10 +1,12 @@
 import { Observable } from "threads/observable"
 import { PluginCategory, GanchosExecutionArguments, PluginLogMessage, EventType } from ".";
+import { OsType } from "../util/os";
 
 export interface GanchosPlugin {
     getName(): string;
     getDescription(): string;
     getEventTypes(): EventType[];
+    getOsTypesToRunOn?(): OsType[]; // Optional
     getDefaultConfigJson(): string;
     getCategory(): PluginCategory;
     getLogSubscription(): Observable<PluginLogMessage>;
@@ -14,4 +16,3 @@ export interface GanchosPlugin {
     run(args: GanchosExecutionArguments): void;
     tearDown(): void;
 }
-
