@@ -1,5 +1,5 @@
 import os from 'os';
-type OsType = 'aix' | 'darwin' | 'freebsd' | 'linux' | 'openbsd' | 'sunos' | 'win32';
+import { OsType } from './OsType';
 
 const isThisRunningOnOs = (osTypes: OsType[]): boolean => {
     if (!osTypes) return true; // Caller doesn't care about OS type`
@@ -7,6 +7,5 @@ const isThisRunningOnOs = (osTypes: OsType[]): boolean => {
 }
 
 export {
-    OsType,
     isThisRunningOnOs,
 }

@@ -1,5 +1,5 @@
 import { EventType } from ".";
-import { OsType } from "../util/os";
+import { OsType } from "./os/OsType";
 
 export interface UserPlugin {
     // Mandatory

@@ -1,6 +1,6 @@
 import { Observable } from "threads/observable"
 import { PluginCategory, GanchosExecutionArguments, PluginLogMessage, EventType } from ".";
-import { OsType } from "../util/os";
+import { OsType } from "./os/OsType";
 
 export interface GanchosPlugin {
     getName(): string;

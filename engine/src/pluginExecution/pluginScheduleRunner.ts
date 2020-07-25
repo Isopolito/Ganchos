@@ -27,7 +27,7 @@ const runUserPluginAndReschedule = async (plugin: UserPlugin): Promise<void> => 
         
         runUserPluginAndReschedule(plugin);
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, e);
+        await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, `Exception - ${e}`);
     }
 }
 
@@ -41,14 +41,14 @@ const runGanchosPluginAndReschedule = async (pluginName: string): Promise<void> 
 
         const configObj = await executeGanchosPlugin(pluginName, GanchosExecutionArguments);
         if (!configObj.runEveryXMinutes || configObj.runEveryXMinutes <= 0) {
-            await pluginLogger.write(SeverityEnum.warning, pluginName, logArea, "Either configuration for this plugin is missing or the 'runEveryXMinutes' option has been set to <= 0. Skipping...");
+            await pluginLogger.write(SeverityEnum.warning, pluginName, logArea, "Either configuration for this plugin is missing or the 'runEveryXMinutes' option is missing or has been set to <= 0. Skipping...");
             return;
         }
         await systemUtil.waitInMinutes(configObj.runEveryXMinutes);
 
         await runGanchosPluginAndReschedule(pluginName);
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, e);
+        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception - ${e}`);
     }
 }
 

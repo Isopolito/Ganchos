@@ -12,19 +12,20 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
     let thread;
     try {
         thread = await spawn(new Worker(`./pluginCollection/${pluginName}`));
-
-        if (args.eventType && shouldPluginIgnoreEvent(args.eventType, await thread.getEventTypes())) return;
-        if (typeof thread.getOsTypes === 'function' && !osUtil.isThisRunningOnOs(await thread.getOsTypesToRunOn())) return;
-
         const defaultConfig = await thread.getDefaultConfigJson();
         const config = await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(pluginName, defaultConfig);
         if (!config) {
-            await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Json configuration for plugin is invalid: ${defaultConfig}`);
+            await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Json configuration for plugin is missing or invalid: ${defaultConfig}`);
             return;
         }
         args.jsonConfig = config;
-
         const configObj = JSON.parse(config);
+
+        if (args.eventType && args.eventType !== 'none' && shouldPluginIgnoreEvent(args.eventType, await thread.getEventTypes())) return configObj;
+        if (typeof thread.getOsTypesToRunOn === 'function' && !osUtil.isThisRunningOnOs(await thread.getOsTypesToRunOn())) {
+            return configObj;
+        }
+
         await systemUtil.waitInMinutes(configObj.runDelayInMinutes || 0);
 
         thread.getLogSubscription().subscribe((message: PluginLogMessage) => {

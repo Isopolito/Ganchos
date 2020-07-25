@@ -2,7 +2,7 @@ import { Observable } from "threads/observable"
 import { expose } from 'threads/worker'
 import {
     GanchosPluginBaseLogic, PluginLogMessage, PluginCategory, GanchosPlugin,
-    SeverityEnum, GanchosExecutionArguments, EventType
+    SeverityEnum, GanchosExecutionArguments, EventType, OsType
 } from 'ganchos-shared';
 
 let baseLogic: GanchosPluginBaseLogic;
@@ -14,6 +14,8 @@ const templatePlugin: GanchosPlugin = {
     getEventTypes: (): EventType[] => ["add", "unlink"],
     getCategory: (): PluginCategory => 'System',
     isEligibleForSchedule: (): boolean => true,
+    //getOsTypesToRunOn: (): OsType[] => ['freebsd', 'linux', 'darwin', 'openbsd', 'sunos'],
+    getOsTypesToRunOn: (): OsType[] => ['win32'],
     getDefaultConfigJson: (): string => ` 
     {
         "foo": "bar",
