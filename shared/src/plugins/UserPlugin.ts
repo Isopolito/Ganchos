@@ -1,4 +1,5 @@
 import { EventType } from ".";
+import { OsType } from "./os/OsType";
 
 export interface UserPlugin {
     // Mandatory
@@ -11,7 +12,9 @@ export interface UserPlugin {
 
     // Optional
     isEligibleForSchedule?: boolean;
+    enabled?: boolean;
     runDelayInMinutes?: number;
+    runOnlyOnOsTypes?: OsType[],
 
     // Handled by Ganchos - no need to put in meta file
     path: string;
@@ -22,9 +25,8 @@ export const implementsUserPlugin = (object: any): object is UserPlugin => {
 
     const name = 'name' in object;
     const description = 'description' in object;
-    const isEligibleForSchedule = 'isEligibleForSchedule' in object;
     const eventTypes = 'eventTypes' in object;
     const defaultJsonConfig = 'defaultJsonConfig' in object;
 
-    return name && description && isEligibleForSchedule && eventTypes && defaultJsonConfig;
+    return name && description && eventTypes && defaultJsonConfig;
 }

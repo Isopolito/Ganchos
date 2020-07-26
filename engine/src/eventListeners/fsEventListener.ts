@@ -4,7 +4,7 @@ import { dispatch } from '../pluginExecution/pluginEventDispatcher';
 
 /*========================================================================================*/
 
-let watcher;
+let watcher: chokidar.FSWatcher;
 
 /*========================================================================================*/
 

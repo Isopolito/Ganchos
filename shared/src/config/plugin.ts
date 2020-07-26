@@ -27,8 +27,8 @@ const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<st
     }
 }
 
-const save = async (pluginName: string, jsonConfig: string, shouldEnable?: boolean) => {
-    if (jsonConfig === null) {
+const save = async (pluginName: string, jsonConfig: string|null, shouldEnable?: boolean) => {
+    if (!jsonConfig) {
         await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `pluginName and jsonConfig required`, true);
         return null;
     }
@@ -52,9 +52,24 @@ const save = async (pluginName: string, jsonConfig: string, shouldEnable?: boole
     }
 }
 
+const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defaultJsonConfig: string): Promise<string|null> => {
+    let config = await get(pluginName);
+    const shouldCreateConfigFile = !config;
+    if (shouldCreateConfigFile) config = defaultJsonConfig;
+
+    if (!validateJson(config)) {
+        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, "Invalid JSON in config file, or if that doesn't exist, then the default config for the plugin...skipping plugin");
+        return null;
+    }
+
+    if (shouldCreateConfigFile) await save(pluginName, config, true);
+    return config;
+}
+
 /*========================================================================================*/
 
 export {
     save,
     get,
+    getConfigJsonAndCreateConfigFileIfNeeded,
 };
