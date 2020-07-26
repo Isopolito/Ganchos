@@ -14,8 +14,8 @@ const templatePlugin: GanchosPlugin = {
     getEventTypes: (): EventType[] => ["add", "unlink"],
     getCategory: (): PluginCategory => 'System',
     isEligibleForSchedule: (): boolean => true,
-    //getOsTypesToRunOn: (): OsType[] => ['freebsd', 'linux', 'darwin', 'openbsd', 'sunos'],
-    getOsTypesToRunOn: (): OsType[] => ['win32'],
+    getOsTypesToRunOn: (): OsType[] => ['freebsd', 'linux', 'darwin', 'openbsd', 'sunos'],
+    //getOsTypesToRunOn: (): OsType[] => ['win32'],
     getDefaultConfigJson: (): string => ` 
     {
         "foo": "bar",
@@ -31,13 +31,13 @@ const templatePlugin: GanchosPlugin = {
     // *** Plugin logic goes in here
     run: (args: GanchosExecutionArguments) => {
         // Validated json string is passed in as config, if not available the default configuration defined above will be used
-        const config = JSON.parse(args.jsonConfig);
+        const configObj = JSON.parse(args.jsonConfig);
 
         // Example of how to log a message
         baseLogic.Log({
             severity: SeverityEnum.info,
             areaInPlugin: 'blah',
-            message: `Hello from Scheduled Plugin. Config value for 'runEveryXMinutes' - '${config.runEveryXMinutes}'`,
+            message: `Hello from Scheduled Plugin. Config value for 'runEveryXMinutes' - '${configObj.runEveryXMinutes}'`,
         });
     },
 }

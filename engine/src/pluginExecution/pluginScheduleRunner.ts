@@ -55,11 +55,10 @@ const runGanchosPluginAndReschedule = async (pluginName: string): Promise<void> 
 const getSchedulingEligibleGanchosPlugins = async (): Promise<string[]> => {
     const plugins = [] as string[];
     for (const pluginName of await fetchGanchosPluginNames(true)) {
-        const thread = await spawn(new Worker(pluginFolder + pluginName));
-        if (await thread.isEligibleForSchedule()) {
-            plugins.push(pluginName);
-        }
+        let thread = await spawn(new Worker(pluginFolder + pluginName));
+        if (await thread.isEligibleForSchedule()) plugins.push(pluginName);
         await Thread.terminate(thread);
+        thread = null;
     }
     return plugins;
 }
@@ -79,7 +78,7 @@ const beginScheduleMonitoring = async (): Promise<void> => {
 
         await Promise.all(tasks);
     } catch (e) {
-        await generalLogger.write(SeverityEnum.critical, logArea, `Error scheduling plugins - ${e}`, true);
+        await generalLogger.write(SeverityEnum.critical, logArea, `Exception - ${e}`, true);
     }
 }
 

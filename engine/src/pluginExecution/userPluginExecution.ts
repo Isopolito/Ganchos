@@ -1,15 +1,14 @@
 import path from "path"
 import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 import { performance } from 'perf_hooks';
-import { UserPlugin, pluginConfig, EventType, pluginLogger, SeverityEnum, systemUtil, osUtil } from "ganchos-shared"
+import {
+    UserPlugin, pluginConfig, EventType, pluginLogger,
+    SeverityEnum, systemUtil, osUtil, shouldEventBeIgnored
+} from "ganchos-shared"
 
 type CommandType = 'cmd' | 'bat' | 'nixShell' | 'exe' | 'nixEx';
 
 const logArea = "userPluginExecute";
-
-const shouldPluginIgnoreEvent = (event: string, eventsToListenFor: EventType[]): boolean => {
-    return !(eventsToListenFor && eventsToListenFor.includes(event as EventType));
-}
 
 const getCommandType = (binFileName: string): CommandType => {
     if (binFileName.endsWith('.cmd')) return 'cmd';
@@ -49,8 +48,8 @@ const prepareInputData = (data: any): string[] => {
 const executeNoTimer = async (userPlugin: UserPlugin, event: EventType, eventData: string): Promise<void> => {
     let spawned: ChildProcessWithoutNullStreams;
     try {
-        if (shouldPluginIgnoreEvent(event, userPlugin.eventTypes)) return;
-        if (!osUtil.isThisRunningOnOs(userPlugin.runOnlyOnOsTypes)) return;
+        if (shouldEventBeIgnored(event, userPlugin.eventTypes)) return;
+        if (!osUtil.shouldNotRunOnThisOs(userPlugin.runOnlyOnOsTypes)) return;
 
         const config = await pluginConfig.get(userPlugin.name, true) || userPlugin.defaultJsonConfig;
         const configObj = JSON.parse(config);

@@ -1,12 +1,11 @@
 import { spawn, Thread, Worker } from "threads";
 import { performance } from 'perf_hooks';
-import { osUtil, systemUtil, pluginLogger, SeverityEnum, GanchosExecutionArguments, PluginLogMessage, pluginConfig, EventType } from 'ganchos-shared';
+import {
+    osUtil, systemUtil, pluginLogger, SeverityEnum, GanchosExecutionArguments,
+    PluginLogMessage, pluginConfig, shouldEventBeIgnored,
+} from 'ganchos-shared';
 
 const logArea = 'ganchos execution';
-
-const shouldPluginIgnoreEvent = (event: string, eventsToListenFor: EventType[]): boolean => {
-    return !(eventsToListenFor && eventsToListenFor.includes(event as EventType));
-}
 
 const execute = async (pluginName: string, args: GanchosExecutionArguments): Promise<any> => {
     let thread;
@@ -21,18 +20,17 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
         args.jsonConfig = config;
         const configObj = JSON.parse(config);
 
-        if (args.eventType && args.eventType !== 'none' && shouldPluginIgnoreEvent(args.eventType, await thread.getEventTypes())) return configObj;
-        if (typeof thread.getOsTypesToRunOn === 'function' && !osUtil.isThisRunningOnOs(await thread.getOsTypesToRunOn())) {
-            return configObj;
-        }
+        if (args.eventType && args.eventType !== 'none' && shouldEventBeIgnored(args.eventType, await thread.getEventTypes())) return configObj;
+        if (typeof thread.getOsTypesToRunOn === 'function' && osUtil.shouldNotRunOnThisOs(await thread.getOsTypesToRunOn())) return configObj;
 
-        await systemUtil.waitInMinutes(configObj.runDelayInMinutes || 0);
+        if (configObj.runDelayInMinutes) await systemUtil.waitInMinutes(configObj.runDelayInMinutes);
+
+        await thread.init();
 
         thread.getLogSubscription().subscribe((message: PluginLogMessage) => {
             pluginLogger.write(message.severity, pluginName, message.areaInPlugin, message.message);
         });
 
-        await thread.init();
         const beforeTime = performance.now();
         await thread.run(args);
         const afterTime = performance.now();
