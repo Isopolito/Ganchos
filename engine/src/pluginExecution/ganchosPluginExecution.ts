@@ -38,7 +38,7 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
 
         return configObj;
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, e);
+        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception - ${e}`);
         return null;
     } finally {
         await Thread.terminate(thread);

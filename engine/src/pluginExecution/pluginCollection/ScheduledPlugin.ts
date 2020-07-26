@@ -7,7 +7,7 @@ import {
 
 let baseLogic: GanchosPluginBaseLogic;
 
-const templatePlugin: GanchosPlugin = {
+const scheduledPlugin: GanchosPlugin = {
     // Configure this section
     getName: (): string => "ScheduledPlugin",
     getDescription: (): string => "Description",
@@ -42,4 +42,4 @@ const templatePlugin: GanchosPlugin = {
     },
 }
 
-expose(templatePlugin as any);
+expose(scheduledPlugin as any);
