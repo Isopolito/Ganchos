@@ -14,8 +14,7 @@ const scheduledPlugin: GanchosPlugin = {
     getEventTypes: (): EventType[] => ["add", "unlink"],
     getCategory: (): PluginCategory => 'System',
     isEligibleForSchedule: (): boolean => true,
-    getOsTypesToRunOn: (): OsType[] => ['freebsd', 'linux', 'darwin', 'openbsd', 'sunos'],
-    //getOsTypesToRunOn: (): OsType[] => ['win32'],
+    getOsTypesToRunOn: (): OsType[] => [],
     getDefaultConfigJson: (): string => ` 
     {
         "foo": "bar",
