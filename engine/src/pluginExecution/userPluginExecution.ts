@@ -85,8 +85,9 @@ const executeNoTimer = async (userPlugin: UserPlugin, event: EventType, eventDat
 }
 
 const execute = async (userPlugin: UserPlugin, event: EventType, eventData: string): Promise<void> => {
-    const config = await pluginConfig.get(userPlugin.name, true) || userPlugin.defaultJsonConfig;
-    const configObj = JSON.parse(config);
+    const config = await pluginConfig.get(userPlugin.name, true);
+    const configObj = config ? JSON.parse(config) : userPlugin.defaultJsonConfig;
+
     if (configObj !== undefined && configObj.enabled === false) return;
 
     if (configObj.runDelayInMinutes) await systemUtil.waitInMinutes(configObj.runDelayInMinutes);

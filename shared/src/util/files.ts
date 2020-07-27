@@ -10,6 +10,11 @@ const touch = async (configPath: string) => {
     sh.touch(configPath);
 }
 
+const getEnvBasedAppName = (): string => {
+    const env = process.env.NODE_ENV || 'dev'
+    return env === 'prod' ? generalConstants.AppDir : `${generalConstants.AppDir}-${env}`;
+}
+
 const doesPathExist = (pathToCheck: string) => sh.test('-f', pathToCheck) || sh.test('-d', pathToCheck);
 
 const getAllFiles = async (paths: string[], fileNameEndsWith?: string): Promise<string[]> => {
@@ -29,12 +34,12 @@ const getAllFiles = async (paths: string[], fileNameEndsWith?: string): Promise<
 
 const removeExtension = (fileName: string): string => fileName ? path.parse(fileName).name : '';
 
-const getAppBaseDir = (): string => path.join(os.homedir(), generalConstants.AppDir);
+const getAppBaseDir = (): string => path.join(os.homedir(), getEnvBasedAppName());
 
-const getConfigPath = (): string => path.join(os.homedir(), generalConstants.AppDir, generalConstants.Config, generalConstants.General);
+const getConfigPath = (): string => path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config, generalConstants.General);
 
 const getPluginConfigPath = (pluginName: string): string => {
-    return path.join(os.homedir(), generalConstants.AppDir, generalConstants.Config,
+    return path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config,
         generalConstants.Plugin, pluginName);
 }
 

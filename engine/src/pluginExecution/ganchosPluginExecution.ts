@@ -20,6 +20,7 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
         args.jsonConfig = config;
         const configObj = JSON.parse(config);
 
+        if (configObj.enabled !== undefined && configObj.enabled === false) return configObj;
         if (args.eventType && args.eventType !== 'none' && shouldEventBeIgnored(args.eventType, await thread.getEventTypes())) return configObj;
         if (typeof thread.getOsTypesToRunOn === 'function' && osUtil.shouldNotRunOnThisOs(await thread.getOsTypesToRunOn())) return configObj;
 
