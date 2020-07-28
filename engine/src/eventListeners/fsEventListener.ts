@@ -42,9 +42,14 @@ const run = async () => {
 	}
 }
 
+const updateWatchPaths = async (paths: string[]|null): Promise<void> => {
+
+}
+
 /*========================================================================================*/
 
 export {
 	run,
-	stop,
+    stop,
+    updateWatchPaths,
 };

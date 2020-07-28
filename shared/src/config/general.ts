@@ -1,10 +1,12 @@
-import { promises as fs } from 'fs';
+import  fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import * as properLockFile from 'proper-lockfile';
 import * as path from 'path';
 import * as shelljs from 'shelljs';
 
 import { getConfigPath, doesPathExist, touch, getAppBaseDir } from '../util/files';
 import { generalLogger, SeverityEnum, validationUtil } from '../';
+import * as constants from '../constants/names';
 
 /*========================================================================================*/
 
@@ -27,8 +29,7 @@ const implementsGeneralConfig = (object: any): object is GeneralConfig => {
     const heartBeatPollIntervalInSeconds = 'heartBeatPollIntervalInSeconds' in object;
     const userPluginMetaExtension = 'userPluginMetaExtension' in object;
 
-    return lastUpdatedTimeStamp && userPluginMetaExtension
-        && watchPaths && userPluginPaths && heartBeatPollIntervalInSeconds;
+    return lastUpdatedTimeStamp && userPluginMetaExtension && watchPaths && userPluginPaths && heartBeatPollIntervalInSeconds;
 }
 
 /*========================================================================================*/
@@ -41,7 +42,7 @@ let inMemoryConfig: GeneralConfig;
 const isConfigInMemoryMostRecent = async (configPath: string): Promise<Boolean> => {
     if (!inMemoryConfig) return false;
 
-    const stats = await fs.stat(configPath);
+    const stats = await fsPromises.stat(configPath);
 
     // True if inMemoryConfig was updated after the config file was last written to disk
     return stats.mtime.getTime() <= inMemoryConfig.lastUpdatedTimeStamp;
@@ -72,8 +73,8 @@ const get = async (): Promise<GeneralConfig | null> => {
 
         if (await isConfigInMemoryMostRecent(generalConfigFilePath)) return inMemoryConfig;
 
-        const rawData = await fs.readFile(generalConfigFilePath);
-        const config = validationUtil.validateJson(rawData.toString());
+        const rawData = await fsPromises.readFile(generalConfigFilePath);
+        const config = validationUtil.parseAndValidatedJson(rawData.toString());
         if (!implementsGeneralConfig(config)) {
             await generalLogger.write(SeverityEnum.critical, logArea, `The JSON in ${generalConfigFilePath} is not a valid GeneralConfig type`, true);
             return null;
@@ -96,7 +97,7 @@ const save = async (config: GeneralConfig) => {
         doesPathExist(configPath) || await touch(configPath);
 
         const release = await properLockFile.lock(configPath, { retries: 5 });
-        await fs.writeFile(configPath, JSON.stringify(config, null, 4));
+        await fsPromises.writeFile(configPath, JSON.stringify(config, null, 4));
         release();
 
         inMemoryConfig = config;
@@ -106,9 +107,17 @@ const save = async (config: GeneralConfig) => {
     }
 }
 
+const watch = async (callback: (configObj: any) => Promise<void>): Promise<void> => {
+    const configPath = getConfigPath();
+    fs.watch(configPath, async (event, filename) => {
+        if (filename && filename === constants.General) await callback(await get());
+    });
+}
+
 /*========================================================================================*/
 
 export {
+    watch,
     save,
     get,
     getAndCreateDefaultIfNotExist,

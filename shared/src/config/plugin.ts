@@ -1,8 +1,9 @@
-import { promises as fs } from 'fs';
+import fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import * as properLockFile from 'proper-lockfile';
-import { getPluginConfigPath, doesPathExist, touch, removeExtension } from '../util/files';
+import { getPluginConfigPath, doesPathExist, touch, removeExtension, getPluginConfigBasePath } from '../util/files';
 import { generalLogger, SeverityEnum, pluginLogger } from '..';
-import { validateJson } from '../util/validation';
+import { parseAndValidatedJson } from '../util/validation';
 
 const logArea = "plugin config";
 // NOTE: If it became an necessary, plugin json config can be cached for each plugin
@@ -13,9 +14,9 @@ const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<st
     if (!doesPathExist(configPath)) return null;
 
     try {
-        const rawData = await fs.readFile(configPath);
+        const rawData = await fsPromises.readFile(configPath);
         const jsonString = rawData.toString();
-        if (!shouldValidateJson || validateJson(jsonString)) {
+        if (!shouldValidateJson || parseAndValidatedJson(jsonString)) {
             return jsonString;
         } else {
             await generalLogger.write(SeverityEnum.error, `${logArea} - get`, `Invalid json in plugin config file for '${pluginName}'`, true);
@@ -27,7 +28,7 @@ const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<st
     }
 }
 
-const save = async (pluginName: string, jsonConfig: string|null, shouldEnable?: boolean) => {
+const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?: boolean) => {
     if (!jsonConfig) {
         await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `pluginName and jsonConfig required`, true);
         return null;
@@ -45,19 +46,19 @@ const save = async (pluginName: string, jsonConfig: string|null, shouldEnable?: 
         }
 
         const release = await properLockFile.lock(configPath, { retries: 5 });
-        await fs.writeFile(configPath, jsonConfig);
+        await fsPromises.writeFile(configPath, jsonConfig);
         release();
     } catch (e) {
         await generalLogger.write(SeverityEnum.error, `${logArea} - save`, e, true);
     }
 }
 
-const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defaultJsonConfig: string): Promise<string|null> => {
+const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defaultJsonConfig: string): Promise<string | null> => {
     let config = await get(pluginName);
     const shouldCreateConfigFile = !config;
     if (shouldCreateConfigFile) config = defaultJsonConfig;
 
-    if (!validateJson(config)) {
+    if (!parseAndValidatedJson(config)) {
         await pluginLogger.write(SeverityEnum.error, pluginName, logArea, "Invalid JSON in config file, or if that doesn't exist, then the default config for the plugin...skipping plugin");
         return null;
     }
@@ -66,9 +67,20 @@ const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defa
     return config;
 }
 
+const watch = async (callback : (pluginConfigObj: any) => Promise<void>): Promise<void> => {
+    const configPath = getPluginConfigBasePath();
+    fs.watch(configPath, async (event, fileName) => {
+        if (fileName) {
+            const pluginJson = await get(fileName, true);
+            await callback(pluginJson ? JSON.parse(pluginJson) : null);
+        }
+    });
+}
+
 /*========================================================================================*/
 
 export {
+    watch,
     save,
     get,
     getConfigJsonAndCreateConfigFileIfNeeded,

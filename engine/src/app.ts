@@ -1,6 +1,7 @@
-import { generalLogger, SeverityEnum } from 'ganchos-shared'
+import { pluginConfig, generalConfig, generalLogger, SeverityEnum } from 'ganchos-shared'
 import { beginScheduleMonitoring } from './pluginExecution/pluginScheduleRunner';
-import { run as runFsEventListener, stop as stopFsEventListener } from './eventListeners/fsEventListener'
+import * as pluginFinder from './pluginExecution/pluginsFinder';
+import { run as runFsEventListener, stop as stopFsEventListener, updateWatchPaths } from './eventListeners/fsEventListener'
 
 const logArea = "main";
 
@@ -13,11 +14,35 @@ const logArea = "main";
 
         const tasks = [];
 
-        tasks.push(runFsEventListener());
         await generalLogger.write(SeverityEnum.info, logArea, "Started File System Event Listener", true);
+        tasks.push(runFsEventListener());
 
-        tasks.push(beginScheduleMonitoring());
         await generalLogger.write(SeverityEnum.info, logArea, "Begin plugin runtime schedules", true);
+        tasks.push(beginScheduleMonitoring());
+
+        await generalLogger.write(SeverityEnum.info, logArea, "Watching general config files for changes", true);
+        tasks.push(generalConfig.watch(async configObj => {
+            // Call logic that will look for path changes in user plugins and add or remove plugins accordingly
+        }));
+
+        await generalLogger.write(SeverityEnum.info, logArea, "Watching user plugin config files for changes", true);
+        tasks.push(pluginConfig.watch(async pluginConfigObj => {
+            if (!pluginConfigObj) {
+                await generalLogger.write(SeverityEnum.warning, logArea, "Detected bad user plugin config...skipping", true);
+                return;
+            }
+            await updateWatchPaths(pluginConfigObj.watchPaths as string[]);
+        }));
+
+        await generalLogger.write(SeverityEnum.info, logArea, "Monitoring ganchos plugin paths for changes", true);
+        tasks.push(pluginFinder.watchGanchosPlugins(_ => {
+            // Call logic that will monitor ganchos plugin path and schedule new ones, etc
+        }));
+
+        await generalLogger.write(SeverityEnum.info, logArea, "Monitoring user plugin paths for changes", true);
+        tasks.push(pluginFinder.watchUserPlugins(_ => {
+            // Call logic that will monitor users plugin path and schedule new ones, etc
+        }));
 
         await Promise.all(tasks);
     } catch (e) {
