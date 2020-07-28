@@ -31,7 +31,7 @@ const logArea = "main";
                 await generalLogger.write(SeverityEnum.warning, logArea, "Detected bad user plugin config...skipping", true);
                 return;
             }
-            await updateWatchPaths(pluginConfigObj.watchPaths as string[]);
+            if (pluginConfigObj.watchPaths) await updateWatchPaths(pluginConfigObj.watchPaths as string[]);
         }));
 
         await generalLogger.write(SeverityEnum.info, logArea, "Monitoring ganchos plugin paths for changes", true);

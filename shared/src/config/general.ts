@@ -10,7 +10,16 @@ import * as constants from '../constants/names';
 
 /*========================================================================================*/
 
+// Cached for faster access (updated on get())
+let cachedConfig: GeneralConfig;
+
+// Config file from last save (updated on save())
+// This is used to compare what's on disk to what's in memory
+let configOnLastSave: GeneralConfig;
+
 const logArea = "general config";
+
+/*========================================================================================*/
 
 interface GeneralConfig {
     lastUpdatedTimeStamp: Number;
@@ -32,20 +41,13 @@ const implementsGeneralConfig = (object: any): object is GeneralConfig => {
     return lastUpdatedTimeStamp && userPluginMetaExtension && watchPaths && userPluginPaths && heartBeatPollIntervalInSeconds;
 }
 
-/*========================================================================================*/
-
-// Keep the most up to date config here in memory for easy access
-let inMemoryConfig: GeneralConfig;
-
-/*========================================================================================*/
-
 const isConfigInMemoryMostRecent = async (configPath: string): Promise<Boolean> => {
-    if (!inMemoryConfig) return false;
+    if (!cachedConfig) return false;
 
     const stats = await fsPromises.stat(configPath);
 
     // True if inMemoryConfig was updated after the config file was last written to disk
-    return stats.mtime.getTime() <= inMemoryConfig.lastUpdatedTimeStamp;
+    return stats.mtime.getTime() <= cachedConfig.lastUpdatedTimeStamp;
 }
 
 const getAndCreateDefaultIfNotExist = async (): Promise<GeneralConfig | null> => {
@@ -71,7 +73,7 @@ const get = async (): Promise<GeneralConfig | null> => {
     try {
         if (!doesPathExist(generalConfigFilePath)) return null;
 
-        if (await isConfigInMemoryMostRecent(generalConfigFilePath)) return inMemoryConfig;
+        if (await isConfigInMemoryMostRecent(generalConfigFilePath)) return cachedConfig;
 
         const rawData = await fsPromises.readFile(generalConfigFilePath);
         const config = validationUtil.parseAndValidatedJson(rawData.toString());
@@ -80,8 +82,8 @@ const get = async (): Promise<GeneralConfig | null> => {
             return null;
         }
 
-        inMemoryConfig = config;
-        inMemoryConfig.lastUpdatedTimeStamp = Date.now();
+        cachedConfig = config;
+        cachedConfig.lastUpdatedTimeStamp = Date.now();
         return config;
     } catch (e) {
         await generalLogger.write(SeverityEnum.critical, logArea, `Can't create GeneralConfig with JSON from file - ${generalConfigFilePath}: ${e}`, true);
@@ -100,8 +102,9 @@ const save = async (config: GeneralConfig) => {
         await fsPromises.writeFile(configPath, JSON.stringify(config, null, 4));
         release();
 
-        inMemoryConfig = config;
-        inMemoryConfig.lastUpdatedTimeStamp = Date.now();
+        cachedConfig = config;
+        cachedConfig.lastUpdatedTimeStamp = Date.now();
+        configOnLastSave = config;
     } catch (e) {
         await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `${e}`, true);
     }
@@ -114,12 +117,15 @@ const watch = async (callback: (configObj: any) => Promise<void>): Promise<void>
     });
 }
 
+const getFromMemory = (): GeneralConfig => configOnLastSave;
+
 /*========================================================================================*/
 
 export {
     watch,
     save,
     get,
-    getAndCreateDefaultIfNotExist,
+    getFromMemory,
     implementsGeneralConfig,
+    getAndCreateDefaultIfNotExist,
 };

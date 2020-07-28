@@ -1,12 +1,16 @@
 import fs from 'fs';
 import { promises as fsPromises } from 'fs';
 import * as properLockFile from 'proper-lockfile';
-import { getPluginConfigPath, doesPathExist, touch, removeExtension, getPluginConfigBasePath } from '../util/files';
 import { generalLogger, SeverityEnum, pluginLogger } from '..';
 import { parseAndValidatedJson } from '../util/validation';
+import { getPluginConfigPath, doesPathExist, touch, removeExtension, getPluginConfigBasePath } from '../util/files';
+
+/*========================================================================================*/
 
 const logArea = "plugin config";
-// NOTE: If it became an necessary, plugin json config can be cached for each plugin
+let pluginConfigFromLastSave: { [key: string]: string } = {}
+
+/*========================================================================================*/
 
 const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<string | null> => {
     pluginName = removeExtension(pluginName);
@@ -33,6 +37,8 @@ const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?
         await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `pluginName and jsonConfig required`, true);
         return null;
     }
+
+    pluginConfigFromLastSave[pluginName] = jsonConfig;
 
     try {
         pluginName = removeExtension(pluginName);
@@ -77,11 +83,14 @@ const watch = async (callback : (pluginConfigObj: any) => Promise<void>): Promis
     });
 }
 
+const getFromMemory = (pluginName: string): string => pluginConfigFromLastSave[pluginName];
+
 /*========================================================================================*/
 
 export {
     watch,
     save,
     get,
+    getFromMemory,
     getConfigJsonAndCreateConfigFileIfNeeded,
 };
