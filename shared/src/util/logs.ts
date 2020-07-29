@@ -2,7 +2,7 @@ import * as path from 'path';
 import moment from 'moment';
 
 import * as generalConstants from '../constants/names';
-import * as fileUtil from '../util/files';
+import * as fileUtil from './files';
 
 /*========================================================================================*/
 

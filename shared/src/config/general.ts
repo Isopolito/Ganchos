@@ -1,4 +1,5 @@
 import  fs from 'fs';
+import chokidar from 'chokidar';
 import { promises as fsPromises } from 'fs';
 import * as properLockFile from 'proper-lockfile';
 import * as path from 'path';
@@ -110,12 +111,21 @@ const save = async (config: GeneralConfig) => {
     }
 }
 
-const watch = async (callback: (configObj: any) => Promise<void>): Promise<void> => {
+let watcher: chokidar.FSWatcher;
+const watch = async (callback : (eventName: string, configFile: string) => Promise<void>): Promise<void> => {
     const configPath = getConfigPath();
-    fs.watch(configPath, async (event, filename) => {
-        if (filename && filename === constants.General) await callback(await get());
+    watcher = chokidar.watch(configPath, {
+        ignored: /(^|[/\\])\../,
+        persistent: true,
+        usePolling: false,
+        ignoreInitial: true,
     });
+
+    watcher.on('change', async (event: string, filePath: string) => await callback(event, filePath));
+    watcher.on('error', async error => await generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
 }
+
+const endWatch = (): Promise<void> => watcher && watcher.close();
 
 const getFromMemory = (): GeneralConfig => configOnLastSave;
 
@@ -123,6 +133,7 @@ const getFromMemory = (): GeneralConfig => configOnLastSave;
 
 export {
     watch,
+    endWatch,
     save,
     get,
     getFromMemory,

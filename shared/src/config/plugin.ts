@@ -1,4 +1,5 @@
-import fs from 'fs';
+import chokidar from 'chokidar';
+import * as differ from 'deep-diff';
 import { promises as fsPromises } from 'fs';
 import * as properLockFile from 'proper-lockfile';
 import { generalLogger, SeverityEnum, pluginLogger } from '..';
@@ -8,7 +9,7 @@ import { getPluginConfigPath, doesPathExist, touch, removeExtension, getPluginCo
 /*========================================================================================*/
 
 const logArea = "plugin config";
-let pluginConfigFromLastSave: { [key: string]: string } = {}
+let pluginInMemory: { [key: string]: string } = {}
 
 /*========================================================================================*/
 
@@ -20,7 +21,9 @@ const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<st
     try {
         const rawData = await fsPromises.readFile(configPath);
         const jsonString = rawData.toString();
+
         if (!shouldValidateJson || parseAndValidatedJson(jsonString)) {
+            if (!pluginInMemory[pluginName]) pluginInMemory[pluginName] = jsonString;
             return jsonString;
         } else {
             await generalLogger.write(SeverityEnum.error, `${logArea} - get`, `Invalid json in plugin config file for '${pluginName}'`, true);
@@ -38,7 +41,7 @@ const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?
         return null;
     }
 
-    pluginConfigFromLastSave[pluginName] = jsonConfig;
+    pluginInMemory[pluginName] = jsonConfig;
 
     try {
         pluginName = removeExtension(pluginName);
@@ -73,24 +76,49 @@ const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defa
     return config;
 }
 
-const watch = async (callback : (pluginConfigObj: any) => Promise<void>): Promise<void> => {
+let watcher: chokidar.FSWatcher;
+const watch = async (callback: (eventName: string, pluginPath: string) => Promise<void>): Promise<void> => {
+    if (watcher) return;
+
     const configPath = getPluginConfigBasePath();
-    fs.watch(configPath, async (event, fileName) => {
-        if (fileName) {
-            const pluginJson = await get(fileName, true);
-            await callback(pluginJson ? JSON.parse(pluginJson) : null);
-        }
+    watcher = chokidar.watch(configPath, {
+        //ignored: /(^|[/\\])\../,
+        persistent: true,
+        usePolling: false,
+        ignoreInitial: true,
     });
+
+    watcher.on('all', async (event: string, filePath: string) => await callback(event, filePath));
+    watcher.on('error', async error => await generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
 }
 
-const getFromMemory = (pluginName: string): string => pluginConfigFromLastSave[pluginName];
+const endWatch = (): Promise<void> => watcher && watcher.close();
+
+const getFromMemory = (pluginName: string): string => pluginInMemory[pluginName];
+
+const configSettingsDiffBetweenFileAndMem = async (pluginName: string): Promise<string[]> => {
+    const inMemoryConfig = getFromMemory(pluginName);
+    if (!inMemoryConfig) return [];
+
+    const fromFile = await get(pluginName);
+    if (!fromFile) return [];
+
+    const diffs = differ.diff(JSON.parse(fromFile), JSON.parse(inMemoryConfig));
+    if (!diffs) return [];
+
+    return diffs.reduce((paths: any[], diff) => {
+        if (diff.path) paths = paths.concat(diff.path);
+        return paths;
+    }, []);
+}
 
 /*========================================================================================*/
 
 export {
     watch,
+    endWatch,
     save,
     get,
-    getFromMemory,
+    configSettingsDiffBetweenFileAndMem,
     getConfigJsonAndCreateConfigFileIfNeeded,
 };
