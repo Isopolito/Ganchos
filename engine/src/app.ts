@@ -1,21 +1,35 @@
+import path from 'path';
 import { pluginConfig, generalConfig, generalLogger, SeverityEnum } from 'ganchos-shared'
 import { beginScheduleMonitoring } from './pluginExecution/pluginScheduleRunner';
 import * as pluginFinder from './pluginExecution/pluginsFinder';
-import { run as runFsEventListener, stop as stopFsEventListener, updateWatchPaths } from './eventListeners/fsEventListener'
+import { start as startFsEventListener, stop as stopFsEventListener } from './eventListeners/fsEventListener'
 
 const logArea = "main";
 
+const refreshListenersIfWatchPathChanges = async (pluginPath: string): Promise<void> => {
+    const pluginName = path.basename(pluginPath);
+    const diffs = await pluginConfig.configSettingsDiffBetweenFileAndMem(pluginName);
+    if (diffs && diffs.includes('watchPaths')) {
+        await stopFsEventListener();
+        await startFsEventListener();
+    }
+}
+
+const shutdown = async (): Promise<void> => {
+    await stopFsEventListener();
+    await pluginConfig.endWatch();
+    await generalConfig.endWatch();
+    await generalLogger.write(SeverityEnum.info, logArea, "SIGINT - Application is shutting down", true);
+}
+
 (async () => {
     try {
-        process.on('SIGINT', async () => {
-            stopFsEventListener();
-            await generalLogger.write(SeverityEnum.info, logArea, "SIGINT - Application is shutting down", true);
-        });
+        process.on('SIGINT', async () => await shutdown());
 
         const tasks = [];
 
         await generalLogger.write(SeverityEnum.info, logArea, "Started File System Event Listener", true);
-        tasks.push(runFsEventListener());
+        tasks.push(startFsEventListener());
 
         await generalLogger.write(SeverityEnum.info, logArea, "Begin plugin runtime schedules", true);
         tasks.push(beginScheduleMonitoring());
@@ -26,13 +40,7 @@ const logArea = "main";
         }));
 
         await generalLogger.write(SeverityEnum.info, logArea, "Watching user plugin config files for changes", true);
-        tasks.push(pluginConfig.watch(async pluginConfigObj => {
-            if (!pluginConfigObj) {
-                await generalLogger.write(SeverityEnum.warning, logArea, "Detected bad user plugin config...skipping", true);
-                return;
-            }
-            if (pluginConfigObj.watchPaths) await updateWatchPaths(pluginConfigObj.watchPaths as string[]);
-        }));
+        tasks.push(pluginConfig.watch((_, pluginPath) => refreshListenersIfWatchPathChanges(pluginPath)));
 
         await generalLogger.write(SeverityEnum.info, logArea, "Monitoring ganchos plugin paths for changes", true);
         tasks.push(pluginFinder.watchGanchosPlugins(_ => {
@@ -50,3 +58,6 @@ const logArea = "main";
         process.exit(1);
     }
 })();
+
+
+

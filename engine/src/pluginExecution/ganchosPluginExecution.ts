@@ -2,10 +2,29 @@ import { spawn, Thread, Worker } from "threads";
 import { performance } from 'perf_hooks';
 import {
     osUtil, systemUtil, pluginLogger, SeverityEnum, GanchosExecutionArguments,
-    PluginLogMessage, pluginConfig, shouldEventBeIgnored,
+    PluginLogMessage, pluginConfig, shouldEventBeIgnored, validationUtil,
 } from 'ganchos-shared';
 
 const logArea = 'ganchos execution';
+
+const getAndValidateDefaultConfig = async (pluginName: string): Promise<string> => {
+    let thread;
+    try {
+        thread = await spawn(new Worker(`./pluginCollection/${pluginName}`));
+        const config = await thread.getDefaultConfigJson();
+
+        // Seems roundabout, but it's to validate json and strip out comments
+        const configObj = validationUtil.parseAndValidatedJson(config, true);
+        return JSON.stringify(configObj);
+
+    } catch (e) {
+        await pluginLogger.write(SeverityEnum.info, pluginName, logArea, `Exception - ${e}`);
+    }
+    finally {
+        await Thread.terminate(thread);
+        thread = null;
+    }
+}
 
 const execute = async (pluginName: string, args: GanchosExecutionArguments): Promise<any> => {
     let thread;
@@ -49,4 +68,5 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
 
 export {
     execute,
+    getAndValidateDefaultConfig,
 }
