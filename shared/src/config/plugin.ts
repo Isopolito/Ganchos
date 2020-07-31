@@ -1,4 +1,4 @@
-import chokidar from 'chokidar';
+import chokidar, { FSWatcher } from 'chokidar';
 import * as differ from 'deep-diff';
 import { promises as fsPromises } from 'fs';
 import * as properLockFile from 'proper-lockfile';
@@ -92,7 +92,12 @@ const watch = async (callback: (eventName: string, pluginPath: string) => Promis
     watcher.on('error', async error => await generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
 }
 
-const endWatch = (): Promise<void> => watcher && watcher.close();
+const endWatch = async (): Promise<void> => {
+    if (watcher) {
+        await watcher.close();
+        (watcher as any) = null;
+    }
+}
 
 const getFromMemory = (pluginName: string): string => pluginInMemory[pluginName];
 

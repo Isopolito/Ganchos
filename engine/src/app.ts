@@ -2,34 +2,37 @@ import path from 'path';
 import { pluginConfig, generalConfig, generalLogger, SeverityEnum } from 'ganchos-shared'
 import { beginScheduleMonitoring } from './pluginExecution/pluginScheduleRunner';
 import * as pluginFinder from './pluginExecution/pluginsFinder';
-import { start as startFsEventListener, stop as stopFsEventListener } from './eventListeners/fsEventListener'
+import { stopIfNeededAndStart as stopStartFsEventListener, stop as stopFsEventListener } from './eventListeners/fsEventListener'
 
 const logArea = "main";
 
 const refreshListenersIfWatchPathChanges = async (pluginPath: string): Promise<void> => {
     const pluginName = path.basename(pluginPath);
     const diffs = await pluginConfig.configSettingsDiffBetweenFileAndMem(pluginName);
-    if (diffs && diffs.includes('watchPaths')) {
-        await stopFsEventListener();
-        await startFsEventListener();
-    }
+    if (diffs && diffs.includes('watchPaths')) await stopStartFsEventListener();
 }
 
 const shutdown = async (): Promise<void> => {
-    await stopFsEventListener();
+    await generalLogger.write(SeverityEnum.info, logArea, "SIGINT - End file watching", true);
     await pluginConfig.endWatch();
     await generalConfig.endWatch();
-    await generalLogger.write(SeverityEnum.info, logArea, "SIGINT - Application is shutting down", true);
+
+    await generalLogger.write(SeverityEnum.info, logArea, "SIGINT - Shutting down fs event listener", true);
+    await stopFsEventListener();
+
+    await generalLogger.write(SeverityEnum.info, logArea, "Goodbye", true);
 }
 
 (async () => {
     try {
         process.on('SIGINT', async () => await shutdown());
+        process.on('SIGTERM', async () => await shutdown());
+        process.on('SIGQUIT', async () => await shutdown());
 
         const tasks = [];
 
         await generalLogger.write(SeverityEnum.info, logArea, "Started File System Event Listener", true);
-        tasks.push(startFsEventListener());
+        tasks.push(stopStartFsEventListener());
 
         await generalLogger.write(SeverityEnum.info, logArea, "Begin plugin runtime schedules", true);
         tasks.push(beginScheduleMonitoring());
@@ -58,6 +61,3 @@ const shutdown = async (): Promise<void> => {
         process.exit(1);
     }
 })();
-
-
-

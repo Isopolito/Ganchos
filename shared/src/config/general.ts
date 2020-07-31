@@ -1,4 +1,3 @@
-import  fs from 'fs';
 import chokidar from 'chokidar';
 import { promises as fsPromises } from 'fs';
 import * as properLockFile from 'proper-lockfile';
@@ -7,7 +6,6 @@ import * as shelljs from 'shelljs';
 
 import { getConfigPath, doesPathExist, touch, getAppBaseDir } from '../util/files';
 import { generalLogger, SeverityEnum, validationUtil } from '../';
-import * as constants from '../constants/names';
 
 /*========================================================================================*/
 
@@ -25,7 +23,6 @@ const logArea = "general config";
 interface GeneralConfig {
     lastUpdatedTimeStamp: Number;
     userPluginPaths: string[];
-    watchPaths: string[];
     heartBeatPollIntervalInSeconds: Number;
     userPluginMetaExtension: string;
 }
@@ -35,11 +32,10 @@ const implementsGeneralConfig = (object: any): object is GeneralConfig => {
 
     const lastUpdatedTimeStamp = 'lastUpdatedTimeStamp' in object;
     const userPluginPaths = 'userPluginPaths' in object;
-    const watchPaths = 'watchPaths' in object;
     const heartBeatPollIntervalInSeconds = 'heartBeatPollIntervalInSeconds' in object;
     const userPluginMetaExtension = 'userPluginMetaExtension' in object;
 
-    return lastUpdatedTimeStamp && userPluginMetaExtension && watchPaths && userPluginPaths && heartBeatPollIntervalInSeconds;
+    return lastUpdatedTimeStamp && userPluginMetaExtension && userPluginPaths && heartBeatPollIntervalInSeconds;
 }
 
 const isConfigInMemoryMostRecent = async (configPath: string): Promise<Boolean> => {
@@ -55,11 +51,8 @@ const getAndCreateDefaultIfNotExist = async (): Promise<GeneralConfig | null> =>
     const configPath = getConfigPath();
     if (doesPathExist(configPath)) return await get();
 
-    const defaultConfig: GeneralConfig = {
-        heartBeatPollIntervalInSeconds: 5,
-        watchPaths: [],
-        userPluginPaths: [path.join(getAppBaseDir(), 'plugins')],
-        lastUpdatedTimeStamp: 0,
+    const defaultConfig: GeneralConfig = { heartBeatPollIntervalInSeconds: 5,
+        userPluginPaths: [path.join(getAppBaseDir(), 'plugins')], lastUpdatedTimeStamp: 0,
         userPluginMetaExtension: 'meta',
     };
 
@@ -125,7 +118,12 @@ const watch = async (callback : (eventName: string, configFile: string) => Promi
     watcher.on('error', async error => await generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
 }
 
-const endWatch = (): Promise<void> => watcher && watcher.close();
+const endWatch = async (): Promise<void> => {
+    if (watcher) {
+        await watcher.close();
+        (watcher as any) = null;
+    }
+}
 
 const getFromMemory = (): GeneralConfig => configOnLastSave;
 

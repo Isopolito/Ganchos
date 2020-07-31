@@ -24,7 +24,12 @@ const scheduledPlugin: GanchosPlugin = {
 
     // This section shouldn't need to change
     init: () => { baseLogic = new GanchosPluginBaseLogic() },
-    tearDown: () => baseLogic.tearDown(),
+    tearDown: () => {
+        if (baseLogic) {
+            baseLogic.tearDown();
+            baseLogic = null;
+        }
+    },
     getLogSubscription: (): Observable<PluginLogMessage> => baseLogic.getLogSubscription(),
 
     // *** Plugin logic goes in here

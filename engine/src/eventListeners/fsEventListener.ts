@@ -28,20 +28,20 @@ const processAllPluginsForWatchPaths = async (): Promise<string[]> => {
         tasks.push(getAndVerifyPluginWatchPaths(pluginName, configString));
     }
 
-    await Promise.all(tasks);
-
-    // TODO: Pull out watch paths array from task results
-    return [];
+    const results = await Promise.all(tasks);
+    return results.reduce((arr, val) => [...arr, ...val], []);
 }
 
 const isPathLegit = (path: string): boolean => {
     if (fileUtil.doesPathExist(path)) return true;
 
-    generalLogger.writeSync(SeverityEnum.error, "event listener", `Watch Path ${path} is not accessible...skipping`);
+    generalLogger.writeSync(SeverityEnum.error, "event listener", `Watch Path '${path}' is not accessible...skipping`);
     return false;
 }
 
-const watchPaths = (pathsToWatch: string[]) => {
+const watchPaths = async (pathsToWatch: string[]): Promise<void> => {
+    if (watcher) await stop();
+
     watcher = chokidar.watch(pathsToWatch, {
         ignored: /(^|[/\\])\../,
         persistent: true,
@@ -55,12 +55,17 @@ const watchPaths = (pathsToWatch: string[]) => {
 
 /*========================================================================================*/
 
-const stop = (): Promise<void> => watcher && watcher.close();
+const stop = async (): Promise<void> => {
+    if (!watcher) return;
 
-const start = async (): Promise<void> => {
+    await watcher.close();
+    watcher = null;
+}
+
+const stopIfNeededAndStart = async (): Promise<void> => {
     try {
         const verifiedPaths = await processAllPluginsForWatchPaths();
-        verifiedPaths.length && watchPaths(verifiedPaths);
+        verifiedPaths.length && await watchPaths(verifiedPaths);
     } catch (e) {
         await generalLogger.write(SeverityEnum.error, "event listener", `Error in 'run': ${e}`);
     }
@@ -69,6 +74,6 @@ const start = async (): Promise<void> => {
 /*========================================================================================*/
 
 export {
-    start,
+    stopIfNeededAndStart,
     stop,
 };

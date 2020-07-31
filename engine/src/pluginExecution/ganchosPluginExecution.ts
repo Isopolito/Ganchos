@@ -16,12 +16,11 @@ const getAndValidateDefaultConfig = async (pluginName: string): Promise<string> 
         // Seems roundabout, but it's to validate json and strip out comments
         const configObj = validationUtil.parseAndValidatedJson(config, true);
         return JSON.stringify(configObj);
-
     } catch (e) {
         await pluginLogger.write(SeverityEnum.info, pluginName, logArea, `Exception - ${e}`);
     }
     finally {
-        await Thread.terminate(thread);
+        thread && await Thread.terminate(thread);
         thread = null;
     }
 }
@@ -61,7 +60,7 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
         await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception - ${e}`);
         return null;
     } finally {
-        await Thread.terminate(thread);
+        thread && await Thread.terminate(thread);
         thread = null;
     }
 }
