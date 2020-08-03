@@ -82,8 +82,17 @@ const beginScheduleMonitoring = async (): Promise<void> => {
     }
 }
 
+const scheduleSingleUserPlugin = async (pluginPath: string): Promise<void> => {
+
+}
+
+const scheduleSingleGanchosPlugin = async (pluginPath: string): Promise<void> => {
+
+}
 //======================================================================================================
 
 export {
     beginScheduleMonitoring,
+    scheduleSingleUserPlugin,
+    scheduleSingleGanchosPlugin,
 }

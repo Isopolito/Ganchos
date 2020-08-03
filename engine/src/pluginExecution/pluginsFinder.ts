@@ -1,10 +1,13 @@
+import chokidar from 'chokidar';
 import { promises as fs } from 'fs'
 import * as appRoot from 'app-root-path'
 import * as path from 'path'
-import { fileUtil, validationUtil, generalLogger, SeverityEnum, generalConfig, UserPlugin, implementsUserPlugin } from 'ganchos-shared';
+import { fileUtil, validationUtil, generalLogger, SeverityEnum, generalConfig, UserPlugin, implementsUserPlugin, pluginConfig } from 'ganchos-shared';
 
 const logArea = "pluginFinder";
 const ganchosPluginPath = '/src/pluginExecution/pluginCollection';
+let ganchosWatcher: chokidar.FSWatcher;
+let userPluginWatcher: chokidar.FSWatcher;
 
 const fetchGanchosPluginNames = async (convertExtensionToJs?: boolean): Promise<string[]> => {
     try {
@@ -40,15 +43,57 @@ const fetchUserPlugins = async (): Promise<UserPlugin[]> => {
     }
 }
 
-const watchUserPlugins = async (callback: (pluginConfigObj: any) => void): Promise<void> => {
+const watchGanchosPlugins = (callback: (event: string, pluginConfigObj: any) => void): void => {
+    if (ganchosWatcher) return;
+
+    const ganchosPluginFullPath = path.join(`${appRoot}`, ganchosPluginPath);
+    ganchosWatcher = chokidar.watch(ganchosPluginFullPath, {
+        //ignored: /(^|[/\\])\../,
+        persistent: true,
+        usePolling: false,
+        ignoreInitial: true,
+    });
+
+    ganchosWatcher.on('all', async (event: string, filePath: string) => callback(event, filePath));
+    ganchosWatcher.on('error', async error => await generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
 }
 
-const watchGanchosPlugins = async (callback: (pluginConfigObj: any) => void): Promise<void> => {
+const watchUserPlugins = async (callback: (event: string, pluginFileName: string) => void): Promise<void> => {
+    if (userPluginWatcher) return;
+
+    const config = await generalConfig.getAndCreateDefaultIfNotExist();
+    if (!config.userPluginPaths) return;
+
+    userPluginWatcher = chokidar.watch(config.userPluginPaths, {
+        //ignored: /(^|[/\\])\../,
+        persistent: true,
+        usePolling: false,
+        ignoreInitial: true,
+    });
+
+    userPluginWatcher.on('all', async (event: string, filePath: string) => callback(event, filePath));
+    userPluginWatcher.on('error', async error => await generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
+}
+
+const endWatchForGanchosPlugins = async (): Promise<void> => {
+    if (ganchosWatcher) {
+        await ganchosWatcher.close();
+        (ganchosWatcher as any) = null;
+    }
+}
+
+const endWatchForUserPlugins = async (): Promise<void> => {
+    if (userPluginWatcher) {
+        await userPluginWatcher.close();
+        (userPluginWatcher as any) = null;
+    }
 }
 
 export {
     watchGanchosPlugins,
+    endWatchForGanchosPlugins,
     watchUserPlugins,
+    endWatchForUserPlugins,
     fetchGanchosPluginNames,
     fetchUserPlugins,
 }

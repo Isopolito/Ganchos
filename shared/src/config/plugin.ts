@@ -1,4 +1,4 @@
-import chokidar, { FSWatcher } from 'chokidar';
+import chokidar from 'chokidar';
 import * as differ from 'deep-diff';
 import { promises as fsPromises } from 'fs';
 import * as properLockFile from 'proper-lockfile';
@@ -10,6 +10,7 @@ import { getPluginConfigPath, doesPathExist, touch, removeExtension, getPluginCo
 
 const logArea = "plugin config";
 let pluginInMemory: { [key: string]: string } = {}
+let watcher: chokidar.FSWatcher;
 
 /*========================================================================================*/
 
@@ -76,7 +77,6 @@ const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defa
     return config;
 }
 
-let watcher: chokidar.FSWatcher;
 const watch = async (callback: (eventName: string, pluginPath: string) => Promise<void>): Promise<void> => {
     if (watcher) return;
 

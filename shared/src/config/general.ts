@@ -1,4 +1,5 @@
 import chokidar from 'chokidar';
+import * as differ from 'deep-diff';
 import { promises as fsPromises } from 'fs';
 import * as properLockFile from 'proper-lockfile';
 import * as path from 'path';
@@ -17,6 +18,7 @@ let cachedConfig: GeneralConfig;
 let configOnLastSave: GeneralConfig;
 
 const logArea = "general config";
+let watcher: chokidar.FSWatcher;
 
 /*========================================================================================*/
 
@@ -104,7 +106,6 @@ const save = async (config: GeneralConfig) => {
     }
 }
 
-let watcher: chokidar.FSWatcher;
 const watch = async (callback : (eventName: string, configFile: string) => Promise<void>): Promise<void> => {
     const configPath = getConfigPath();
     watcher = chokidar.watch(configPath, {
@@ -125,6 +126,22 @@ const endWatch = async (): Promise<void> => {
     }
 }
 
+const configSettingsDiffBetweenFileAndMem = async (): Promise<string[]> => {
+    const inMemoryConfig = getFromMemory();
+    if (!inMemoryConfig) return [];
+
+    const fromFile = await get();
+    if (!fromFile) return [];
+
+    const diffs = differ.diff(fromFile, inMemoryConfig);
+    if (!diffs) return [];
+
+    return diffs.reduce((paths: any[], diff) => {
+        if (diff.path) paths = paths.concat(diff.path);
+        return paths;
+    }, []);
+}
+
 const getFromMemory = (): GeneralConfig => configOnLastSave;
 
 /*========================================================================================*/
@@ -137,4 +154,5 @@ export {
     getFromMemory,
     implementsGeneralConfig,
     getAndCreateDefaultIfNotExist,
+    configSettingsDiffBetweenFileAndMem 
 };
