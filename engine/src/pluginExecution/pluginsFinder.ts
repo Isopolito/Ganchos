@@ -20,22 +20,34 @@ const fetchGanchosPluginNames = async (convertExtensionToJs?: boolean): Promise<
     }
 }
 
+const createUserPluginFromMetaFile = async (pluginPath: string): Promise<UserPlugin> => {
+    const config = await generalConfig.getAndCreateDefaultIfNotExist();
+
+    if (!pluginPath.endsWith(config.userPluginMetaExtension)) return null;
+
+    const rawData = await fs.readFile(pluginPath);
+    const plugin = validationUtil.parseAndValidatedJson(rawData.toString(), true);
+
+    if (!implementsUserPlugin(plugin)) {
+        await generalLogger.write(SeverityEnum.error, logArea, `The JSON in plugin meta file '${pluginPath}' is not a valid UserPlugin`);
+        return null;
+    }
+
+    plugin.path = path.dirname(pluginPath);
+    return plugin;
+}
+
 const fetchUserPlugins = async (): Promise<UserPlugin[]> => {
     try {
         const config = await generalConfig.getAndCreateDefaultIfNotExist();
         if (!config.userPluginPaths) return [];
 
         const plugins = [];
-        for (const file of await fileUtil.getAllFiles(config.userPluginPaths, config.userPluginMetaExtension)) {
-            const rawData = await fs.readFile(file);
-            const plugin = validationUtil.parseAndValidatedJson(rawData.toString(), true);
-            if (!implementsUserPlugin(plugin)) {
-                await generalLogger.write(SeverityEnum.error, logArea, `The JSON in plugin meta file '${file}' is not a valid UserPlugin`);
-                continue;
-            }
-            plugin.path = path.dirname(file);
-            plugins.push(plugin);
+        for (const filePath of await fileUtil.getAllFiles(config.userPluginPaths, config.userPluginMetaExtension)) {
+            const plugin = createUserPluginFromMetaFile(filePath);
+            if (plugin) plugins.push(plugin);
         }
+
         return plugins;
     } catch (e) {
         await generalLogger.write(SeverityEnum.critical, logArea, `Unable to fetch user plugins: ${e}`);
@@ -95,5 +107,6 @@ export {
     watchUserPlugins,
     endWatchForUserPlugins,
     fetchGanchosPluginNames,
+    createUserPluginFromMetaFile,
     fetchUserPlugins,
 }
