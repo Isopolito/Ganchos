@@ -9,7 +9,7 @@ const runUserPlugin = async (event: string, filePath: string, plugin: UserPlugin
     try {
         await userPluginExecute.execute(plugin, event as EventType, filePath);
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, `Exception - ${e}`);
+        await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, `Exception (${runUserPlugin.name}) - ${e}`);
     }
 }
 
@@ -22,7 +22,7 @@ const runGanchosPlugin = async (event: string, filePath: string, pluginName: str
         };
         await executeGanchosPlugin(pluginName, GanchosExecutionArguments);
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception - ${e}`);
+        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${runGanchosPlugin.name}) - ${e}`);
     }
 }
 

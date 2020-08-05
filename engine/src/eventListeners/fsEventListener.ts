@@ -29,7 +29,7 @@ const processAllPluginsForWatchPaths = async (): Promise<string[]> => {
     }
 
     const results = await Promise.all(tasks);
-    return results.reduce((arr, val) => [...arr, ...val], []);
+    return results.reduce((arr, val) => [...arr, ...val], []); // flatten arrays
 }
 
 const isPathLegit = (path: string): boolean => {

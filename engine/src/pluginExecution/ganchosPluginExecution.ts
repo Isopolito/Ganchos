@@ -17,7 +17,7 @@ const getAndValidateDefaultConfig = async (pluginName: string): Promise<string> 
         const configObj = validationUtil.parseAndValidatedJson(config, true);
         return JSON.stringify(configObj);
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.info, pluginName, logArea, `Exception - ${e}`);
+        await pluginLogger.write(SeverityEnum.info, pluginName, logArea, `Exception (${getAndValidateDefaultConfig.name})- ${e}`);
     }
     finally {
         thread && await Thread.terminate(thread);
@@ -57,7 +57,7 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
 
         return configObj;
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception - ${e}`);
+        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${execute.name}) - ${e}`);
         return null;
     } finally {
         thread && await Thread.terminate(thread);
