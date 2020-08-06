@@ -3,6 +3,7 @@ import { promises as fs } from 'fs'
 import * as appRoot from 'app-root-path'
 import * as path from 'path'
 import { fileUtil, validationUtil, generalLogger, SeverityEnum, generalConfig, UserPlugin, implementsUserPlugin, pluginConfig } from 'ganchos-shared';
+import { debug } from 'console';
 
 const logArea = "pluginFinder";
 const ganchosPluginPath = '/src/pluginExecution/pluginCollection';
@@ -44,7 +45,7 @@ const fetchUserPlugins = async (): Promise<UserPlugin[]> => {
 
         const plugins = [];
         for (const filePath of await fileUtil.getAllFiles(config.userPluginPaths, config.userPluginMetaExtension)) {
-            const plugin = createUserPluginFromMetaFile(filePath);
+            const plugin = await createUserPluginFromMetaFile(filePath);
             if (plugin) plugins.push(plugin);
         }
 
@@ -75,6 +76,8 @@ const watchUserPlugins = async (callback: (event: string, pluginFileName: string
 
     const config = await generalConfig.getAndCreateDefaultIfNotExist();
     if (!config.userPluginPaths) return;
+
+    console.log(`watchUserPlugins - userPluginPath: ${config.userPluginPaths}`);
 
     userPluginWatcher = chokidar.watch(config.userPluginPaths, {
         //ignored: /(^|[/\\])\../,

@@ -40,14 +40,14 @@ const shutdown = async (): Promise<void> => {
         tasks.push(beginScheduleMonitoring());
 
         await generalLogger.write(SeverityEnum.info, logArea, "Watching general config files for changes", true);
-        tasks.push(generalConfig.watch(async (event, configFilepath) => {
+        generalConfig.watch(async (event, configFilepath) => {
             const diffs = await generalConfig.configSettingsDiffBetweenFileAndMem();
             if (diffs && diffs.includes('userPluginPaths')) {
                 // Make sure new user plugin paths are reflected in user plugin watcher
                 await pluginFinder.endWatchForUserPlugins();
-                pluginFinder.watchUserPlugins((event, fileName) => event === 'add' && scheduleSingleUserPlugin(fileName));
+                await pluginFinder.watchUserPlugins((event, fileName) => event === 'add' && scheduleSingleUserPlugin(fileName));
             }
-        }));
+        });
 
         await generalLogger.write(SeverityEnum.info, logArea, "Watching user plugin config files for changes", true);
         tasks.push(pluginConfig.watch((_, pluginPath) => refreshListenersIfWatchPathChanges(pluginPath)));

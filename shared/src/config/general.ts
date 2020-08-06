@@ -78,6 +78,9 @@ const get = async (): Promise<GeneralConfig | null> => {
             return null;
         }
 
+        // Only set this here initially, after that only on saves
+        if (!configOnLastSave) configOnLastSave = config;
+
         cachedConfig = config;
         cachedConfig.lastUpdatedTimeStamp = Date.now();
         return config;
@@ -106,17 +109,17 @@ const save = async (config: GeneralConfig) => {
     }
 }
 
-const watch = async (callback : (eventName: string, configFile: string) => Promise<void>): Promise<void> => {
+const watch = (callback : (eventName: string, configFile: string) => Promise<void>): void => {
     const configPath = getConfigPath();
     watcher = chokidar.watch(configPath, {
-        ignored: /(^|[/\\])\../,
+        //ignored: /(^|[/\\])\../,
         persistent: true,
         usePolling: false,
         ignoreInitial: true,
     });
 
-    watcher.on('change', async (event: string, filePath: string) => await callback(event, filePath));
-    watcher.on('error', async error => await generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
+    watcher.on('all', async (event: string, filePath: string) => await callback(event, filePath));
+    watcher.on('error', async error => await generalLogger.write(SeverityEnum.error, logArea, `Error in general config watcher: ${error}`));
 }
 
 const endWatch = async (): Promise<void> => {
@@ -136,10 +139,14 @@ const configSettingsDiffBetweenFileAndMem = async (): Promise<string[]> => {
     const diffs = differ.diff(fromFile, inMemoryConfig);
     if (!diffs) return [];
 
-    return diffs.reduce((paths: any[], diff) => {
+    const flatDiffs = diffs.reduce((paths: any[], diff) => {
         if (diff.path) paths = paths.concat(diff.path);
         return paths;
     }, []);
+
+    // Config has been changed outside of ganchos, sync up changes
+    if (flatDiffs.length > 1) configOnLastSave = fromFile;
+    return flatDiffs;
 }
 
 const getFromMemory = (): GeneralConfig => configOnLastSave;

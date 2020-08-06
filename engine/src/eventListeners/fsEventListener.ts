@@ -11,10 +11,14 @@ let watcher: chokidar.FSWatcher;
 /*========================================================================================*/
 
 const getAndVerifyPluginWatchPaths = async (pluginName: string, defaultJsonConfig: string): Promise<string[]> => {
-    const config = await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(pluginName, defaultJsonConfig);
-    const configObj = JSON.parse(config);
-    if (!configObj.watchPaths) return [];
-    return configObj.watchPaths.filter((wp: string) => isPathLegit(wp));
+    try {
+        const config = await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(pluginName, defaultJsonConfig);
+        const configObj = JSON.parse(config);
+        if (!configObj.watchPaths) return [];
+        return configObj.watchPaths.filter((wp: string) => isPathLegit(wp));
+    } catch (e) {
+        await generalLogger.write(SeverityEnum.error, "event listener", `Exception (${getAndVerifyPluginWatchPaths.name}) - ${e}`);
+    }
 }
 
 const processAllPluginsForWatchPaths = async (): Promise<string[]> => {
@@ -67,7 +71,7 @@ const stopIfNeededAndStart = async (): Promise<void> => {
         const verifiedPaths = await processAllPluginsForWatchPaths();
         verifiedPaths.length && await watchPaths(verifiedPaths);
     } catch (e) {
-        await generalLogger.write(SeverityEnum.error, "event listener", `Error in 'run': ${e}`);
+        await generalLogger.write(SeverityEnum.error, "event listener", `Exception (${stopIfNeededAndStart.name}) - ${e}`);
     }
 }
 

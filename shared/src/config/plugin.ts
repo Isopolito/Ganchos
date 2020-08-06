@@ -59,22 +59,30 @@ const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?
         await fsPromises.writeFile(configPath, jsonConfig);
         release();
     } catch (e) {
-        await generalLogger.write(SeverityEnum.error, `${logArea} - save`, e, true);
+        await generalLogger.write(SeverityEnum.error, `${logArea} - ${save.name}`, `Exception - ${e}`, true);
     }
 }
 
 const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defaultJsonConfig: string): Promise<string | null> => {
-    let config = await get(pluginName);
-    const shouldCreateConfigFile = !config;
-    if (shouldCreateConfigFile) config = defaultJsonConfig;
+    let config = null;
+    try {
+        config = await get(pluginName);
+        const shouldCreateConfigFile = !config;
+        if (shouldCreateConfigFile) config = defaultJsonConfig;
 
-    if (!parseAndValidatedJson(config)) {
-        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, "Invalid JSON in config file, or if that doesn't exist, then the default config for the plugin...skipping plugin");
-        return null;
+        if (!parseAndValidatedJson(config)) {
+            await pluginLogger.write(SeverityEnum.error, pluginName, logArea, "Invalid JSON in config file, or if that doesn't exist, then the default config for the plugin...skipping plugin");
+            return null;
+        }
+
+        if (shouldCreateConfigFile) await save(pluginName, config, true);
     }
-
-    if (shouldCreateConfigFile) await save(pluginName, config, true);
-    return config;
+    catch (e) {
+        await generalLogger.write(SeverityEnum.error, `${logArea} - ${getConfigJsonAndCreateConfigFileIfNeeded.name}`, `Exception - ${e}`, true);
+    }
+    finally {
+        return config;
+    }
 }
 
 const watch = async (callback: (eventName: string, pluginPath: string) => Promise<void>): Promise<void> => {
