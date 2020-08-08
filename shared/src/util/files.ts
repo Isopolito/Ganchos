@@ -11,7 +11,7 @@ const touch = async (configPath: string) => {
 }
 
 const getEnvBasedAppName = (): string => {
-    const env = process.env.NODE_ENV || 'dev'
+    const env = process.env.NODE_ENV || 'dev';
     return env === 'prod' ? generalConstants.AppDir : `${generalConstants.AppDir}-${env}`;
 }
 
