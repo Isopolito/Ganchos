@@ -39,8 +39,11 @@ const getAppBaseDir = (): string => path.join(os.homedir(), getEnvBasedAppName()
 const getConfigPath = (): string => path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config, generalConstants.General);
 
 const getPluginConfigPath = (pluginName: string): string => {
-    return path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config,
-        generalConstants.Plugin, pluginName);
+    return path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config, generalConstants.Plugin, pluginName);
+}
+
+const getPluginConfigBasePath = (): string => {
+    return path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config, generalConstants.Plugin);
 }
 
 export {
@@ -49,6 +52,7 @@ export {
     getConfigPath,
     getAppBaseDir,
     getPluginConfigPath,
+    getPluginConfigBasePath,
     doesPathExist,
     getAllFiles,
 }

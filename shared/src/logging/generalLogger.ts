@@ -1,12 +1,18 @@
 import { write as writeMessage } from './genericLogger';
 import { makeTimeStamp } from '../util/logs';
+import * as generalConfig from '../config/general';
 import * as constants from '../constants/names';
 import { SeverityEnum } from './SeverityEnum';
 import { GeneralLogFileMessage } from './GeneralLogFileMessage';
 
 /*========================================================================================*/
 
-const write = (severity: SeverityEnum, area: string, message: string, shouldLogToConsole?: boolean): Promise<void> => {
+const write = async (severity: SeverityEnum, area: string, message: string, shouldLogToConsole?: boolean): Promise<void> => {
+    if (severity === SeverityEnum.debug) {
+        const config = await generalConfig.get();
+        if (!config?.enableDebug) return;
+    }
+
 	const logMessage: GeneralLogFileMessage = {
 		timeStamp: makeTimeStamp(),
 		severity: severity,

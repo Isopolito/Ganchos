@@ -2,10 +2,32 @@ import { spawn, Thread, Worker } from "threads";
 import { performance } from 'perf_hooks';
 import {
     osUtil, systemUtil, pluginLogger, SeverityEnum, GanchosExecutionArguments,
-    PluginLogMessage, pluginConfig, shouldEventBeIgnored,
+    PluginLogMessage, pluginConfig, shouldEventBeIgnored, validationUtil,
 } from 'ganchos-shared';
 
 const logArea = 'ganchos execution';
+
+const getAndValidateDefaultConfig = async (pluginName: string): Promise<string> => {
+    let thread;
+    try {
+        thread = await spawn(new Worker(`./pluginCollection/${pluginName}`));
+        const config = await thread.getDefaultConfigJson();
+
+        // Ensure plugin config exists and is in memory for subsequent comparisons
+        await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(pluginName, config);
+
+        // Seems roundabout, but it's to validate json and strip out comments
+        const configObj = validationUtil.parseAndValidatedJson(config, true);
+
+        return JSON.stringify(configObj);
+    } catch (e) {
+        await pluginLogger.write(SeverityEnum.info, pluginName, logArea, `Exception (${getAndValidateDefaultConfig.name})- ${e}`);
+    }
+    finally {
+        thread && await Thread.terminate(thread);
+        thread = null;
+    }
+}
 
 const execute = async (pluginName: string, args: GanchosExecutionArguments): Promise<any> => {
     let thread;
@@ -39,14 +61,15 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
 
         return configObj;
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception - ${e}`);
+        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${execute.name}) - ${e}`);
         return null;
     } finally {
-        await Thread.terminate(thread);
+        thread && await Thread.terminate(thread);
         thread = null;
     }
 }
 
 export {
     execute,
+    getAndValidateDefaultConfig,
 }
