@@ -27,6 +27,7 @@ interface GeneralConfig {
     userPluginPaths: string[];
     heartBeatPollIntervalInSeconds: Number;
     userPluginMetaExtension: string;
+    enableDebug?: boolean;
 }
 
 const implementsGeneralConfig = (object: any): object is GeneralConfig => {
@@ -112,7 +113,6 @@ const save = async (config: GeneralConfig) => {
 const watch = (callback : (eventName: string, configFile: string) => Promise<void>): void => {
     const configPath = getConfigPath();
     watcher = chokidar.watch(configPath, {
-        //ignored: /(^|[/\\])\../,
         persistent: true,
         usePolling: false,
         ignoreInitial: true,
@@ -144,7 +144,7 @@ const configSettingsDiffBetweenFileAndMem = async (): Promise<string[]> => {
         return paths;
     }, []);
 
-    // Config has been changed outside of ganchos, sync up changes
+    // If config has been changed outside of ganchos, sync up changes
     if (flatDiffs.length > 1) configOnLastSave = fromFile;
     return flatDiffs;
 }

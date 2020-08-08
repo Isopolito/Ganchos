@@ -13,8 +13,12 @@ const getAndValidateDefaultConfig = async (pluginName: string): Promise<string> 
         thread = await spawn(new Worker(`./pluginCollection/${pluginName}`));
         const config = await thread.getDefaultConfigJson();
 
+        // Ensure plugin config exists and is in memory for subsequent comparisons
+        await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(pluginName, config);
+
         // Seems roundabout, but it's to validate json and strip out comments
         const configObj = validationUtil.parseAndValidatedJson(config, true);
+
         return JSON.stringify(configObj);
     } catch (e) {
         await pluginLogger.write(SeverityEnum.info, pluginName, logArea, `Exception (${getAndValidateDefaultConfig.name})- ${e}`);

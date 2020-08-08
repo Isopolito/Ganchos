@@ -1,12 +1,13 @@
 import chokidar from 'chokidar';
 import { fileUtil, generalLogger, SeverityEnum, pluginConfig } from 'ganchos-shared';
-import { dispatch } from '../pluginExecution/pluginEventDispatcher';
-import { fetchUserPlugins, fetchGanchosPluginNames } from '../pluginExecution/pluginsFinder';
-import { getAndValidateDefaultConfig } from '../pluginExecution/ganchosPluginExecution';
+import { dispatch } from '../plugins/pluginEventDispatcher';
+import { fetchUserPlugins, fetchGanchosPluginNames } from '../plugins/pluginsFinder';
+import { getAndValidateDefaultConfig } from '../plugins/execution/ganchosPlugin';
 
 /*========================================================================================*/
 
 let watcher: chokidar.FSWatcher;
+const logArea = "fs event listener";
 
 /*========================================================================================*/
 
@@ -17,7 +18,7 @@ const getAndVerifyPluginWatchPaths = async (pluginName: string, defaultJsonConfi
         if (!configObj.watchPaths) return [];
         return configObj.watchPaths.filter((wp: string) => isPathLegit(wp));
     } catch (e) {
-        await generalLogger.write(SeverityEnum.error, "event listener", `Exception (${getAndVerifyPluginWatchPaths.name}) - ${e}`);
+        await generalLogger.write(SeverityEnum.error, logArea, `Exception (${getAndVerifyPluginWatchPaths.name}) - ${e}`);
     }
 }
 
@@ -39,7 +40,7 @@ const processAllPluginsForWatchPaths = async (): Promise<string[]> => {
 const isPathLegit = (path: string): boolean => {
     if (fileUtil.doesPathExist(path)) return true;
 
-    generalLogger.writeSync(SeverityEnum.error, "event listener", `Watch Path '${path}' is not accessible...skipping`);
+    generalLogger.writeSync(SeverityEnum.error, logArea, `Watch Path '${path}' is not accessible...skipping`);
     return false;
 }
 
@@ -54,7 +55,7 @@ const watchPaths = async (pathsToWatch: string[]): Promise<void> => {
     });
 
     watcher.on('all', async (event: string, filePath: string) => await dispatch(event, filePath));
-    watcher.on('error', async error => await generalLogger.write(SeverityEnum.error, "event listener", `Error in watcher: ${error}`));
+    watcher.on('error', async error => await generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
 };
 
 /*========================================================================================*/
@@ -69,9 +70,12 @@ const stop = async (): Promise<void> => {
 const stopIfNeededAndStart = async (): Promise<void> => {
     try {
         const verifiedPaths = await processAllPluginsForWatchPaths();
-        verifiedPaths.length && await watchPaths(verifiedPaths);
+        if (verifiedPaths.length) {
+            await generalLogger.write(SeverityEnum.info, logArea, `Watching paths: ${verifiedPaths.join(',')}`);
+            await watchPaths(verifiedPaths);
+        } 
     } catch (e) {
-        await generalLogger.write(SeverityEnum.error, "event listener", `Exception (${stopIfNeededAndStart.name}) - ${e}`);
+        await generalLogger.write(SeverityEnum.error, logArea, `Exception (${stopIfNeededAndStart.name}) - ${e}`);
     }
 }
 

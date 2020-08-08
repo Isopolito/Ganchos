@@ -1,7 +1,7 @@
-import { GanchosExecutionArguments, EventType, pluginLogger, SeverityEnum, UserPlugin } from 'ganchos-shared';
+import { GanchosExecutionArguments, EventType, pluginLogger, generalLogger, SeverityEnum, UserPlugin } from 'ganchos-shared';
+import * as userPluginExecute from './execution/userPlugin';
 import { fetchGanchosPluginNames, fetchUserPlugins } from "./pluginsFinder";
-import * as userPluginExecute from './userPluginExecution';
-import { execute as executeGanchosPlugin } from './ganchosPluginExecution';
+import { execute as executeGanchosPlugin } from './execution/ganchosPlugin';
 
 const logArea = "event dispatcher";
 
@@ -20,6 +20,7 @@ const runGanchosPlugin = async (event: string, filePath: string, pluginName: str
             filePath: filePath,
             jsonConfig: null,
         };
+
         await executeGanchosPlugin(pluginName, GanchosExecutionArguments);
     } catch (e) {
         await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${runGanchosPlugin.name}) - ${e}`);
@@ -28,6 +29,8 @@ const runGanchosPlugin = async (event: string, filePath: string, pluginName: str
 
 const dispatch = async (event: string, filePath: string): Promise<void> => {
     const tasks = [];
+
+    await generalLogger.write(SeverityEnum.debug, logArea, `${dispatch.name} - event: ${event}, filePath: ${filePath}`, true);
 
     for (const file of await fetchGanchosPluginNames(true)) {
         tasks.push(runGanchosPlugin(event, filePath, file));

@@ -1,50 +1,18 @@
 import * as path from 'path';
 import { spawn, Thread, Worker } from "threads";
-import { generalLogger, pluginLogger, SeverityEnum, pluginConfig, UserPlugin, GanchosExecutionArguments, systemUtil, fileUtil } from 'ganchos-shared';
-import { fetchGanchosPluginNames, fetchUserPlugins, createUserPluginFromMetaFile } from "./pluginsFinder";
-import { execute as executeUserPlugin } from './userPluginExecution';
-import { execute as executeGanchosPlugin } from './ganchosPluginExecution';
+import { generalLogger, pluginLogger, SeverityEnum, GanchosExecutionArguments, systemUtil, fileUtil } from 'ganchos-shared';
+import { fetchGanchosPluginNames } from "../pluginsFinder";
+import { execute as executeGanchosPlugin } from '../execution/ganchosPlugin';
+import { PluginInstanceManager } from './PluginInstanceManager';
 
 //======================================================================================================
 
 const pluginFolder = "./pluginCollection/";
-const logArea = "schedule runner";
+const logArea = "ganchos schedule runner";
 const badConfigWaitTimeInMin = 5;
+const pluginInstanceManager = new PluginInstanceManager();
 
 //======================================================================================================
-
-const runUserPlugin = async (plugin: UserPlugin): Promise<any> => {
-    const mostRecentConfig = await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(plugin.name, JSON.stringify(plugin.defaultJsonConfig));
-    if (!mostRecentConfig) return null;
-
-    const configObj = JSON.parse(mostRecentConfig);
-    if (configObj.enabled) await executeUserPlugin(plugin, 'none', null);
-
-    return configObj;
-}
-
-const runUserPluginAndReschedule = async (plugin: UserPlugin): Promise<void> => {
-    try {
-        if (!fileUtil.doesPathExist(path.join(plugin.path, plugin.binFileName))) {
-            await pluginLogger.write(SeverityEnum.warning, plugin.name, logArea, `Bin file for plugin doesn't exist. Removing plugin from schedule`);
-            return;
-        }
-
-        const pluginConfigObj = await runUserPlugin(plugin);
-
-        if (!pluginConfigObj || !pluginConfigObj.runEveryXMinutes || pluginConfigObj.runEveryXMinutes <= 0) {
-            await pluginLogger.write(SeverityEnum.warning, plugin.name, logArea,
-                `Either configuration for this plugin is missing or invalid, or the 'runEveryXMinutes' option has been set to <= 0. Will try again in ${badConfigWaitTimeInMin} minutes`);
-            await systemUtil.waitInMinutes(badConfigWaitTimeInMin);
-        } else {
-            await systemUtil.waitInMinutes(pluginConfigObj.runEveryXMinutes);
-        }
-
-        return runUserPluginAndReschedule(plugin);
-    } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, `Exception (${runUserPluginAndReschedule.name}) - ${e}`);
-    }
-}
 
 const isGanchosPluginScheduable = async (pluginName: string, buildPath: boolean = true): Promise<boolean> => {
     let thread;
@@ -83,6 +51,12 @@ const runGanchosPluginAndReschedule = async (pluginName: string): Promise<void> 
             await systemUtil.waitInMinutes(configObj.runEveryXMinutes);
         }
 
+        if (pluginInstanceManager.isCanceled(pluginName)) {
+            await pluginInstanceManager.cancel(pluginName);
+            return;
+        };
+
+        pluginInstanceManager.setRunningStatus(pluginName, true);
         await runGanchosPluginAndReschedule(pluginName);
     } catch (e) {
         await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${runGanchosPluginAndReschedule.name})- ${e}`);
@@ -105,32 +79,22 @@ const beginScheduleMonitoring = async (): Promise<void> => {
             tasks.push(runGanchosPluginAndReschedule(pluginName));
         }
 
-        const userPlugins = (await fetchUserPlugins()).filter(up => up.isEligibleForSchedule)
-        for (const plugin of userPlugins) {
-            tasks.push(runUserPluginAndReschedule(plugin));
-        }
-
         await Promise.all(tasks);
     } catch (e) {
         await generalLogger.write(SeverityEnum.critical, logArea, `Exception (${beginScheduleMonitoring.name}) - ${e}`, true);
     }
 }
 
-const scheduleSingleUserPlugin = async (pluginPath: string): Promise<void> => {
-    const plugin = await createUserPluginFromMetaFile(pluginPath);
-    if (!plugin || !plugin.isEligibleForSchedule) return;
-
-    return runUserPluginAndReschedule(plugin);
-}
-
 const scheduleSingleGanchosPlugin = async (pluginPath: string): Promise<void> => {
     if (!isGanchosPluginScheduable(pluginPath, false)) return;
-    runGanchosPluginAndReschedule(path.basename(pluginPath));
+
+    const pluginName = path.basename(pluginPath);
+    await pluginInstanceManager.setCanceledIfRunning(pluginName, async () => await runGanchosPluginAndReschedule(pluginName));
 }
+
 //======================================================================================================
 
 export {
     beginScheduleMonitoring,
-    scheduleSingleUserPlugin,
     scheduleSingleGanchosPlugin,
 }

@@ -3,10 +3,9 @@ import { promises as fs } from 'fs'
 import * as appRoot from 'app-root-path'
 import * as path from 'path'
 import { fileUtil, validationUtil, generalLogger, SeverityEnum, generalConfig, UserPlugin, implementsUserPlugin, pluginConfig } from 'ganchos-shared';
-import { debug } from 'console';
 
 const logArea = "pluginFinder";
-const ganchosPluginPath = '/src/pluginExecution/pluginCollection';
+const ganchosPluginPath = '/src/plugins/pluginCollection';
 let ganchosWatcher: chokidar.FSWatcher;
 let userPluginWatcher: chokidar.FSWatcher;
 
@@ -33,6 +32,9 @@ const createUserPluginFromMetaFile = async (pluginPath: string): Promise<UserPlu
         await generalLogger.write(SeverityEnum.error, logArea, `The JSON in plugin meta file '${pluginPath}' is not a valid UserPlugin`);
         return null;
     }
+
+    // This will ensure a plugin config exists and that it is in memory for comparisons later on
+    await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(plugin.name, plugin.defaultJsonConfig);
 
     plugin.path = path.dirname(pluginPath);
     return plugin;
@@ -80,13 +82,12 @@ const watchUserPlugins = async (callback: (event: string, pluginFileName: string
     console.log(`watchUserPlugins - userPluginPath: ${config.userPluginPaths}`);
 
     userPluginWatcher = chokidar.watch(config.userPluginPaths, {
-        //ignored: /(^|[/\\])\../,
         persistent: true,
         usePolling: false,
         ignoreInitial: true,
     });
 
-    userPluginWatcher.on('all', async (event: string, filePath: string) => callback(event, filePath));
+    userPluginWatcher.on('all', async (event: string, filePath: string) => await callback(event, filePath));
     userPluginWatcher.on('error', async error => await generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
 }
 
