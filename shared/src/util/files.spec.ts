@@ -1,8 +1,9 @@
 import 'mocha';
 import { expect } from 'chai';
-import { fileUtil } from '..';
 import * as sh from 'shelljs';
 import * as path from 'path';
+
+import { fileUtil } from '..';
 
 describe('** File Util **', () => {
     describe('When running tests', () => {

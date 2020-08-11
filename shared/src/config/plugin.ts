@@ -57,7 +57,7 @@ const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?
 
         const release = await properLockFile.lock(configPath, { retries: 5 });
         await fsPromises.writeFile(configPath, jsonConfig);
-        release();
+        await release();
     } catch (e) {
         await generalLogger.write(SeverityEnum.error, `${logArea} - ${save.name}`, `Exception - ${e}`, true);
     }
@@ -109,7 +109,7 @@ const endWatch = async (): Promise<void> => {
 
 const getFromMemory = (pluginName: string): string => pluginInMemory[pluginName];
 
-const configSettingsDiffBetweenFileAndMem = async (pluginName: string): Promise<string[]> => {
+const diffBetweenFileAndMem = async (pluginName: string): Promise<string[]> => {
     const inMemoryConfig = getFromMemory(pluginName);
     if (!inMemoryConfig) return [];
 
@@ -132,6 +132,6 @@ export {
     endWatch,
     save,
     get,
-    configSettingsDiffBetweenFileAndMem,
+    diffBetweenFileAndMem,
     getConfigJsonAndCreateConfigFileIfNeeded,
 };

@@ -6,8 +6,9 @@ import { fileUtil } from '..';
 import * as generalConfig from './general';
 import { GeneralConfig, implementsGeneralConfig } from './GeneralConfig';
 
-describe('** General Config **', () => {
+describe('** Plugin Config **', () => {
     let config: GeneralConfig;
+
     before(() => {
         config = {
             userPluginPaths: ['/home/user/foo'],
@@ -53,7 +54,7 @@ describe('** General Config **', () => {
 
         it('should create necessary directories and a default general config file', async () => {
             await generalConfig.getAndCreateDefaultIfNotExist();
-            const configObj = await generalConfig.get();
+            const configObj = await generalConfig.get(); 
 
             expect(implementsGeneralConfig(configObj)).to.be.true;
         });
@@ -73,7 +74,7 @@ describe('** General Config **', () => {
     });
 
     describe(`A call to ${generalConfig.diffBetweenFileAndMem.name}`, () => {
-        before(() => {
+        before(async () => {
             const testDir = fileUtil.getAppBaseDir();
             if (testDir.endsWith('test')) sh.rm('-rf', testDir);
         });

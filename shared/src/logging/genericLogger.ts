@@ -15,7 +15,7 @@ const write = async (name: string, messageJson: string): Promise<void> => {
 
 	const release = await properLockFile.lock(filePath, { retries: 5});
 	await fs.appendFile(filePath, messageJson + os.EOL);
-	return release();
+	await release();
 }
 
 /*========================================================================================*/
