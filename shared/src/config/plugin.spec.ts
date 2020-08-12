@@ -4,95 +4,113 @@ import { expect } from 'chai';
 import * as sh from 'shelljs';
 import { fileUtil } from '..';
 import * as generalConfig from './general';
-import { GeneralConfig, implementsGeneralConfig } from './GeneralConfig';
+import * as pluginConfig from './plugin';
+import { touch } from '../util/files';
+
+const pluginName = 'test';
 
 describe('** Plugin Config **', () => {
-    let config: GeneralConfig;
+    let pluginConfigObj: any = {};
+    let pluginConfigJson = '';
+    let generalConfigObj;
 
-    before(() => {
-        config = {
-            userPluginPaths: ['/home/user/foo'],
-            heartBeatPollIntervalInSeconds: 5,
-            userPluginMetaExtension: 'foo',
-            enableDebug: true,
-            lastUpdatedTimeStamp: 0,
+    beforeEach(async () => {
+        const testDir = fileUtil.getAppBaseDir();
+        if (testDir.endsWith('test')) sh.rm('-rf', testDir);
+
+        generalConfigObj = await generalConfig.getAndCreateDefaultIfNotExist();
+
+        pluginConfigObj = {
+            watchPaths: ['/home/user/foo'],
+            propertyOne: 'p1',
+            propertyTwo: 'p2',
+            enabled: true
         };
+
+        pluginConfigJson = JSON.stringify(pluginConfigObj, null, 4);
     });
 
-    describe('After saving a general config', () => {
-        before(() => {
-            const testDir = fileUtil.getAppBaseDir();
-            if (testDir.endsWith('test')) sh.rm('-rf', testDir);
+    describe('The "get" call', () => {
+        it('should return null if plugin config JSON is invalid and "shouldValidateJson" param is true', async () => {
+            const configPath = fileUtil.getPluginConfigPath(pluginName);
+            await touch(configPath);
+            await fsPromises.writeFile(configPath, '{ bad json }');
+
+            const configObj = await pluginConfig.get(pluginName, true);
+
+            expect(configObj).to.be.null;
         });
 
-        it('a "get" call should return the same config object', async () => {
-            await generalConfig.save(config);
+        it('should return  plugin config JSON (even when invalid) if "shouldValidateJson" param is false', async () => {
+            const configPath = fileUtil.getPluginConfigPath(pluginName);
+            await touch(configPath);
+            await fsPromises.writeFile(configPath, '{ bad json }');
 
-            const fetchedConfig = await generalConfig.get() as GeneralConfig;
-            fetchedConfig.lastUpdatedTimeStamp = 0; // don't care about this
+            const configJson = await pluginConfig.get(pluginName, false);
 
-            expect(fetchedConfig).to.eql(config);
-        });
-
-        after(() => {
-            const testDir = fileUtil.getAppBaseDir();
-            if (testDir.endsWith('test')) sh.rm('-rf', testDir);
-        });
-    });
-
-    describe(`A call to ${generalConfig.getAndCreateDefaultIfNotExist.name}`, () => {
-        beforeEach(() => {
-            const testDir = fileUtil.getAppBaseDir();
-            if (testDir.endsWith('test')) sh.rm('-rf', testDir);
-        });
-
-        it('should return a GeneralConfig obj', async () => {
-            const configObj = await generalConfig.getAndCreateDefaultIfNotExist();
-
-            expect(implementsGeneralConfig(configObj)).to.be.true;
-        });
-
-        it('should create necessary directories and a default general config file', async () => {
-            await generalConfig.getAndCreateDefaultIfNotExist();
-            const configObj = await generalConfig.get(); 
-
-            expect(implementsGeneralConfig(configObj)).to.be.true;
-        });
-
-        it('should create default plugin directory', async () => {
-            const configObj = await generalConfig.getAndCreateDefaultIfNotExist() as GeneralConfig;
-
-            const exists = sh.test('-d', configObj.userPluginPaths[0]);
-
-            expect(exists).to.be.true;
-        });
-
-        after(() => {
-            const testDir = fileUtil.getAppBaseDir();
-            if (testDir.endsWith('test')) sh.rm('-rf', testDir);
+            expect(configJson).to.equal('{ bad json }');
         });
     });
 
-    describe(`A call to ${generalConfig.diffBetweenFileAndMem.name}`, () => {
-        before(async () => {
-            const testDir = fileUtil.getAppBaseDir();
-            if (testDir.endsWith('test')) sh.rm('-rf', testDir);
+    describe('When saving a plugin configuration', () => {
+        it('a "get" call should return the same plugin configuration', async () => {
+            await pluginConfig.save(pluginName, pluginConfigJson);
+
+            const fetchedConfigJson = await pluginConfig.get(pluginName);
+
+            expect(fetchedConfigJson).to.eql(pluginConfigJson);
         });
 
+        it('"enabled" flag on plugin should be TRUE if it is omitted from plugin json and "shouldEnable" param is TRUE', async () => {
+            delete pluginConfigObj.enabled;
+            await pluginConfig.save(pluginName, JSON.stringify(pluginConfigObj, null, 4), true);
+
+            const fetchedConfigObj = JSON.parse(await pluginConfig.get(pluginName) as string);
+
+            expect(fetchedConfigObj.enabled).to.be.true;
+        });
+
+        it('"enabled" flag on plugin should be undefined if it is omitted from plugin json and "shouldEnable" param is FALSE', async () => {
+            delete pluginConfigObj.enabled;
+            await pluginConfig.save(pluginName, JSON.stringify(pluginConfigObj, null, 4));
+
+            const fetchedConfigObj = JSON.parse(await pluginConfig.get(pluginName) as string);
+
+            expect(fetchedConfigObj.enabled).to.be.undefined;
+        });
+    });
+
+    describe(`A call to ${pluginConfig.diffBetweenFileAndMem.name}`, () => {
         it('should accurately report differences between config on disk and in memory', async () => {
-            await generalConfig.save(config);
-            config.userPluginMetaExtension = 'barley';
-            const configPath = fileUtil.getConfigPath();
-            await fsPromises.writeFile(configPath, JSON.stringify(config, null, 4));
+            await pluginConfig.save(pluginName, pluginConfigJson);
+            pluginConfigObj.propertyOne = 'new prop value';
+            const configPath = fileUtil.getPluginConfigPath(pluginName);
+            await fsPromises.writeFile(configPath, JSON.stringify(pluginConfigObj, null, 4));
 
-            const diffs = await generalConfig.diffBetweenFileAndMem();
+            const diffs = await pluginConfig.diffBetweenFileAndMem(pluginName);
 
-            expect(diffs).includes('userPluginMetaExtension');
-        });
-
-        after(() => {
-            const testDir = fileUtil.getAppBaseDir();
-            if (testDir.endsWith('test')) sh.rm('-rf', testDir);
+            expect(diffs).includes('propertyOne');
         });
     });
+
+    describe(`A call to ${pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded.name}`, () => {
+        it('Should create the plugin config file with the default JSON parameter if the config file does not yet exist', async () => {
+            await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(pluginName, pluginConfigJson);
+            const fetchedConfigJson = await pluginConfig.get(pluginName);
+
+            expect(fetchedConfigJson).to.eql(pluginConfigJson);
+        });
+
+        it('Should NOT create config file if one already exists', async () => {
+            await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(pluginName, pluginConfigJson);
+            const fetchedConfigJson = await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(pluginName, '{"foo": "bar"}');
+
+            expect(fetchedConfigJson).to.eql(pluginConfigJson);
+        });
+    });
+});
+
+after(() => {
+    const testDir = fileUtil.getAppBaseDir();
+    if (testDir.endsWith('test')) sh.rm('-rf', testDir);
 });

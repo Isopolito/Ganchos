@@ -27,18 +27,18 @@ const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<st
             if (!pluginInMemory[pluginName]) pluginInMemory[pluginName] = jsonString;
             return jsonString;
         } else {
-            await generalLogger.write(SeverityEnum.error, `${logArea} - get`, `Invalid json in plugin config file for '${pluginName}'`, true);
+            await generalLogger.write(SeverityEnum.error, `${logArea} - get`, `Invalid json in plugin config file for '${pluginName}'`);
             return null;
         }
     } catch (e) {
-        await generalLogger.write(SeverityEnum.critical, `${logArea} - get`, `Error. Can't parse plugin config json: ${e}`, true);
+        await generalLogger.write(SeverityEnum.critical, `${logArea} - get`, `Error. Can't parse plugin config json: ${e}`);
         return null;
     }
 }
 
-const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?: boolean) => {
+const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?: boolean): Promise<void|null> => {
     if (!jsonConfig) {
-        await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `pluginName and jsonConfig required`, true);
+        await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `pluginName and jsonConfig required`);
         return null;
     }
 
@@ -59,7 +59,7 @@ const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?
         await fsPromises.writeFile(configPath, jsonConfig);
         await release();
     } catch (e) {
-        await generalLogger.write(SeverityEnum.error, `${logArea} - ${save.name}`, `Exception - ${e}`, true);
+        await generalLogger.write(SeverityEnum.error, `${logArea} - ${save.name}`, `Exception - ${e}`);
     }
 }
 
@@ -78,7 +78,7 @@ const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defa
         if (shouldCreateConfigFile) await save(pluginName, config, true);
     }
     catch (e) {
-        await generalLogger.write(SeverityEnum.error, `${logArea} - ${getConfigJsonAndCreateConfigFileIfNeeded.name}`, `Exception - ${e}`, true);
+        await generalLogger.write(SeverityEnum.error, `${logArea} - ${getConfigJsonAndCreateConfigFileIfNeeded.name}`, `Exception - ${e}`);
     }
     finally {
         return config;
