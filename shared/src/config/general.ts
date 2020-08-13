@@ -6,7 +6,8 @@ import * as path from 'path';
 import * as shelljs from 'shelljs';
 
 import { getConfigPath, doesPathExist, touch, getAppBaseDir } from '../util/files';
-import { generalLogger, SeverityEnum, validationUtil } from '../';
+import { generalLogger, SeverityEnum, validationUtil, systemUtil } from '../';
+import { GeneralConfig, implementsGeneralConfig } from './GeneralConfig';
 
 /*========================================================================================*/
 
@@ -22,58 +23,41 @@ let watcher: chokidar.FSWatcher;
 
 /*========================================================================================*/
 
-interface GeneralConfig {
-    lastUpdatedTimeStamp: Number;
-    userPluginPaths: string[];
-    heartBeatPollIntervalInSeconds: Number;
-    userPluginMetaExtension: string;
-    enableDebug?: boolean;
-}
-
-const implementsGeneralConfig = (object: any): object is GeneralConfig => {
-    if (!object) return false;
-
-    const lastUpdatedTimeStamp = 'lastUpdatedTimeStamp' in object;
-    const userPluginPaths = 'userPluginPaths' in object;
-    const heartBeatPollIntervalInSeconds = 'heartBeatPollIntervalInSeconds' in object;
-    const userPluginMetaExtension = 'userPluginMetaExtension' in object;
-
-    return lastUpdatedTimeStamp && userPluginMetaExtension && userPluginPaths && heartBeatPollIntervalInSeconds;
-}
-
 const isConfigInMemoryMostRecent = async (configPath: string): Promise<Boolean> => {
     if (!cachedConfig) return false;
 
     const stats = await fsPromises.stat(configPath);
 
     // True if inMemoryConfig was updated after the config file was last written to disk
-    return stats.mtime.getTime() <= cachedConfig.lastUpdatedTimeStamp;
+    return stats.mtime.getTime() >= cachedConfig.lastUpdatedTimeStamp;
 }
 
 const getAndCreateDefaultIfNotExist = async (): Promise<GeneralConfig | null> => {
     const configPath = getConfigPath();
     if (doesPathExist(configPath)) return await get();
 
-    const defaultConfig: GeneralConfig = { heartBeatPollIntervalInSeconds: 5,
-        userPluginPaths: [path.join(getAppBaseDir(), 'plugins')], lastUpdatedTimeStamp: 0,
+    const defaultConfig: GeneralConfig = {
+        heartBeatPollIntervalInSeconds: 5,
+        userPluginPaths: [path.join(getAppBaseDir(), 'plugins')],
+        lastUpdatedTimeStamp: 0,
         userPluginMetaExtension: 'meta',
     };
 
+    doesPathExist(configPath) || await touch(configPath);
     shelljs.test('-e', defaultConfig.userPluginPaths[0]) || shelljs.mkdir(defaultConfig.userPluginPaths[0]);
 
-    save(defaultConfig);
-    return defaultConfig;
+    await save(defaultConfig);
+    return systemUtil.deepClone(defaultConfig);
 }
 
 const get = async (): Promise<GeneralConfig | null> => {
     const generalConfigFilePath = getConfigPath();
     try {
         if (!doesPathExist(generalConfigFilePath)) return null;
-
         if (await isConfigInMemoryMostRecent(generalConfigFilePath)) return cachedConfig;
 
-        const rawData = await fsPromises.readFile(generalConfigFilePath);
-        const config = validationUtil.parseAndValidatedJson(rawData.toString());
+        const configJson = (await fsPromises.readFile(generalConfigFilePath)).toString();
+        const config = validationUtil.parseAndValidateJson(configJson);
         if (!implementsGeneralConfig(config)) {
             await generalLogger.write(SeverityEnum.critical, logArea, `The JSON in ${generalConfigFilePath} is not a valid GeneralConfig type`, true);
             return null;
@@ -84,7 +68,8 @@ const get = async (): Promise<GeneralConfig | null> => {
 
         cachedConfig = config;
         cachedConfig.lastUpdatedTimeStamp = Date.now();
-        return config;
+
+        return JSON.parse(configJson); // return a deep clone
     } catch (e) {
         await generalLogger.write(SeverityEnum.critical, logArea, `Can't create GeneralConfig with JSON from file - ${generalConfigFilePath}: ${e}`, true);
         return null;
@@ -100,13 +85,14 @@ const save = async (config: GeneralConfig) => {
 
         const release = await properLockFile.lock(configPath, { retries: 5 });
         await fsPromises.writeFile(configPath, JSON.stringify(config, null, 4));
-        release();
+        await release();
 
-        cachedConfig = config;
+        const clonedConfig = systemUtil.deepClone(config);
+        cachedConfig = clonedConfig;
         cachedConfig.lastUpdatedTimeStamp = Date.now();
-        configOnLastSave = config;
+        configOnLastSave = clonedConfig;
     } catch (e) {
-        await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `${e}`, true);
+        await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `Exception - ${e}`, true);
     }
 }
 
@@ -129,14 +115,13 @@ const endWatch = async (): Promise<void> => {
     }
 }
 
-const configSettingsDiffBetweenFileAndMem = async (): Promise<string[]> => {
-    const inMemoryConfig = getFromMemory();
-    if (!inMemoryConfig) return [];
+const diffBetweenFileAndMem = async (): Promise<string[]> => {
+    if (!configOnLastSave) return [];
 
     const fromFile = await get();
     if (!fromFile) return [];
 
-    const diffs = differ.diff(fromFile, inMemoryConfig);
+    const diffs = differ.diff(fromFile, configOnLastSave);
     if (!diffs) return [];
 
     const flatDiffs = diffs.reduce((paths: any[], diff) => {
@@ -149,8 +134,6 @@ const configSettingsDiffBetweenFileAndMem = async (): Promise<string[]> => {
     return flatDiffs;
 }
 
-const getFromMemory = (): GeneralConfig => configOnLastSave;
-
 /*========================================================================================*/
 
 export {
@@ -158,8 +141,6 @@ export {
     endWatch,
     save,
     get,
-    getFromMemory,
-    implementsGeneralConfig,
     getAndCreateDefaultIfNotExist,
-    configSettingsDiffBetweenFileAndMem 
+    diffBetweenFileAndMem 
 };

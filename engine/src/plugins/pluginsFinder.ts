@@ -26,7 +26,7 @@ const createUserPluginFromMetaFile = async (pluginPath: string): Promise<UserPlu
     if (!pluginPath.endsWith(config.userPluginMetaExtension)) return null;
 
     const rawData = await fs.readFile(pluginPath);
-    const plugin = validationUtil.parseAndValidatedJson(rawData.toString(), true);
+    const plugin = validationUtil.parseAndValidateJson(rawData.toString(), true);
 
     if (!implementsUserPlugin(plugin)) {
         await generalLogger.write(SeverityEnum.error, logArea, `The JSON in plugin meta file '${pluginPath}' is not a valid UserPlugin`);

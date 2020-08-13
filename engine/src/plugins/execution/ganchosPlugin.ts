@@ -17,7 +17,7 @@ const getAndValidateDefaultConfig = async (pluginName: string): Promise<string> 
         await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(pluginName, config);
 
         // Seems roundabout, but it's to validate json and strip out comments
-        const configObj = validationUtil.parseAndValidatedJson(config, true);
+        const configObj = validationUtil.parseAndValidateJson(config, true);
 
         return JSON.stringify(configObj);
     } catch (e) {

@@ -3,7 +3,7 @@ import * as differ from 'deep-diff';
 import { promises as fsPromises } from 'fs';
 import * as properLockFile from 'proper-lockfile';
 import { generalLogger, SeverityEnum, pluginLogger } from '..';
-import { parseAndValidatedJson } from '../util/validation';
+import { parseAndValidateJson } from '../util/validation';
 import { getPluginConfigPath, doesPathExist, touch, removeExtension, getPluginConfigBasePath } from '../util/files';
 
 /*========================================================================================*/
@@ -23,22 +23,22 @@ const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<st
         const rawData = await fsPromises.readFile(configPath);
         const jsonString = rawData.toString();
 
-        if (!shouldValidateJson || parseAndValidatedJson(jsonString)) {
+        if (!shouldValidateJson || parseAndValidateJson(jsonString)) {
             if (!pluginInMemory[pluginName]) pluginInMemory[pluginName] = jsonString;
             return jsonString;
         } else {
-            await generalLogger.write(SeverityEnum.error, `${logArea} - get`, `Invalid json in plugin config file for '${pluginName}'`, true);
+            await generalLogger.write(SeverityEnum.error, `${logArea} - get`, `Invalid json in plugin config file for '${pluginName}'`);
             return null;
         }
     } catch (e) {
-        await generalLogger.write(SeverityEnum.critical, `${logArea} - get`, `Error. Can't parse plugin config json: ${e}`, true);
+        await generalLogger.write(SeverityEnum.critical, `${logArea} - get`, `Error. Can't parse plugin config json: ${e}`);
         return null;
     }
 }
 
-const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?: boolean) => {
+const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?: boolean): Promise<void|null> => {
     if (!jsonConfig) {
-        await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `pluginName and jsonConfig required`, true);
+        await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `pluginName and jsonConfig required`);
         return null;
     }
 
@@ -57,9 +57,9 @@ const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?
 
         const release = await properLockFile.lock(configPath, { retries: 5 });
         await fsPromises.writeFile(configPath, jsonConfig);
-        release();
+        await release();
     } catch (e) {
-        await generalLogger.write(SeverityEnum.error, `${logArea} - ${save.name}`, `Exception - ${e}`, true);
+        await generalLogger.write(SeverityEnum.error, `${logArea} - ${save.name}`, `Exception - ${e}`);
     }
 }
 
@@ -70,7 +70,7 @@ const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defa
         const shouldCreateConfigFile = !config;
         if (shouldCreateConfigFile) config = defaultJsonConfig;
 
-        if (!parseAndValidatedJson(config)) {
+        if (!parseAndValidateJson(config)) {
             await pluginLogger.write(SeverityEnum.error, pluginName, logArea, "Invalid JSON in config file, or if that doesn't exist, then the default config for the plugin...skipping plugin");
             return null;
         }
@@ -78,7 +78,7 @@ const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defa
         if (shouldCreateConfigFile) await save(pluginName, config, true);
     }
     catch (e) {
-        await generalLogger.write(SeverityEnum.error, `${logArea} - ${getConfigJsonAndCreateConfigFileIfNeeded.name}`, `Exception - ${e}`, true);
+        await generalLogger.write(SeverityEnum.error, `${logArea} - ${getConfigJsonAndCreateConfigFileIfNeeded.name}`, `Exception - ${e}`);
     }
     finally {
         return config;
@@ -109,7 +109,7 @@ const endWatch = async (): Promise<void> => {
 
 const getFromMemory = (pluginName: string): string => pluginInMemory[pluginName];
 
-const configSettingsDiffBetweenFileAndMem = async (pluginName: string): Promise<string[]> => {
+const diffBetweenFileAndMem = async (pluginName: string): Promise<string[]> => {
     const inMemoryConfig = getFromMemory(pluginName);
     if (!inMemoryConfig) return [];
 
@@ -132,6 +132,6 @@ export {
     endWatch,
     save,
     get,
-    configSettingsDiffBetweenFileAndMem,
+    diffBetweenFileAndMem,
     getConfigJsonAndCreateConfigFileIfNeeded,
 };
