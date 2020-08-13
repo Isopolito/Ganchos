@@ -5,7 +5,7 @@ const stripJsonComments = (json: string): string => json.split(os.EOL)
     .filter(line => !line.match(/^\s*?\/\//))
     .join(os.EOL);
 
-const parseAndValidatedJson = (jsonString: string|null, stripComments?: boolean): any => {
+const parseAndValidateJson = (jsonString: string|null, stripComments?: boolean): any => {
     try {
         if (!jsonString) return false;
 
@@ -18,5 +18,5 @@ const parseAndValidatedJson = (jsonString: string|null, stripComments?: boolean)
 };
 
 export {
-    parseAndValidatedJson
+    parseAndValidateJson
 }

@@ -3,7 +3,7 @@ import * as differ from 'deep-diff';
 import { promises as fsPromises } from 'fs';
 import * as properLockFile from 'proper-lockfile';
 import { generalLogger, SeverityEnum, pluginLogger } from '..';
-import { parseAndValidatedJson } from '../util/validation';
+import { parseAndValidateJson } from '../util/validation';
 import { getPluginConfigPath, doesPathExist, touch, removeExtension, getPluginConfigBasePath } from '../util/files';
 
 /*========================================================================================*/
@@ -23,7 +23,7 @@ const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<st
         const rawData = await fsPromises.readFile(configPath);
         const jsonString = rawData.toString();
 
-        if (!shouldValidateJson || parseAndValidatedJson(jsonString)) {
+        if (!shouldValidateJson || parseAndValidateJson(jsonString)) {
             if (!pluginInMemory[pluginName]) pluginInMemory[pluginName] = jsonString;
             return jsonString;
         } else {
@@ -70,7 +70,7 @@ const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defa
         const shouldCreateConfigFile = !config;
         if (shouldCreateConfigFile) config = defaultJsonConfig;
 
-        if (!parseAndValidatedJson(config)) {
+        if (!parseAndValidateJson(config)) {
             await pluginLogger.write(SeverityEnum.error, pluginName, logArea, "Invalid JSON in config file, or if that doesn't exist, then the default config for the plugin...skipping plugin");
             return null;
         }

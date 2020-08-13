@@ -9,7 +9,7 @@ const logArea = "main";
 
 const refreshListenersIfWatchPathChanges = async (pluginPath: string): Promise<void> => {
     const pluginName = path.basename(pluginPath);
-    const diffs = await pluginConfig.configSettingsDiffBetweenFileAndMem(pluginName);
+    const diffs = await pluginConfig.diffBetweenFileAndMem(pluginName);
     if (diffs && diffs.includes('watchPaths')) await stopStartFsEventListener();
 }
 
@@ -43,7 +43,7 @@ const shutdown = async (): Promise<void> => {
 
         await generalLogger.write(SeverityEnum.info, logArea, "Watching general config files for changes", true);
         generalConfig.watch(async (event, configFilepath) => {
-            const diffs = await generalConfig.configSettingsDiffBetweenFileAndMem();
+            const diffs = await generalConfig.diffBetweenFileAndMem();
             if (diffs && diffs.includes('userPluginPaths')) {
                 // Make sure new user plugin paths are reflected in user plugin watcher
                 await pluginFinder.endWatchForUserPlugins();

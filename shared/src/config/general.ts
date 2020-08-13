@@ -57,7 +57,7 @@ const get = async (): Promise<GeneralConfig | null> => {
         if (await isConfigInMemoryMostRecent(generalConfigFilePath)) return cachedConfig;
 
         const configJson = (await fsPromises.readFile(generalConfigFilePath)).toString();
-        const config = validationUtil.parseAndValidatedJson(configJson);
+        const config = validationUtil.parseAndValidateJson(configJson);
         if (!implementsGeneralConfig(config)) {
             await generalLogger.write(SeverityEnum.critical, logArea, `The JSON in ${generalConfigFilePath} is not a valid GeneralConfig type`, true);
             return null;

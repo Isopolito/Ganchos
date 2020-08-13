@@ -7,10 +7,8 @@ export class PluginInstanceManager {
     }
 
     setCanceledIfRunning(pluginName: string, onCancel: () => Promise<void>): Promise<void> {
-        if (!this.runningStatus[pluginName]) {
-            // Not running, so execute onCancel handler immediately 
-            return onCancel();
-        }
+        // If not running execute onCancel handler immediately 
+        if (!this.runningStatus[pluginName]) return onCancel();
 
         this.pluginInstanceCancelHandlers[pluginName] = onCancel;
     }
