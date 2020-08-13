@@ -7,5 +7,5 @@ const shouldNotRunOnThisOs = (osTypes: OsType[]): boolean => {
 }
 
 export {
-    shouldNotRunOnThisOs as shouldNotRunOnThisOs,
+    shouldNotRunOnThisOs,
 }
