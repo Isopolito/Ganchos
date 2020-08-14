@@ -78,8 +78,6 @@ const watchUserPlugins = async (callback: (event: string, pluginFileName: string
     const config = await generalConfig.getAndCreateDefaultIfNotExist();
     if (!config.userPluginPaths) return;
 
-    console.log(`watchUserPlugins - userPluginPath: ${config.userPluginPaths}`);
-
     userPluginWatcher = chokidar.watch(config.userPluginPaths, {
         persistent: true,
         usePolling: false,
