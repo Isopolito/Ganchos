@@ -1,5 +1,5 @@
 import path from 'path';
-import { pluginConfig, generalConfig, generalLogger, SeverityEnum } from 'ganchos-shared'
+import { pluginConfig, generalConfig, generalLogger, SeverityEnum, fileUtil } from 'ganchos-shared'
 import * as pluginFinder from './plugins/pluginsFinder';
 import { beginScheduleMonitoring as beginGanchosPluginScheduler, scheduleSingleGanchosPlugin } from './plugins/scheduled/ganchoPlugins';
 import { beginScheduleMonitoring as beginUserPluginScheduler, scheduleSingleUserPlugin } from './plugins/scheduled/userPlugins';
@@ -28,6 +28,8 @@ const shutdown = async (): Promise<void> => {
 
 (async () => {
     try {
+        fileUtil.clearWriteLocks();
+
         process.on('SIGINT', async () => await shutdown());
         process.on('SIGTERM', async () => await shutdown());
         process.on('SIGQUIT', async () => await shutdown());

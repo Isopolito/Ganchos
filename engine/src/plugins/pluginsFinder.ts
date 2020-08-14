@@ -50,7 +50,6 @@ const fetchUserPlugins = async (): Promise<UserPlugin[]> => {
             const plugin = await createUserPluginFromMetaFile(filePath);
             if (plugin) plugins.push(plugin);
         }
-
         return plugins;
     } catch (e) {
         await generalLogger.write(SeverityEnum.critical, logArea, `Unable to fetch user plugins: ${e}`);

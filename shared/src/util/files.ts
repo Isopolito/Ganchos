@@ -18,7 +18,7 @@ const getEnvBasedAppName = (): string => {
 const doesPathExist = (pathToCheck: string) => sh.test('-f', pathToCheck) || sh.test('-d', pathToCheck);
 
 const getAllFiles = async (paths: string[], fileNameEndsWith?: string): Promise<string[]> => {
-    const files = [] as string[];
+    const files:string[] = [];
 
     for (const filePath of paths) {
         if (!doesPathExist(filePath)) continue;
@@ -38,12 +38,18 @@ const getAppBaseDir = (): string => path.join(os.homedir(), getEnvBasedAppName()
 
 const getConfigPath = (): string => path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config, generalConstants.General);
 
+const getLogBasePath = (): string => path.join(getAppBaseDir(), generalConstants.LogDir);
+
 const getPluginConfigPath = (pluginName: string): string => {
     return path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config, generalConstants.Plugin, pluginName);
 }
 
 const getPluginConfigBasePath = (): string => {
     return path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config, generalConstants.Plugin);
+}
+
+const clearWriteLocks = (): void => {
+    sh.rm("-rf", path.join(getLogBasePath(), "*.lock"));
 }
 
 export {
@@ -55,4 +61,6 @@ export {
     getPluginConfigBasePath,
     doesPathExist,
     getAllFiles,
+    clearWriteLocks,
+    getLogBasePath,
 }
