@@ -52,6 +52,14 @@ const clearWriteLocks = (): void => {
     sh.rm("-rf", path.join(getLogBasePath(), "*.lock"));
 }
 
+const interpolateHomeTilde = (path: string[] | string): string[] | string => {
+    if (!path) return '';
+
+    return typeof path === 'string'
+        ? path.replace('~', os.homedir())
+        : path.map(p => p && p.replace('~', os.homedir()));
+}
+
 export {
     removeExtension,
     touch,
@@ -63,4 +71,5 @@ export {
     getAllFiles,
     clearWriteLocks,
     getLogBasePath,
+    interpolateHomeTilde,
 }
