@@ -1,9 +1,9 @@
+import queue from 'queue';
+import * as path from 'path';
 import chokidar from 'chokidar';
+import * as shelljs from 'shelljs';
 import * as differ from 'deep-diff';
 import { promises as fsPromises } from 'fs';
-import * as properLockFile from 'proper-lockfile';
-import * as path from 'path';
-import * as shelljs from 'shelljs';
 
 import { getConfigPath, doesPathExist, touch, getAppBaseDir } from '../util/files';
 import { generalLogger, SeverityEnum, validationUtil, systemUtil, fileUtil } from '../';
@@ -20,6 +20,7 @@ let configOnLastSave: GeneralConfig;
 
 const logArea = "general config";
 let watcher: chokidar.FSWatcher;
+const saveQueue = queue({ results: [], concurrency: 1, autostart: true, timeout: 5000 });
 
 /*========================================================================================*/
 
@@ -85,14 +86,14 @@ const save = async (config: GeneralConfig) => {
         const configPath = getConfigPath();
         doesPathExist(configPath) || await touch(configPath);
 
-        const release = await properLockFile.lock(configPath, { retries: 5 });
-        await fsPromises.writeFile(configPath, JSON.stringify(config, null, 4));
-        await release();
+        saveQueue.push(async () => {
+            await fsPromises.writeFile(configPath, JSON.stringify(config, null, 4))
 
-        const clonedConfig = systemUtil.deepClone(config);
-        cachedConfig = clonedConfig;
-        cachedConfig.lastUpdatedTimeStamp = Date.now();
-        configOnLastSave = clonedConfig;
+            const clonedConfig = systemUtil.deepClone(config);
+            cachedConfig = clonedConfig;
+            cachedConfig.lastUpdatedTimeStamp = Date.now();
+            configOnLastSave = clonedConfig;
+        });
     } catch (e) {
         await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `Exception - ${e}`, true);
     }

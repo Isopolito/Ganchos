@@ -1,5 +1,6 @@
 import * as path from 'path';
 import { spawn, Thread, Worker } from "threads";
+import * as appRoot from 'app-root-path'
 import { generalLogger, pluginLogger, SeverityEnum, GanchosExecutionArguments, systemUtil, fileUtil } from 'ganchos-shared';
 import { fetchGanchosPluginNames } from "../pluginsFinder";
 import { execute as executeGanchosPlugin } from '../execution/ganchosPlugin';
@@ -7,26 +8,19 @@ import { PluginInstanceManager } from './PluginInstanceManager';
 
 //======================================================================================================
 
-const pluginFolder = "./pluginCollection/";
 const logArea = "ganchos schedule runner";
 const badConfigWaitTimeInMin = 5;
 const pluginInstanceManager = new PluginInstanceManager();
 
 //======================================================================================================
 
-const isGanchosPluginScheduable = async (pluginName: string, buildPath: boolean = true): Promise<boolean> => {
+const isGanchosPluginEligibleForSchedule = async (pluginName: string): Promise<boolean> => {
     let thread;
     try {
-        const fullPath = buildPath ? path.join(pluginFolder, pluginName) : pluginName;
-        if (!fileUtil.doesPathExist(fullPath)) {
-            await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Plugin path invalid: ${fullPath}`);
-            return false;
-        }
-
-        thread = await spawn(new Worker(fullPath));
+        thread = await spawn(new Worker(path.join('../', fileUtil.getGanchosPluginPath(), pluginName)));
         return await thread.isEligibleForSchedule();
     } catch (e) {
-        await generalLogger.write(SeverityEnum.error, logArea, `Exception (${isGanchosPluginScheduable.name}) - ${e}`);
+        await generalLogger.write(SeverityEnum.error, logArea, `Exception (${isGanchosPluginEligibleForSchedule.name}) - ${e}`);
         return false;
     } finally {
         thread && await Thread.terminate(thread);
@@ -66,7 +60,7 @@ const runGanchosPluginAndReschedule = async (pluginName: string): Promise<void> 
 const getSchedulingEligibleGanchosPlugins = async (): Promise<string[]> => {
     const plugins: string[] = [];
     for (const pluginName of await fetchGanchosPluginNames(true)) {
-        if (await isGanchosPluginScheduable(pluginName)) plugins.push(pluginName);
+        if (await isGanchosPluginEligibleForSchedule(pluginName)) plugins.push(pluginName);
     }
     return plugins;
 }
@@ -86,7 +80,7 @@ const beginScheduleMonitoring = async (): Promise<void> => {
 }
 
 const scheduleSingleGanchosPlugin = async (pluginPath: string): Promise<void> => {
-    if (!isGanchosPluginScheduable(pluginPath, false)) return;
+    if (!isGanchosPluginEligibleForSchedule(pluginPath)) return;
 
     const pluginName = path.basename(pluginPath);
     await pluginInstanceManager.setCanceledIfRunning(pluginName, async () => await runGanchosPluginAndReschedule(pluginName));

@@ -1,8 +1,9 @@
 import { spawn, Thread, Worker } from "threads";
 import { performance } from 'perf_hooks';
+import * as path from 'path';
 import {
     osUtil, systemUtil, pluginLogger, SeverityEnum, GanchosExecutionArguments,
-    PluginLogMessage, pluginConfig, shouldEventBeIgnored, validationUtil,
+    PluginLogMessage, pluginConfig, shouldEventBeIgnored, validationUtil, fileUtil,
 } from 'ganchos-shared';
 
 const logArea = 'ganchos execution';
@@ -10,7 +11,8 @@ const logArea = 'ganchos execution';
 const getAndValidateDefaultConfig = async (pluginName: string): Promise<string> => {
     let thread;
     try {
-        thread = await spawn(new Worker(`./pluginCollection/${pluginName}`));
+        const pluginPath = path.join('../', fileUtil.getGanchosPluginPath(), pluginName);
+        thread = await spawn(new Worker(pluginPath));
         const config = await thread.getDefaultConfigJson();
 
         // Ensure plugin config exists and is in memory for subsequent comparisons
@@ -32,7 +34,8 @@ const getAndValidateDefaultConfig = async (pluginName: string): Promise<string> 
 const execute = async (pluginName: string, args: GanchosExecutionArguments): Promise<any> => {
     let thread;
     try {
-        thread = await spawn(new Worker(`./pluginCollection/${pluginName}`));
+        const pluginPath = path.join('../', fileUtil.getGanchosPluginPath(), pluginName);
+        thread = await spawn(new Worker(pluginPath));
         const defaultConfig = await thread.getDefaultConfigJson();
         const config = await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(pluginName, defaultConfig);
         if (!config) {

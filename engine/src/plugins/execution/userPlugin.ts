@@ -66,13 +66,13 @@ const executeNoTimer = async (userPlugin: UserPlugin, event: EventType, eventDat
         spawned.stdout.on('data', data => {
             const messageParts = prepareInputData(data);
             if (!messageParts) return;
-            pluginLogger.writeSync(SeverityEnum.info, userPlugin.name, messageParts[0], messageParts[1]);
+            pluginLogger.write(SeverityEnum.info, userPlugin.name, messageParts[0], messageParts[1]);
         });
 
         spawned.stderr.on('data', data => {
             const messageParts = prepareInputData(data);
             if (!messageParts) return;
-            pluginLogger.writeSync(SeverityEnum.info, userPlugin.name, messageParts[0], messageParts[1]);
+            pluginLogger.write(SeverityEnum.info, userPlugin.name, messageParts[0], messageParts[1]);
         });
 
         return true;

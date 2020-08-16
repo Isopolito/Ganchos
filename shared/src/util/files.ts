@@ -6,7 +6,9 @@ import recursive from 'recursive-readdir';
 import * as generalConstants from '../constants/names';
 import * as pathConstants from '../constants/paths';
 
-const touch = async (configPath: string) => {
+const touch = async (configPath: string): Promise<void> => {
+    if (sh.test('-e', configPath)) return;
+
     sh.mkdir('-p', path.dirname(configPath));
     sh.touch(configPath);
 }
@@ -16,7 +18,7 @@ const getEnvBasedAppName = (): string => {
     return env === 'prod' ? generalConstants.AppDir : `${generalConstants.AppDir}-${env}`;
 }
 
-const doesPathExist = (pathToCheck: string) => sh.test('-f', pathToCheck) || sh.test('-d', pathToCheck);
+const doesPathExist = (pathToCheck: string): boolean => sh.test('-f', pathToCheck) || sh.test('-d', pathToCheck);
 
 const getAllFiles = async (paths: string[], fileNameEndsWith?: string): Promise<string[]> => {
     const files:string[] = [];
@@ -55,10 +57,6 @@ const getGanchosPluginPath = (appRoot: string|null = null): string => {
         : pathConstants.GanchosRelativePluginPath;
 }
 
-const clearWriteLocks = (): void => {
-    sh.rm("-rf", path.join(getLogBasePath(), "*.lock"));
-}
-
 const interpolateHomeTilde = (path: string[] | string): string[] | string => {
     if (!path) return '';
 
@@ -76,7 +74,6 @@ export {
     getPluginConfigBasePath,
     doesPathExist,
     getAllFiles,
-    clearWriteLocks,
     getLogBasePath,
     interpolateHomeTilde,
     getGanchosPluginPath,

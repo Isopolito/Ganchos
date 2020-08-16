@@ -1,5 +1,5 @@
 import chokidar from 'chokidar';
-import { fileUtil, generalLogger, SeverityEnum, pluginConfig } from 'ganchos-shared';
+import { fileUtil, generalLogger, SeverityEnum, pluginConfig, systemUtil } from 'ganchos-shared';
 import { dispatch } from '../plugins/pluginEventDispatcher';
 import { fetchUserPlugins, fetchGanchosPluginNames } from '../plugins/pluginsFinder';
 import { getAndValidateDefaultConfig } from '../plugins/execution/ganchosPlugin';
@@ -16,6 +16,8 @@ const getAndVerifyPluginWatchPaths = async (pluginName: string, defaultJsonConfi
         const config = await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(pluginName, defaultJsonConfig);
         const configObj = JSON.parse(config);
         if (!configObj.watchPaths) return [];
+
+        configObj.watchPaths = fileUtil.interpolateHomeTilde(configObj.watchPaths);
         return configObj.watchPaths.filter((wp: string) => isPathLegit(wp));
     } catch (e) {
         await generalLogger.write(SeverityEnum.error, logArea, `Exception (${getAndVerifyPluginWatchPaths.name}) - ${e}`);
@@ -34,7 +36,7 @@ const processAllPluginsForWatchPaths = async (): Promise<string[]> => {
     }
 
     const results = await Promise.all(tasks);
-    return results.reduce((arr, val) => [...arr, ...val], []); // flatten arrays
+    return systemUtil.flattenAndDistinct(results);
 }
 
 const isPathLegit = (path: string): boolean => {
