@@ -6,7 +6,7 @@ import * as path from 'path';
 import * as shelljs from 'shelljs';
 
 import { getConfigPath, doesPathExist, touch, getAppBaseDir } from '../util/files';
-import { generalLogger, SeverityEnum, validationUtil, systemUtil } from '../';
+import { generalLogger, SeverityEnum, validationUtil, systemUtil, fileUtil } from '../';
 import { GeneralConfig, implementsGeneralConfig } from './GeneralConfig';
 
 /*========================================================================================*/
@@ -69,7 +69,9 @@ const get = async (): Promise<GeneralConfig | null> => {
         cachedConfig = config;
         cachedConfig.lastUpdatedTimeStamp = Date.now();
 
-        return JSON.parse(configJson); // return a deep clone
+        const clonedConfig = JSON.parse(configJson); // deep clone
+        clonedConfig.userPluginPaths = fileUtil.interpolateHomeTilde(clonedConfig.userPluginPaths);
+        return clonedConfig;
     } catch (e) {
         await generalLogger.write(SeverityEnum.critical, logArea, `Can't create GeneralConfig with JSON from file - ${generalConfigFilePath}: ${e}`, true);
         return null;
