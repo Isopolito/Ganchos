@@ -4,6 +4,7 @@ import * as os from 'os';
 import recursive from 'recursive-readdir';
 
 import * as generalConstants from '../constants/names';
+import * as pathConstants from '../constants/paths';
 
 const touch = async (configPath: string) => {
     sh.mkdir('-p', path.dirname(configPath));
@@ -48,8 +49,22 @@ const getPluginConfigBasePath = (): string => {
     return path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config, generalConstants.Plugin);
 }
 
+const getGanchosPluginPath = (appRoot: string|null = null): string => {
+    return appRoot
+        ? path.join(appRoot, 'dist','plugins', pathConstants.GanchosRelativePluginPath)
+        : pathConstants.GanchosRelativePluginPath;
+}
+
 const clearWriteLocks = (): void => {
     sh.rm("-rf", path.join(getLogBasePath(), "*.lock"));
+}
+
+const interpolateHomeTilde = (path: string[] | string): string[] | string => {
+    if (!path) return '';
+
+    return typeof path === 'string'
+        ? path.replace('~', os.homedir())
+        : path.map(p => p && p.replace('~', os.homedir()));
 }
 
 export {
@@ -63,4 +78,6 @@ export {
     getAllFiles,
     clearWriteLocks,
     getLogBasePath,
+    interpolateHomeTilde,
+    getGanchosPluginPath,
 }
