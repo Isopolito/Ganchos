@@ -1,7 +1,7 @@
+import queue from 'queue';
 import chokidar from 'chokidar';
 import * as differ from 'deep-diff';
 import { promises as fsPromises } from 'fs';
-import * as properLockFile from 'proper-lockfile';
 import { generalLogger, SeverityEnum, pluginLogger } from '..';
 import { parseAndValidateJson } from '../util/validation';
 import { getPluginConfigPath, doesPathExist, touch, removeExtension, getPluginConfigBasePath } from '../util/files';
@@ -11,6 +11,7 @@ import { getPluginConfigPath, doesPathExist, touch, removeExtension, getPluginCo
 const logArea = "plugin config";
 let pluginInMemory: { [key: string]: string } = {}
 let watcher: chokidar.FSWatcher;
+const saveQueue = queue({ results: [], concurrency: 1, autostart: true, timeout: 5000 });
 
 /*========================================================================================*/
 
@@ -36,7 +37,7 @@ const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<st
     }
 }
 
-const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?: boolean): Promise<void|null> => {
+const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?: boolean): Promise<void | null> => {
     if (!jsonConfig) {
         await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `pluginName and jsonConfig required`);
         return null;
@@ -55,9 +56,7 @@ const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?
             jsonConfig = JSON.stringify(configObj, null, 4);
         }
 
-        const release = await properLockFile.lock(configPath, { retries: 5 });
-        await fsPromises.writeFile(configPath, jsonConfig);
-        await release();
+        saveQueue.push(() => fsPromises.writeFile(configPath, jsonConfig as string));
     } catch (e) {
         await generalLogger.write(SeverityEnum.error, `${logArea} - ${save.name}`, `Exception - ${e}`);
     }
@@ -110,19 +109,26 @@ const endWatch = async (): Promise<void> => {
 const getFromMemory = (pluginName: string): string => pluginInMemory[pluginName];
 
 const diffBetweenFileAndMem = async (pluginName: string): Promise<string[]> => {
-    const inMemoryConfig = getFromMemory(pluginName);
-    if (!inMemoryConfig) return [];
+    try {
 
-    const fromFile = await get(pluginName);
-    if (!fromFile) return [];
+        const inMemoryConfig = getFromMemory(pluginName);
+        if (!inMemoryConfig) return [];
 
-    const diffs = differ.diff(JSON.parse(fromFile), JSON.parse(inMemoryConfig));
-    if (!diffs) return [];
+        const fromFile = await get(pluginName);
+        if (!fromFile) return [];
 
-    return diffs.reduce((paths: any[], diff) => {
-        if (diff.path) paths = paths.concat(diff.path);
-        return paths;
-    }, []);
+        const diffs = differ.diff(JSON.parse(fromFile), JSON.parse(inMemoryConfig));
+        if (!diffs) return [];
+
+        return diffs.reduce((paths: any[], diff) => {
+            if (diff.path) paths = paths.concat(diff.path);
+            return paths;
+        }, []);
+    } catch (e) {
+        await generalLogger.write(SeverityEnum.error, `${logArea} - ${diffBetweenFileAndMem.name}`, `Exception - ${e}`);
+    }
+
+    return [];
 }
 
 /*========================================================================================*/

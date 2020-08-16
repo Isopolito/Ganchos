@@ -5,14 +5,14 @@ import * as path from 'path'
 import { fileUtil, validationUtil, generalLogger, SeverityEnum, generalConfig, UserPlugin, implementsUserPlugin, pluginConfig } from 'ganchos-shared';
 
 const logArea = "pluginFinder";
-const ganchosPluginPath = '/src/plugins/pluginCollection';
 let ganchosWatcher: chokidar.FSWatcher;
 let userPluginWatcher: chokidar.FSWatcher;
 
 const fetchGanchosPluginNames = async (convertExtensionToJs?: boolean): Promise<string[]> => {
     try {
-        const dirPath = path.join(`${appRoot}`, ganchosPluginPath);
+        const dirPath = fileUtil.getGanchosPluginPath(appRoot.toString());
         return (await fs.readdir(dirPath))
+            .filter(file => file.endsWith('.ts') || file.endsWith('js'))
             .map(file => convertExtensionToJs ? file.replace(".ts", ".js") : file);
     } catch (e) {
         await generalLogger.write(SeverityEnum.critical, logArea, `Unable to fetch ganchos specific plugins: ${e}`);
@@ -60,7 +60,7 @@ const fetchUserPlugins = async (): Promise<UserPlugin[]> => {
 const watchGanchosPlugins = (callback: (event: string, pluginConfigObj: any) => void): void => {
     if (ganchosWatcher) return;
 
-    const ganchosPluginFullPath = path.join(`${appRoot}`, ganchosPluginPath);
+    const ganchosPluginFullPath = fileUtil.getGanchosPluginPath(appRoot.toString());
     ganchosWatcher = chokidar.watch(ganchosPluginFullPath, {
         //ignored: /(^|[/\\])\../,
         persistent: true,
