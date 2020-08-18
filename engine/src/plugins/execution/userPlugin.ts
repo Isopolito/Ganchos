@@ -2,7 +2,7 @@ import path from "path"
 import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 import { performance } from 'perf_hooks';
 import {
-    UserPlugin, pluginConfig, EventType, pluginLogger,
+    UserPlugin, pluginConfig, EventType, pluginLogger, fileUtil,
     SeverityEnum, systemUtil, osUtil, shouldEventBeIgnored
 } from "ganchos-shared"
 
@@ -77,25 +77,27 @@ const executeNoTimer = async (userPlugin: UserPlugin, event: EventType, eventDat
 
         return true;
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, userPlugin.name, logArea, e);
+        pluginLogger.write(SeverityEnum.error, userPlugin.name, logArea, e);
         return false;
     } finally {
         (spawned as any) = null;
     }
 }
 
+// NOTE: eventData depends on the context. For instance, if this is called from file listening it would be a file path
 const execute = async (userPlugin: UserPlugin, event: EventType, eventData: string): Promise<void> => {
     const config = await pluginConfig.get(userPlugin.name, true);
     const configObj = config ? JSON.parse(config) : userPlugin.defaultJsonConfig;
 
     if (configObj !== undefined && configObj.enabled === false) return;
+    if (fileUtil.doesParentPathHaveAChild(eventData, configObj.excludeWatchPaths)) return;
 
     if (configObj.runDelayInMinutes) await systemUtil.waitInMinutes(configObj.runDelayInMinutes);
 
     const beforeTime = performance.now();
     const didExecute = await executeNoTimer(userPlugin, event, eventData, config);
     const afterTime = performance.now();
-    didExecute && await pluginLogger.write(SeverityEnum.info, userPlugin.name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
+    didExecute && pluginLogger.write(SeverityEnum.info, userPlugin.name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
 }
 
 export {

@@ -65,6 +65,17 @@ const interpolateHomeTilde = (path: string[] | string): string[] | string => {
         : path.map(p => p && p.replace('~', os.homedir()));
 }
 
+const doesParentPathHaveAChild = (parentPath: string, childPaths: string[]): boolean => {
+    if (!parentPath || !childPaths || childPaths.length < 1) return false;
+
+    for (const childPath of childPaths) {
+        const relative = path.relative(parentPath, childPath);
+        if (relative && !relative.startsWith('..') && !path.isAbsolute(relative)) return true;
+    }
+
+    return false;
+}
+
 export {
     removeExtension,
     touch,
@@ -77,4 +88,5 @@ export {
     getLogBasePath,
     interpolateHomeTilde,
     getGanchosPluginPath,
+    doesParentPathHaveAChild,
 }

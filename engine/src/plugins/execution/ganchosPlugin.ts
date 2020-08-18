@@ -23,7 +23,7 @@ const getAndValidateDefaultConfig = async (pluginName: string): Promise<string> 
 
         return JSON.stringify(configObj);
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.info, pluginName, logArea, `Exception (${getAndValidateDefaultConfig.name})- ${e}`);
+        pluginLogger.write(SeverityEnum.info, pluginName, logArea, `Exception (${getAndValidateDefaultConfig.name})- ${e}`);
     }
     finally {
         thread && await Thread.terminate(thread);
@@ -39,7 +39,7 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
         const defaultConfig = await thread.getDefaultConfigJson();
         const config = await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(pluginName, defaultConfig);
         if (!config) {
-            await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Json configuration for plugin is missing or invalid: ${defaultConfig}`);
+            pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Json configuration for plugin is missing or invalid: ${defaultConfig}`);
             return;
         }
         args.jsonConfig = config;
@@ -48,6 +48,7 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
         if (configObj.enabled !== undefined && configObj.enabled === false) return configObj;
         if (args.eventType && args.eventType !== 'none' && shouldEventBeIgnored(args.eventType, await thread.getEventTypes())) return configObj;
         if (typeof thread.getOsTypesToRunOn === 'function' && osUtil.shouldNotRunOnThisOs(await thread.getOsTypesToRunOn())) return configObj;
+        if (fileUtil.doesParentPathHaveAChild(args.filePath, configObj.excludeWatchPaths)) return configObj;
 
         if (configObj.runDelayInMinutes) await systemUtil.waitInMinutes(configObj.runDelayInMinutes);
 
@@ -60,11 +61,11 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
         const beforeTime = performance.now();
         await thread.run(args);
         const afterTime = performance.now();
-        await pluginLogger.write(SeverityEnum.info, pluginName, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
+        pluginLogger.write(SeverityEnum.info, pluginName, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
 
         return configObj;
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${execute.name}) - ${e}`);
+        pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${execute.name}) - ${e}`);
         return null;
     } finally {
         thread && await Thread.terminate(thread);
