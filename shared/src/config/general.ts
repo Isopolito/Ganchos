@@ -2,7 +2,6 @@ import queue from 'queue';
 import * as path from 'path';
 import chokidar from 'chokidar';
 import * as shelljs from 'shelljs';
-import * as differ from 'deep-diff';
 import { promises as fsPromises } from 'fs';
 
 import { getConfigPath, doesPathExist, touch, getAppBaseDir } from '../util/files';
@@ -13,10 +12,6 @@ import { GeneralConfig, implementsGeneralConfig } from './GeneralConfig';
 
 // Cached for faster access (updated on get())
 let cachedConfig: GeneralConfig;
-
-// Config file from last save (updated on save())
-// This is used to compare what's on disk to what's in memory
-let configOnLastSave: GeneralConfig;
 
 const logArea = "general config";
 let watcher: chokidar.FSWatcher;
@@ -51,13 +46,19 @@ const getAndCreateDefaultIfNotExist = async (): Promise<GeneralConfig | null> =>
     return systemUtil.deepClone(defaultConfig);
 }
 
+const getJsonFromConfigFile = async (): Promise<string | null> => {
+    const generalConfigFilePath = getConfigPath();
+    const rawData = await fsPromises.readFile(generalConfigFilePath);
+    return rawData ? rawData.toString() : null;
+}
+
 const get = async (): Promise<GeneralConfig | null> => {
     const generalConfigFilePath = getConfigPath();
     try {
         if (!doesPathExist(generalConfigFilePath)) return null;
         if (await isConfigInMemoryMostRecent(generalConfigFilePath)) return cachedConfig;
 
-        const configJson = (await fsPromises.readFile(generalConfigFilePath)).toString();
+        const configJson = await getJsonFromConfigFile();
         const config = validationUtil.parseAndValidateJson(configJson);
         if (!implementsGeneralConfig(config)) {
             await generalLogger.write(SeverityEnum.critical, logArea, `The JSON in ${generalConfigFilePath} is not a valid GeneralConfig type`, true);
@@ -70,7 +71,7 @@ const get = async (): Promise<GeneralConfig | null> => {
         cachedConfig = config;
         cachedConfig.lastUpdatedTimeStamp = Date.now();
 
-        const clonedConfig = JSON.parse(configJson); // deep clone
+        const clonedConfig = JSON.parse(configJson as string); // deep clone
         clonedConfig.userPluginPaths = fileUtil.interpolateHomeTilde(clonedConfig.userPluginPaths);
         return clonedConfig;
     } catch (e) {
@@ -99,7 +100,7 @@ const save = async (config: GeneralConfig) => {
     }
 }
 
-const watch = (callback : (eventName: string, configFile: string) => Promise<void>): void => {
+const watch = (callback: (eventName: string, configFile: string) => Promise<void>): void => {
     const configPath = getConfigPath();
     watcher = chokidar.watch(configPath, {
         persistent: true,
@@ -118,25 +119,6 @@ const endWatch = async (): Promise<void> => {
     }
 }
 
-const diffBetweenFileAndMem = async (): Promise<string[]> => {
-    if (!configOnLastSave) return [];
-
-    const fromFile = await get();
-    if (!fromFile) return [];
-
-    const diffs = differ.diff(fromFile, configOnLastSave);
-    if (!diffs) return [];
-
-    const flatDiffs = diffs.reduce((paths: any[], diff) => {
-        if (diff.path) paths = paths.concat(diff.path);
-        return paths;
-    }, []);
-
-    // If config has been changed outside of ganchos, sync up changes
-    if (flatDiffs.length > 1) configOnLastSave = fromFile;
-    return flatDiffs;
-}
-
 /*========================================================================================*/
 
 export {
@@ -144,6 +126,6 @@ export {
     endWatch,
     save,
     get,
+    getJsonFromConfigFile,
     getAndCreateDefaultIfNotExist,
-    diffBetweenFileAndMem 
 };

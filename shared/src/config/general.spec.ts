@@ -71,27 +71,4 @@ describe('** General Config **', () => {
             if (testDir.endsWith('test')) sh.rm('-rf', testDir);
         });
     });
-
-    describe(`A call to ${generalConfig.diffBetweenFileAndMem.name}`, () => {
-        before(() => {
-            const testDir = fileUtil.getAppBaseDir();
-            if (testDir.endsWith('test')) sh.rm('-rf', testDir);
-        });
-
-        it('should accurately report differences between config on disk and in memory', async () => {
-            await generalConfig.save(config);
-            config.userPluginMetaExtension = 'barley';
-            const configPath = fileUtil.getConfigPath();
-            await fsPromises.writeFile(configPath, JSON.stringify(config, null, 4));
-
-            const diffs = await generalConfig.diffBetweenFileAndMem();
-
-            expect(diffs).includes('userPluginMetaExtension');
-        });
-
-        after(() => {
-            const testDir = fileUtil.getAppBaseDir();
-            if (testDir.endsWith('test')) sh.rm('-rf', testDir);
-        });
-    });
 });

@@ -1,6 +1,5 @@
 import queue from 'queue';
 import chokidar from 'chokidar';
-import * as differ from 'deep-diff';
 import { promises as fsPromises } from 'fs';
 import { generalLogger, SeverityEnum, pluginLogger } from '..';
 import { parseAndValidateJson } from '../util/validation';
@@ -9,7 +8,6 @@ import { getPluginConfigPath, doesPathExist, touch, removeExtension, getPluginCo
 /*========================================================================================*/
 
 const logArea = "plugin config";
-let pluginInMemory: { [key: string]: string } = {}
 let watcher: chokidar.FSWatcher;
 const saveQueue = queue({ results: [], concurrency: 1, autostart: true, timeout: 5000 });
 
@@ -25,7 +23,7 @@ const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<st
         const jsonString = rawData.toString();
 
         if (!shouldValidateJson || parseAndValidateJson(jsonString)) {
-            if (!pluginInMemory[pluginName]) pluginInMemory[pluginName] = jsonString;
+            intializeInMemoryPluginConfigIfNeededpluginName(pluginName, jsonString);
             return jsonString;
         } else {
             await generalLogger.write(SeverityEnum.error, `${logArea} - get`, `Invalid json in plugin config file for '${pluginName}'`);
@@ -43,7 +41,7 @@ const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?
         return null;
     }
 
-    pluginInMemory[pluginName] = jsonConfig;
+    setPluginConfigInMemory(pluginName, jsonConfig);
 
     try {
         pluginName = removeExtension(pluginName);
@@ -106,31 +104,6 @@ const endWatch = async (): Promise<void> => {
     }
 }
 
-const getFromMemory = (pluginName: string): string => pluginInMemory[pluginName];
-
-const diffBetweenFileAndMem = async (pluginName: string): Promise<string[]> => {
-    try {
-
-        const inMemoryConfig = getFromMemory(pluginName);
-        if (!inMemoryConfig) return [];
-
-        const fromFile = await get(pluginName);
-        if (!fromFile) return [];
-
-        const diffs = differ.diff(JSON.parse(fromFile), JSON.parse(inMemoryConfig));
-        if (!diffs) return [];
-
-        return diffs.reduce((paths: any[], diff) => {
-            if (diff.path) paths = paths.concat(diff.path);
-            return paths;
-        }, []);
-    } catch (e) {
-        await generalLogger.write(SeverityEnum.error, `${logArea} - ${diffBetweenFileAndMem.name}`, `Exception - ${e}`);
-    }
-
-    return [];
-}
-
 /*========================================================================================*/
 
 export {
@@ -138,6 +111,5 @@ export {
     endWatch,
     save,
     get,
-    diffBetweenFileAndMem,
     getConfigJsonAndCreateConfigFileIfNeeded,
 };
