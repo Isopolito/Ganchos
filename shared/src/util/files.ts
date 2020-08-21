@@ -39,7 +39,7 @@ const removeExtension = (fileName: string): string => fileName ? path.parse(file
 
 const getAppBaseDir = (): string => path.join(os.homedir(), getEnvBasedAppName());
 
-const getConfigPath = (): string => path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config, generalConstants.General);
+const getGeneralConfigPath = (): string => path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config, generalConstants.General);
 
 const getLogBasePath = (): string => path.join(getAppBaseDir(), generalConstants.LogDir);
 
@@ -79,7 +79,7 @@ const doesParentPathHaveAChild = (parentPath: string, childPaths: string[]): boo
 export {
     removeExtension,
     touch,
-    getConfigPath,
+    getGeneralConfigPath,
     getAppBaseDir,
     getPluginConfigPath,
     getPluginConfigBasePath,
