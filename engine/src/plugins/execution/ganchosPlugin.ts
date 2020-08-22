@@ -16,7 +16,7 @@ const getAndValidateDefaultConfig = async (pluginName: string): Promise<string> 
         const config = await thread.getDefaultConfigJson();
 
         // Ensure plugin config exists and is in memory for subsequent comparisons
-        await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(pluginName, config);
+        await pluginConfig.getJson(pluginName, config);
 
         // Seems roundabout, but it's to validate json and strip out comments
         const configObj = validationUtil.parseAndValidateJson(config, true);
@@ -37,7 +37,7 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
         const pluginPath = path.join('../', fileUtil.getGanchosPluginPath(), pluginName);
         thread = await spawn(new Worker(pluginPath));
         const defaultConfig = await thread.getDefaultConfigJson();
-        const config = await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(pluginName, defaultConfig);
+        const config = await pluginConfig.getJson(pluginName, defaultConfig);
         if (!config) {
             pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Json configuration for plugin is missing or invalid: ${defaultConfig}`);
             return;

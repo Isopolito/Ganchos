@@ -1,4 +1,3 @@
-import path from 'path';
 import { pluginConfig, generalConfig, generalLogger, SeverityEnum } from 'ganchos-shared'
 import * as pluginFinder from './plugins/pluginsFinder';
 import { beginScheduleMonitoring as beginGanchosPluginScheduler, scheduleSingleGanchosPlugin } from './plugins/scheduled/ganchoPlugins';
@@ -7,9 +6,7 @@ import { stopIfNeededAndStart as stopStartFsEventListener, stop as stopFsEventLi
 
 const logArea = "main";
 
-const refreshListenersIfWatchPathChanges = async (pluginPath: string): Promise<void> => {
-    const pluginName = path.basename(pluginPath);
-    const diffs = await pluginConfig.diffBetweenFileAndMem(pluginName);
+const refreshListenersIfWatchPathChanges = async (diffs: string[]|null): Promise<void> => {
     if (diffs && diffs.includes('watchPaths')) await stopStartFsEventListener();
 }
 
@@ -42,8 +39,7 @@ const shutdown = async (): Promise<void> => {
         tasks.push(beginUserPluginScheduler());
 
         await generalLogger.write(SeverityEnum.info, logArea, "Watching general config files for changes", true);
-        generalConfig.watch(async (event, configFilepath) => {
-            const diffs = await generalConfig.diffBetweenFileAndMem();
+        generalConfig.watch(async (diffs) => {
             if (diffs && diffs.includes('userPluginPaths')) {
                 // Make sure new user plugin paths are reflected in user plugin watcher
                 await pluginFinder.endWatchForUserPlugins();
@@ -52,7 +48,7 @@ const shutdown = async (): Promise<void> => {
         });
 
         await generalLogger.write(SeverityEnum.info, logArea, "Watching user plugin config files for changes", true);
-        tasks.push(pluginConfig.watch((_, pluginPath) => refreshListenersIfWatchPathChanges(pluginPath)));
+        tasks.push(pluginConfig.watch((event, path, diffs) => refreshListenersIfWatchPathChanges(diffs)));
 
         // If a plugin is deleted it will automatically be removed from scheduling
         await generalLogger.write(SeverityEnum.info, logArea, "Monitoring ganchos plugin paths for changes", true);

@@ -39,27 +39,27 @@ describe('** General Config **', () => {
         });
     });
 
-    describe(`A call to ${generalConfig.getAndCreateDefaultIfNotExist.name}`, () => {
+    describe(`A call to ${generalConfig.get.name}`, () => {
         beforeEach(() => {
             const testDir = fileUtil.getAppBaseDir();
             if (testDir.endsWith('test')) sh.rm('-rf', testDir);
         });
 
         it('should return a GeneralConfig obj', async () => {
-            const configObj = await generalConfig.getAndCreateDefaultIfNotExist();
+            const configObj = await generalConfig.get();
 
             expect(implementsGeneralConfig(configObj)).to.be.true;
         });
 
         it('should create necessary directories and a default general config file', async () => {
-            await generalConfig.getAndCreateDefaultIfNotExist();
+            await generalConfig.get();
             const configObj = await generalConfig.get();
 
             expect(implementsGeneralConfig(configObj)).to.be.true;
         });
 
         it('should create default plugin directory', async () => {
-            const configObj = await generalConfig.getAndCreateDefaultIfNotExist() as GeneralConfig;
+            const configObj = await generalConfig.get() as GeneralConfig;
 
             const exists = sh.test('-d', configObj.userPluginPaths[0]);
 

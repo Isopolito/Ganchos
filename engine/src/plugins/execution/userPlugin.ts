@@ -86,8 +86,8 @@ const executeNoTimer = async (userPlugin: UserPlugin, event: EventType, eventDat
 
 // NOTE: eventData depends on the context. For instance, if this is called from file listening it would be a file path
 const execute = async (userPlugin: UserPlugin, event: EventType, eventData: string): Promise<void> => {
-    const config = await pluginConfig.get(userPlugin.name, true);
-    const configObj = config ? JSON.parse(config) : userPlugin.defaultJsonConfig;
+    let configObj = await pluginConfig.get(userPlugin.name);
+    if (!configObj) configObj = JSON.parse(userPlugin.defaultJsonConfig);
 
     if (configObj !== undefined && configObj.enabled === false) return;
     if (fileUtil.doesParentPathHaveAChild(eventData, configObj.excludeWatchPaths)) return;
@@ -95,7 +95,7 @@ const execute = async (userPlugin: UserPlugin, event: EventType, eventData: stri
     if (configObj.runDelayInMinutes) await systemUtil.waitInMinutes(configObj.runDelayInMinutes);
 
     const beforeTime = performance.now();
-    const didExecute = await executeNoTimer(userPlugin, event, eventData, config);
+    const didExecute = await executeNoTimer(userPlugin, event, eventData, JSON.stringify(configObj));
     const afterTime = performance.now();
     didExecute && pluginLogger.write(SeverityEnum.info, userPlugin.name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
 }

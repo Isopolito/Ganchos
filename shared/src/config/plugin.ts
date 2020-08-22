@@ -1,105 +1,84 @@
-import queue from 'queue';
-import chokidar from 'chokidar';
-import { promises as fsPromises } from 'fs';
-import { generalLogger, SeverityEnum, pluginLogger } from '..';
-import { parseAndValidateJson } from '../util/validation';
-import { getPluginConfigPath, doesPathExist, touch, removeExtension, getPluginConfigBasePath } from '../util/files';
+import { generalLogger, SeverityEnum, pluginLogger, validationUtil } from '..';
+import * as path from 'path';
+import { getPluginConfigPath, removeExtension, getPluginConfigBasePath } from '../util/files';
+import { ConfigManager } from './ConfigManager';
+import { Watcher } from './watcher';
 
 /*========================================================================================*/
 
 const logArea = "plugin config";
-let watcher: chokidar.FSWatcher;
-const saveQueue = queue({ results: [], concurrency: 1, autostart: true, timeout: 5000 });
+
+// TODO: remove if not needed
+//const getPluginNameFromPath = (filePath: string): string => removeExtension(path.basename(filePath));
+
+const inMemConfigManagers: { [pluginName: string]: ConfigManager } = {};
+
+const watcher = new Watcher(getPluginConfigBasePath(), async (filePath) => {
+    const pluginName = removeExtension(filePath);
+    return inMemConfigManagers[pluginName]
+        ? await inMemConfigManagers[pluginName].getFromMemory()
+        : null;
+});
 
 /*========================================================================================*/
 
-const get = async (pluginName: string, shouldValidateJson?: boolean): Promise<string | null> => {
+const getJson = async (pluginName: string, defaultJsonConfig: string|null = null): Promise<string | null> => {
     pluginName = removeExtension(pluginName);
-    const configPath = getPluginConfigPath(pluginName);
-    if (!doesPathExist(configPath)) return null;
 
-    try {
-        const rawData = await fsPromises.readFile(configPath);
-        const jsonString = rawData.toString();
-
-        if (!shouldValidateJson || parseAndValidateJson(jsonString)) {
-            intializeInMemoryPluginConfigIfNeededpluginName(pluginName, jsonString);
-            return jsonString;
-        } else {
-            await generalLogger.write(SeverityEnum.error, `${logArea} - get`, `Invalid json in plugin config file for '${pluginName}'`);
+    if (defaultJsonConfig) {
+        const configObj = validationUtil.parseAndValidateJson(defaultJsonConfig, true);
+        if (!configObj) {
+            pluginLogger.write(SeverityEnum.error, pluginName, `${logArea} - ${getJson.name}`, `Attempted to use invalid json as default`);
             return null;
         }
-    } catch (e) {
-        await generalLogger.write(SeverityEnum.critical, `${logArea} - get`, `Error. Can't parse plugin config json: ${e}`);
-        return null;
     }
+
+    if (!inMemConfigManagers[pluginName]) {
+        inMemConfigManagers[pluginName] = new ConfigManager(getPluginConfigPath(pluginName), defaultJsonConfig, pluginName);
+    }
+
+    return await inMemConfigManagers[pluginName].getJson();
+}
+
+const get = (pluginName: string): Promise<any | null> => {
+    if (!inMemConfigManagers[pluginName]) {
+        inMemConfigManagers[pluginName] = new ConfigManager(getPluginConfigPath(pluginName), null, pluginName);
+    }
+    return inMemConfigManagers[pluginName].get();
 }
 
 const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?: boolean): Promise<void | null> => {
-    if (!jsonConfig) {
-        await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `pluginName and jsonConfig required`);
-        return null;
-    }
-
-    setPluginConfigInMemory(pluginName, jsonConfig);
-
     try {
         pluginName = removeExtension(pluginName);
-        const configPath = getPluginConfigPath(pluginName);
-        doesPathExist(configPath) || await touch(configPath);
+        const configObj = validationUtil.parseAndValidateJson(jsonConfig, true);
+        if (!configObj) {
+            pluginLogger.write(SeverityEnum.error, pluginName, `${logArea} - ${save.name}`, `Attempted to save invalid json`);
+            return;
+        }
 
         if (shouldEnable) {
-            const configObj = JSON.parse(jsonConfig);
             configObj.enabled = true;
             jsonConfig = JSON.stringify(configObj, null, 4);
         }
 
-        saveQueue.push(() => fsPromises.writeFile(configPath, jsonConfig as string));
+        if (!inMemConfigManagers[pluginName]) {
+            inMemConfigManagers[pluginName] = new ConfigManager(getPluginConfigPath(pluginName), jsonConfig, pluginName);
+        }
+
+        return await inMemConfigManagers[pluginName].set(configObj);
     } catch (e) {
         await generalLogger.write(SeverityEnum.error, `${logArea} - ${save.name}`, `Exception - ${e}`);
     }
 }
 
-const getConfigJsonAndCreateConfigFileIfNeeded = async (pluginName: string, defaultJsonConfig: string): Promise<string | null> => {
-    let config = null;
-    try {
-        config = await get(pluginName);
-        const shouldCreateConfigFile = !config;
-        if (shouldCreateConfigFile) config = defaultJsonConfig;
-
-        if (!parseAndValidateJson(config)) {
-            await pluginLogger.write(SeverityEnum.error, pluginName, logArea, "Invalid JSON in config file, or if that doesn't exist, then the default config for the plugin...skipping plugin");
-            return null;
-        }
-
-        if (shouldCreateConfigFile) await save(pluginName, config, true);
-    }
-    catch (e) {
-        await generalLogger.write(SeverityEnum.error, `${logArea} - ${getConfigJsonAndCreateConfigFileIfNeeded.name}`, `Exception - ${e}`);
-    }
-    finally {
-        return config;
-    }
-}
-
-const watch = async (callback: (eventName: string, pluginPath: string) => Promise<void>): Promise<void> => {
-    if (watcher) return;
-
-    const configPath = getPluginConfigBasePath();
-    watcher = chokidar.watch(configPath, {
-        //ignored: /(^|[/\\])\../,
-        persistent: true,
-        usePolling: false,
-        ignoreInitial: true,
-    });
-
-    watcher.on('all', async (event: string, filePath: string) => await callback(event, filePath));
-    watcher.on('error', async error => await generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
+const watch = async (callback: (eventName: string, pluginPath: string, diffs: string[]|null) => Promise<void>): Promise<void> => {
+    if (!watcher) return;
+    return await watcher.beginWatch(callback);
 }
 
 const endWatch = async (): Promise<void> => {
     if (watcher) {
-        await watcher.close();
+        await watcher.endWatch();
         (watcher as any) = null;
     }
 }
@@ -111,5 +90,5 @@ export {
     endWatch,
     save,
     get,
-    getConfigJsonAndCreateConfigFileIfNeeded,
+    getJson,
 };

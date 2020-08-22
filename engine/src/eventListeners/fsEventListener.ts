@@ -13,7 +13,7 @@ const logArea = "fs event listener";
 
 const getAndVerifyPluginWatchPaths = async (pluginName: string, defaultJsonConfig: string): Promise<string[]> => {
     try {
-        const config = await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(pluginName, defaultJsonConfig);
+        const config = await pluginConfig.getJson(pluginName, defaultJsonConfig);
         const configObj = JSON.parse(config);
         if (!configObj.watchPaths) return [];
 
