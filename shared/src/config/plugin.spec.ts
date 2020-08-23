@@ -14,10 +14,11 @@ describe('** Plugin Config **', () => {
     let pluginConfigJson = '';
     let generalConfigObj;
 
-    beforeEach(async () => {
+    before(async () => {
         const testDir = fileUtil.getAppBaseDir();
         if (testDir.endsWith('test')) sh.rm('-rf', testDir);
 
+        // This will recreate new config directory and sub directories
         generalConfigObj = await generalConfig.get();
 
         pluginConfigObj = {
@@ -33,12 +34,13 @@ describe('** Plugin Config **', () => {
     describe('The "get" call', () => {
         it('should return null if plugin config JSON is invalid', async () => {
             const configPath = fileUtil.getPluginConfigPath(pluginName);
-            await touch(configPath);
+            touch(configPath);
             await fsPromises.writeFile(configPath, '{ bad json }');
 
             const configObj = await pluginConfig.get(pluginName);
+            console.log(`configObj: ${JSON.stringify(configObj)}`)
 
-            expect(configObj).to.be.null;
+            expect(configObj).to.be.eql({});
         });
 
         //it('should return  plugin config JSON (even when invalid) if "shouldValidateJson" param is false', async () => {

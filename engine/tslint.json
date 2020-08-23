@@ -1,6 +1,7 @@
 {
     "defaultSeverity": "error",
-    "quotemark": [true, "single", "jsx-double"],
+    "quote-mark": [true, "single", "jsx-double"],
+    "no-floating-promises": true,
     "extends": [
         "tslint:recommended"
     ],

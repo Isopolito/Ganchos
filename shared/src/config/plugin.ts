@@ -1,6 +1,7 @@
-import { generalLogger, SeverityEnum, pluginLogger, validationUtil, fileUtil } from '..';
 import { promises as fsPromises } from 'fs';
+
 import { getPluginConfigPath, removeExtension, getPluginConfigBasePath } from '../util/files';
+import { generalLogger, SeverityEnum, pluginLogger, validationUtil, fileUtil } from '..';
 import { ConfigManager } from './ConfigManager';
 import { Watcher } from './watcher';
 
@@ -8,13 +9,11 @@ import { Watcher } from './watcher';
 
 const logArea = "plugin config";
 
-// TODO: remove if not needed
-//const getPluginNameFromPath = (filePath: string): string => removeExtension(path.basename(filePath));
-
 const pluginConfigMgrInitializer = (pluginName: string, jsonConfig: string | null) => async (): Promise<void> => {
-    if (!jsonConfig) return;
     const pluginPath = getPluginConfigPath(pluginName);
     fileUtil.touch(pluginPath);
+
+    if (!jsonConfig) return;
     await fsPromises.writeFile(pluginPath, jsonConfig);
 }
 
@@ -30,8 +29,6 @@ const watcher = new Watcher(getPluginConfigBasePath(), async (filePath) => {
 /*========================================================================================*/
 
 const getJson = async (pluginName: string, defaultJsonConfig: string | null = null): Promise<string | null> => {
-    pluginName = removeExtension(pluginName);
-
     if (defaultJsonConfig) {
         const configObj = validationUtil.parseAndValidateJson(defaultJsonConfig, true);
         if (!configObj) {
@@ -58,6 +55,7 @@ const get = (pluginName: string): Promise<any | null> => {
             pluginName
         );
     }
+    
     return inMemConfigManagers[pluginName].get();
 }
 
