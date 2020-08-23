@@ -13,15 +13,20 @@ const getAndValidateDefaultConfig = async (pluginName: string): Promise<string> 
     try {
         const pluginPath = path.join('../', fileUtil.getGanchosPluginPath(), pluginName);
         thread = await spawn(new Worker(pluginPath));
-        const config = await thread.getDefaultConfigJson();
+        let defaultConfig = await thread.getDefaultConfigJson();
 
-        // Ensure plugin config exists and is in memory for subsequent comparisons
-        await pluginConfig.getJson(pluginName, config);
+        const configObj = validationUtil.parseAndValidateJson(defaultConfig, true);
+        if (!configObj) {
+            pluginLogger.write(SeverityEnum.info, pluginName, logArea, `Default JSON configuration for plugin is invalid`);
+            return null;
+        }
 
-        // Seems roundabout, but it's to validate json and strip out comments
-        const configObj = validationUtil.parseAndValidateJson(config, true);
+        // Comments are not stripped out
+        defaultConfig = JSON.stringify(configObj);
 
-        return JSON.stringify(configObj);
+        // Ensure plugin config exists (via default create logic) and is in memory for subsequent comparisons
+        await pluginConfig.getJson(pluginName, defaultConfig);
+        return defaultConfig;
     } catch (e) {
         pluginLogger.write(SeverityEnum.info, pluginName, logArea, `Exception (${getAndValidateDefaultConfig.name})- ${e}`);
     }
@@ -39,7 +44,7 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
         const defaultConfig = await thread.getDefaultConfigJson();
         const config = await pluginConfig.getJson(pluginName, defaultConfig);
         if (!config) {
-            pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Json configuration for plugin is missing or invalid: ${defaultConfig}`);
+            pluginLogger.write(SeverityEnum.error, pluginName, logArea, `JSON configuration for plugin is missing or invalid: ${defaultConfig}`);
             return;
         }
         args.jsonConfig = config;

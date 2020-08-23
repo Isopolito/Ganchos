@@ -1,6 +1,5 @@
 import * as path from 'path';
 import { spawn, Thread, Worker } from "threads";
-import * as appRoot from 'app-root-path'
 import { generalLogger, pluginLogger, SeverityEnum, GanchosExecutionArguments, systemUtil, fileUtil } from 'ganchos-shared';
 import { fetchGanchosPluginNames } from "../pluginsFinder";
 import { execute as executeGanchosPlugin } from '../execution/ganchosPlugin';

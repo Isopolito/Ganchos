@@ -1,5 +1,5 @@
-import { generalLogger, SeverityEnum, pluginLogger, validationUtil } from '..';
-import * as path from 'path';
+import { generalLogger, SeverityEnum, pluginLogger, validationUtil, fileUtil } from '..';
+import { promises as fsPromises } from 'fs';
 import { getPluginConfigPath, removeExtension, getPluginConfigBasePath } from '../util/files';
 import { ConfigManager } from './ConfigManager';
 import { Watcher } from './watcher';
@@ -10,6 +10,13 @@ const logArea = "plugin config";
 
 // TODO: remove if not needed
 //const getPluginNameFromPath = (filePath: string): string => removeExtension(path.basename(filePath));
+
+const pluginConfigMgrInitializer = (pluginName: string, jsonConfig: string | null) => async (): Promise<void> => {
+    if (!jsonConfig) return;
+    const pluginPath = getPluginConfigPath(pluginName);
+    fileUtil.touch(pluginPath);
+    await fsPromises.writeFile(pluginPath, jsonConfig);
+}
 
 const inMemConfigManagers: { [pluginName: string]: ConfigManager } = {};
 
@@ -22,7 +29,7 @@ const watcher = new Watcher(getPluginConfigBasePath(), async (filePath) => {
 
 /*========================================================================================*/
 
-const getJson = async (pluginName: string, defaultJsonConfig: string|null = null): Promise<string | null> => {
+const getJson = async (pluginName: string, defaultJsonConfig: string | null = null): Promise<string | null> => {
     pluginName = removeExtension(pluginName);
 
     if (defaultJsonConfig) {
@@ -34,7 +41,10 @@ const getJson = async (pluginName: string, defaultJsonConfig: string|null = null
     }
 
     if (!inMemConfigManagers[pluginName]) {
-        inMemConfigManagers[pluginName] = new ConfigManager(getPluginConfigPath(pluginName), defaultJsonConfig, pluginName);
+        inMemConfigManagers[pluginName] = new ConfigManager(
+            getPluginConfigPath(pluginName),
+            pluginConfigMgrInitializer(pluginName, defaultJsonConfig),
+            pluginName);
     }
 
     return await inMemConfigManagers[pluginName].getJson();
@@ -42,7 +52,11 @@ const getJson = async (pluginName: string, defaultJsonConfig: string|null = null
 
 const get = (pluginName: string): Promise<any | null> => {
     if (!inMemConfigManagers[pluginName]) {
-        inMemConfigManagers[pluginName] = new ConfigManager(getPluginConfigPath(pluginName), null, pluginName);
+        inMemConfigManagers[pluginName] = new ConfigManager(
+            getPluginConfigPath(pluginName),
+            pluginConfigMgrInitializer(pluginName, null),
+            pluginName
+        );
     }
     return inMemConfigManagers[pluginName].get();
 }
@@ -62,7 +76,10 @@ const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?
         }
 
         if (!inMemConfigManagers[pluginName]) {
-            inMemConfigManagers[pluginName] = new ConfigManager(getPluginConfigPath(pluginName), jsonConfig, pluginName);
+            inMemConfigManagers[pluginName] = new ConfigManager(
+                getPluginConfigPath(pluginName),
+                pluginConfigMgrInitializer(pluginName, jsonConfig),
+                pluginName);
         }
 
         return await inMemConfigManagers[pluginName].set(configObj);
@@ -71,7 +88,7 @@ const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?
     }
 }
 
-const watch = async (callback: (eventName: string, pluginPath: string, diffs: string[]|null) => Promise<void>): Promise<void> => {
+const watch = async (callback: (eventName: string, pluginPath: string, diffs: string[] | null) => Promise<void>): Promise<void> => {
     if (!watcher) return;
     return await watcher.beginWatch(callback);
 }

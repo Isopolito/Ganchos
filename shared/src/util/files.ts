@@ -6,11 +6,15 @@ import recursive from 'recursive-readdir';
 import * as generalConstants from '../constants/names';
 import * as pathConstants from '../constants/paths';
 
-const touch = async (configPath: string): Promise<void> => {
+const touch = (configPath: string): void => {
     if (sh.test('-e', configPath)) return;
 
     sh.mkdir('-p', path.dirname(configPath));
     sh.touch(configPath);
+}
+
+const makeAllDirInPath = (configPath: string): void => {
+    sh.mkdir('-p', configPath);
 }
 
 const getEnvBasedAppName = (): string => {
@@ -79,6 +83,7 @@ const doesParentPathHaveAChild = (parentPath: string, childPaths: string[]): boo
 export {
     removeExtension,
     touch,
+    makeAllDirInPath,
     getGeneralConfigPath,
     getAppBaseDir,
     getPluginConfigPath,

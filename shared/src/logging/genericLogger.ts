@@ -8,7 +8,7 @@ const write = async (name: string, messageJson: string): Promise<void> => {
 	if (!messageJson || !name) return;
 
 	const filePath = makeLogFilePath(name);
-	await touch(filePath);
+	touch(filePath);
 
 	await fs.appendFile(filePath, messageJson + os.EOL);
 }

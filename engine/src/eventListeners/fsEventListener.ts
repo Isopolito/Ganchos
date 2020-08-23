@@ -32,7 +32,7 @@ const processAllPluginsForWatchPaths = async (): Promise<string[]> => {
 
     for (const pluginName of await fetchGanchosPluginNames(true)) {
         const configString = await getAndValidateDefaultConfig(pluginName);
-        tasks.push(getAndVerifyPluginWatchPaths(pluginName, configString));
+        if (configString) tasks.push(getAndVerifyPluginWatchPaths(pluginName, configString));
     }
 
     const results = await Promise.all(tasks);
