@@ -38,7 +38,6 @@ describe('** Plugin Config **', () => {
             await fsPromises.writeFile(configPath, '{ bad json }');
 
             const configObj = await pluginConfig.get(pluginName);
-            console.log(`configObj: ${JSON.stringify(configObj)}`)
 
             expect(configObj).to.be.eql({});
         });
@@ -104,10 +103,10 @@ describe('** Plugin Config **', () => {
         });
 
         it('Should NOT create config file if one already exists', async () => {
-            await pluginConfig.getJson(pluginName, pluginConfigJson);
+            const originalJsonConfig = await pluginConfig.getJson(pluginName, pluginConfigJson);
             const fetchedConfigJson = await pluginConfig.getJson(pluginName, '{"foo": "bar"}');
 
-            expect(fetchedConfigJson).to.eql(pluginConfigJson);
+            expect(fetchedConfigJson).to.eql(originalJsonConfig);
         });
     });
 });

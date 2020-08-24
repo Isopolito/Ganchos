@@ -39,7 +39,7 @@ describe('** System Util **', () => {
 
             const result = systemUtil.flattenAndDistinct(arrays);
 
-            expect(result).to.be.eql([1,1,2,3,4,5,6,7,8,9]);
+            expect(result).to.be.eql([1,2,3,4,5,6,7,8,9]);
         });
     });
 });
