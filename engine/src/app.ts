@@ -1,8 +1,8 @@
 import { pluginConfig, generalConfig, generalLogger, SeverityEnum } from 'ganchos-shared'
 import * as pluginFinder from './plugins/pluginsFinder';
-import { beginScheduleMonitoring as beginGanchosPluginScheduler, scheduleSingleGanchosPlugin } from './plugins/scheduled/ganchoPlugins';
-import { beginScheduleMonitoring as beginUserPluginScheduler, scheduleSingleUserPlugin } from './plugins/scheduled/userPlugins';
-import { stopIfNeededAndStart as stopStartFsEventListener, stop as stopFsEventListener } from './eventListeners/fsEventListener'
+import { beginScheduleMonitoring as beginGanchosPluginScheduler, scheduleSingleGanchosPlugin } from './plugins/scheduling/ganchosPlugins';
+import { beginScheduleMonitoring as beginUserPluginScheduler, scheduleSingleUserPlugin } from './plugins/scheduling/userPlugins';
+import { stopIfNeededAndStart as stopStartFsEventListener, stop as stopFsEventListener } from './eventListening/fsEventListener'
 
 const logArea = "main";
 
@@ -23,6 +23,14 @@ const shutdown = async (): Promise<void> => {
     await generalLogger.write(SeverityEnum.info, logArea, "Goodbye", true);
 }
 
+const handleGeneralConfigChanges = async (diffs: string[] | null): Promise<void> => {
+    if (diffs && diffs.includes('userPluginPaths')) {
+        // Make sure new user plugin paths are reflected in user plugin watcher
+        await pluginFinder.endWatchForUserPlugins();
+        await pluginFinder.watchUserPlugins((event, fileName) => scheduleSingleUserPlugin(fileName));
+    }
+}
+
 (async () => {
     try {
         process.on('SIGINT', async () => await shutdown());
@@ -39,16 +47,10 @@ const shutdown = async (): Promise<void> => {
         tasks.push(beginUserPluginScheduler());
 
         await generalLogger.write(SeverityEnum.info, logArea, "Watching general config files for changes", true);
-        generalConfig.watch(async (diffs) => {
-            if (diffs && diffs.includes('userPluginPaths')) {
-                // Make sure new user plugin paths are reflected in user plugin watcher
-                await pluginFinder.endWatchForUserPlugins();
-                await pluginFinder.watchUserPlugins((event, fileName) => scheduleSingleUserPlugin(fileName));
-            }
-        });
+        generalConfig.watch((event, filePath, diffs) => handleGeneralConfigChanges(diffs));
 
         await generalLogger.write(SeverityEnum.info, logArea, "Watching user plugin config files for changes", true);
-        tasks.push(pluginConfig.watch((event, path, diffs) => refreshListenersIfWatchPathChanges(diffs)));
+        tasks.push(pluginConfig.watch((event, filePath, diffs) => refreshListenersIfWatchPathChanges(diffs)));
 
         // If a plugin is deleted it will automatically be removed from scheduling
         await generalLogger.write(SeverityEnum.info, logArea, "Monitoring ganchos plugin paths for changes", true);

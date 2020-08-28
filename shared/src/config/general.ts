@@ -16,7 +16,7 @@ const defaultConfig: GeneralConfig = {
     userPluginMetaExtension: 'meta',
 };
 
-const inMemConfigInitializer = async (): Promise<void> => {
+const configMgrInitializer = async (): Promise<void> => {
     // create general config path with default config file
     const configFilePath = getGeneralConfigPath();
     if (!fileUtil.doesPathExist(configFilePath)) {
@@ -27,7 +27,7 @@ const inMemConfigInitializer = async (): Promise<void> => {
     // create default plugin path if not exists
     fileUtil.makeAllDirInPath(defaultConfig.userPluginPaths[0]);
 }
-const inMemConfigMgr = new ConfigManager(getGeneralConfigPath(), inMemConfigInitializer, 'general');
+const inMemConfigMgr = new ConfigManager(getGeneralConfigPath(), configMgrInitializer, 'general');
 
 const watcher = new Watcher(getGeneralConfigPath(), () => inMemConfigMgr.getFromMemory());
 

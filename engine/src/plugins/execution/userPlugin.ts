@@ -90,7 +90,7 @@ const execute = async (userPlugin: UserPlugin, event: EventType, eventData: stri
     if (!configObj) configObj = JSON.parse(userPlugin.defaultJsonConfig);
 
     if (configObj !== undefined && configObj.enabled === false) return;
-    if (fileUtil.doesParentPathHaveAChild(eventData, configObj.excludeWatchPaths)) return;
+    if (fileUtil.isChildPathInParentPath(eventData, configObj.excludeWatchPaths)) return;
 
     if (configObj.runDelayInMinutes) await systemUtil.waitInMinutes(configObj.runDelayInMinutes);
 

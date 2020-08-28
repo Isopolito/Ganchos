@@ -1,7 +1,7 @@
 import queue from 'queue';
 import { promises as fsPromises } from 'fs';
 
-import { generalLogger, SeverityEnum, validationUtil, fileUtil, systemUtil } from '..';
+import { generalLogger, SeverityEnum, validationUtil, systemUtil } from '..';
 
 // Guaranteed to be called once
 type Initializer = () => Promise<void>;
@@ -35,7 +35,7 @@ export class ConfigManager {
 
     private async isConfigInMemoryMostRecent(): Promise<Boolean> {
         try {
-            if (!this.configInMemory) return false;
+            if (systemUtil.isObjectEmpty(this.configInMemory)) return false;
 
             const stats = await fsPromises.stat(this.configFilePath);
 

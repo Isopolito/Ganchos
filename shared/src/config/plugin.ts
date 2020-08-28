@@ -9,14 +9,14 @@ import { Watcher } from './watcher';
 
 const logArea = "plugin config";
 
-const pluginConfigMgrInitializer = (pluginName: string, jsonConfig: string | null) => async (): Promise<void> => {
+// Ensure plugin path always exists, and if necessary create default jsonConfig if available
+const pluginConfigMgrInitializer = (pluginName: string, defaultJsonConfig: string | null) => async (): Promise<void> => {
     const pluginPath = getPluginConfigPath(pluginName);
-    fileUtil.touch(pluginPath);
-
-    if (!jsonConfig) return;
-    await fsPromises.writeFile(pluginPath, jsonConfig);
+    if (!fileUtil.doesPathExist(pluginPath)) {
+        fileUtil.touch(pluginPath);
+        if (defaultJsonConfig) await fsPromises.writeFile(pluginPath, defaultJsonConfig);
+    }
 }
-
 const inMemConfigManagers: { [pluginName: string]: ConfigManager } = {};
 
 const watcher = new Watcher(getPluginConfigBasePath(), async (filePath) => {
@@ -28,13 +28,17 @@ const watcher = new Watcher(getPluginConfigBasePath(), async (filePath) => {
 
 /*========================================================================================*/
 
-const getJson = async (pluginName: string, defaultJsonConfig: string | null = null): Promise<string | null> => {
-    if (defaultJsonConfig) {
+const getJson = async (pluginName: string, defaultJsonConfig: any): Promise<string | null> => {
+    pluginName = removeExtension(pluginName);
+
+    if (defaultJsonConfig && typeof defaultJsonConfig === 'string') {
         const configObj = validationUtil.parseAndValidateJson(defaultJsonConfig, true);
         if (!configObj) {
             pluginLogger.write(SeverityEnum.error, pluginName, `${logArea} - ${getJson.name}`, `Attempted to use invalid json as default`);
             return null;
         }
+    } else if (defaultJsonConfig) {
+        defaultJsonConfig = JSON.stringify(defaultJsonConfig);
     }
 
     if (!inMemConfigManagers[pluginName]) {
@@ -48,6 +52,8 @@ const getJson = async (pluginName: string, defaultJsonConfig: string | null = nu
 }
 
 const get = (pluginName: string): Promise<any | null> => {
+    pluginName = removeExtension(pluginName);
+
     if (!inMemConfigManagers[pluginName]) {
         inMemConfigManagers[pluginName] = new ConfigManager(
             getPluginConfigPath(pluginName),

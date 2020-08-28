@@ -53,7 +53,7 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
         if (configObj.enabled !== undefined && configObj.enabled === false) return configObj;
         if (args.eventType && args.eventType !== 'none' && shouldEventBeIgnored(args.eventType, await thread.getEventTypes())) return configObj;
         if (typeof thread.getOsTypesToRunOn === 'function' && osUtil.shouldNotRunOnThisOs(await thread.getOsTypesToRunOn())) return configObj;
-        if (fileUtil.doesParentPathHaveAChild(args.filePath, configObj.excludeWatchPaths)) return configObj;
+        if (fileUtil.isChildPathInParentPath(args.filePath, configObj.excludeWatchPaths)) return configObj;
 
         if (configObj.runDelayInMinutes) await systemUtil.waitInMinutes(configObj.runDelayInMinutes);
 

@@ -1,6 +1,6 @@
 import chokidar from 'chokidar';
 import { fileUtil, generalLogger, SeverityEnum, pluginConfig, systemUtil } from 'ganchos-shared';
-import { dispatch } from '../plugins/pluginEventDispatcher';
+import { dispatch } from './pluginEventDispatcher';
 import { fetchUserPlugins, fetchGanchosPluginNames } from '../plugins/pluginsFinder';
 import { getAndValidateDefaultConfig } from '../plugins/execution/ganchosPlugin';
 

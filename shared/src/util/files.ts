@@ -27,7 +27,8 @@ const doesPathExist = (pathToCheck: string): boolean => sh.test('-f', pathToChec
 const getAllFiles = async (paths: string[], fileNameEndsWith?: string): Promise<string[]> => {
     const files:string[] = [];
 
-    for (const filePath of paths) {
+    for (let filePath of paths) {
+        filePath = interpolateHomeTilde(filePath) as string;
         if (!doesPathExist(filePath)) continue;
 
         for (const fileName of await recursive(filePath)) {
@@ -69,7 +70,7 @@ const interpolateHomeTilde = (path: string[] | string): string[] | string => {
         : path.map(p => p && p.replace('~', os.homedir()));
 }
 
-const doesParentPathHaveAChild = (parentPath: string, childPaths: string[]): boolean => {
+const isChildPathInParentPath = (parentPath: string, childPaths: string[]): boolean => {
     if (!parentPath || !childPaths || childPaths.length < 1) return false;
 
     for (const childPath of childPaths) {
@@ -93,5 +94,5 @@ export {
     getLogBasePath,
     interpolateHomeTilde,
     getGanchosPluginPath,
-    doesParentPathHaveAChild,
+    isChildPathInParentPath,
 }

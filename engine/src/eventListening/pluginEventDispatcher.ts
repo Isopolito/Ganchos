@@ -1,20 +1,37 @@
-import { GanchosExecutionArguments, EventType, pluginLogger, generalLogger, SeverityEnum, UserPlugin } from 'ganchos-shared';
-import * as userPluginExecute from './execution/userPlugin';
-import { fetchGanchosPluginNames, fetchUserPlugins } from "./pluginsFinder";
-import { execute as executeGanchosPlugin } from './execution/ganchosPlugin';
+import {
+    GanchosExecutionArguments,
+    EventType,
+    pluginLogger,
+    generalLogger,
+    SeverityEnum,
+    UserPlugin,
+    pluginConfig,
+    fileUtil
+} from 'ganchos-shared';
+import * as userPluginExecute from '../plugins/execution/userPlugin';
+import { fetchGanchosPluginNames, fetchUserPlugins } from "../plugins/pluginsFinder";
+import { execute as executeGanchosPlugin } from '../plugins/execution/ganchosPlugin';
 
 const logArea = "event dispatcher";
 
 const runUserPlugin = async (event: string, filePath: string, plugin: UserPlugin): Promise<void> => {
     try {
+        // Don't run plugin if the file for the event is inside an excluded directory
+        const config = await pluginConfig.get(plugin.name);
+        if (fileUtil.isChildPathInParentPath(filePath, config.excludeWatchPaths)) return;
+
         await userPluginExecute.execute(plugin, event as EventType, filePath);
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, `Exception (${runUserPlugin.name}) - ${e}`);
+        pluginLogger.write(SeverityEnum.error, plugin.name, logArea, `Exception (${runUserPlugin.name}) - ${e}`);
     }
 }
 
 const runGanchosPlugin = async (event: string, filePath: string, pluginName: string): Promise<void> => {
     try {
+        // Don't run plugin if the file for the event is inside an excluded directory
+        const config = await pluginConfig.get(pluginName);
+        if (fileUtil.isChildPathInParentPath(filePath, config.excludeWatchPaths)) return;
+
         const GanchosExecutionArguments: GanchosExecutionArguments = {
             eventType: event as EventType,
             filePath: filePath,
@@ -23,7 +40,7 @@ const runGanchosPlugin = async (event: string, filePath: string, pluginName: str
 
         await executeGanchosPlugin(pluginName, GanchosExecutionArguments);
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${runGanchosPlugin.name}) - ${e}`);
+        pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${runGanchosPlugin.name}) - ${e}`);
     }
 }
 
