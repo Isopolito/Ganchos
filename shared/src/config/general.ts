@@ -1,11 +1,11 @@
 import * as path from 'path';
 import { promises as fsPromises } from 'fs';
 
-import { getGeneralConfigPath, getAppBaseDir } from '../util/files';
+import { Watcher } from './watcher';
 import { GeneralConfig } from './GeneralConfig';
 import { ConfigManager } from './ConfigManager';
-import { Watcher } from './watcher';
-import { fileUtil } from '..';
+import { write as genLogger } from '../logging/generalLogger';
+import { makeAllDirInPath, touch, doesPathExist, getGeneralConfigPath, getAppBaseDir } from '../util/files';
 
 /*========================================================================================*/
 
@@ -19,17 +19,18 @@ const defaultConfig: GeneralConfig = {
 const configMgrInitializer = async (): Promise<void> => {
     // create general config path with default config file
     const configFilePath = getGeneralConfigPath();
-    if (!fileUtil.doesPathExist(configFilePath)) {
-        fileUtil.touch(configFilePath);
+    if (!doesPathExist(configFilePath)) {
+        touch(configFilePath);
         await fsPromises.writeFile(configFilePath, JSON.stringify(defaultConfig));
     }
 
     // create default plugin path if not exists
-    fileUtil.makeAllDirInPath(defaultConfig.userPluginPaths[0]);
+    makeAllDirInPath(defaultConfig.userPluginPaths[0]);
 }
-const inMemConfigMgr = new ConfigManager(getGeneralConfigPath(), configMgrInitializer, 'general');
 
-const watcher = new Watcher(getGeneralConfigPath(), () => inMemConfigMgr.getFromMemory());
+
+const inMemConfigMgr = new ConfigManager(getGeneralConfigPath(), genLogger, configMgrInitializer, 'general');
+const watcher = new Watcher(getGeneralConfigPath(), () => inMemConfigMgr.getFromMemory(), genLogger);
 
 /*========================================================================================*/
 

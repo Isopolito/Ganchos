@@ -42,7 +42,7 @@ const processAllPluginsForWatchPaths = async (): Promise<string[]> => {
 const isPathLegit = (path: string): boolean => {
     if (fileUtil.doesPathExist(path)) return true;
 
-    generalLogger.writeSync(SeverityEnum.error, logArea, `Watch Path '${path}' is not accessible...skipping`);
+    generalLogger.write(SeverityEnum.error, logArea, `Watch Path '${path}' is not accessible...skipping`);
     return false;
 }
 

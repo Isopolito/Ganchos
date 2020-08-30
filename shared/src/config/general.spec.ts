@@ -1,7 +1,8 @@
 import 'mocha';
 import { expect } from 'chai';
 import * as sh from 'shelljs';
-import { fileUtil, validationUtil } from '..';
+import * as fileUtil from '../util/files';
+import * as validationUtil from '../util/validation';
 import * as generalConfig from './general';
 import { GeneralConfig, implementsGeneralConfig } from './GeneralConfig';
 

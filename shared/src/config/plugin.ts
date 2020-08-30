@@ -1,7 +1,8 @@
 import { promises as fsPromises } from 'fs';
 
 import { getPluginConfigPath, removeExtension, getPluginConfigBasePath } from '../util/files';
-import { generalLogger, SeverityEnum, pluginLogger, validationUtil, fileUtil } from '..';
+import { SeverityEnum, pluginLogger, validationUtil, fileUtil } from '..';
+import * as generalLogger from '../logging/generalLogger';
 import { ConfigManager } from './ConfigManager';
 import { Watcher } from './watcher';
 
@@ -19,12 +20,16 @@ const pluginConfigMgrInitializer = (pluginName: string, defaultJsonConfig: strin
 }
 const inMemConfigManagers: { [pluginName: string]: ConfigManager } = {};
 
-const watcher = new Watcher(getPluginConfigBasePath(), async (filePath) => {
-    const pluginName = removeExtension(filePath);
-    return inMemConfigManagers[pluginName]
-        ? await inMemConfigManagers[pluginName].getFromMemory()
-        : null;
-});
+const watcher = new Watcher(
+    getPluginConfigBasePath(),
+    async (filePath) => {
+        const pluginName = removeExtension(filePath);
+        return inMemConfigManagers[pluginName]
+            ? await inMemConfigManagers[pluginName].getFromMemory()
+            : null;
+    },
+    generalLogger.write,
+);
 
 /*========================================================================================*/
 
@@ -44,6 +49,7 @@ const getJson = async (pluginName: string, defaultJsonConfig: any): Promise<stri
     if (!inMemConfigManagers[pluginName]) {
         inMemConfigManagers[pluginName] = new ConfigManager(
             getPluginConfigPath(pluginName),
+            async (severityEnum, area, msg) => pluginLogger.write(severityEnum, pluginName, area, msg),
             pluginConfigMgrInitializer(pluginName, defaultJsonConfig),
             pluginName);
     }
@@ -57,6 +63,7 @@ const get = (pluginName: string): Promise<any | null> => {
     if (!inMemConfigManagers[pluginName]) {
         inMemConfigManagers[pluginName] = new ConfigManager(
             getPluginConfigPath(pluginName),
+            async (severityEnum, area, msg) => pluginLogger.write(severityEnum, pluginName, area, msg),
             pluginConfigMgrInitializer(pluginName, null),
             pluginName
         );
@@ -82,6 +89,7 @@ const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?
         if (!inMemConfigManagers[pluginName]) {
             inMemConfigManagers[pluginName] = new ConfigManager(
                 getPluginConfigPath(pluginName),
+                async (severityEnum, area, msg) => pluginLogger.write(severityEnum, pluginName, area, msg),
                 pluginConfigMgrInitializer(pluginName, jsonConfig),
                 pluginName);
         }

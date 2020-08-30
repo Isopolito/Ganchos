@@ -1,13 +1,19 @@
 import queue from 'queue';
 import { promises as fsPromises } from 'fs';
 
-import { generalLogger, SeverityEnum, validationUtil, systemUtil } from '..';
+import * as systemUtil from '../util/system'
+import * as validationUtil from '../util/validation'
+import { SeverityEnum } from '../logging/SeverityEnum';
+import { doesPathExist } from '../util/files';
 
-// Guaranteed to be called once
+// Initializer called on first execution or if config file is removed
+// TODO: Maybe this should not be called if config file is removed? Currently only useful for testing
 type Initializer = () => Promise<void>;
+type Logger = (severity: SeverityEnum, area: string, msg: string) => void;
 
 export class ConfigManager {
     private readonly saveQueue: queue;
+    private readonly logger: Logger;
     private readonly initializer: Initializer;
     private readonly configFilePath: string;
     private configInMemory: any;
@@ -16,19 +22,20 @@ export class ConfigManager {
     private configInMemoryLastUpdated: number;
     private haveRanInitializer: boolean;
 
-    constructor(configFilePath: string, initializer: Initializer, consumerName: string = configFilePath) {
+    constructor(configFilePath: string, logger: Logger, initializer: Initializer, consumerName: string = configFilePath) {
         this.configInMemory = {};
         this.jsonConfigInMemory = null;
         this.consumerName = consumerName;
         this.configInMemoryLastUpdated = 0;
         this.configFilePath = configFilePath;
         this.saveQueue = queue({ results: [], concurrency: 1, autostart: true, timeout: 5000 });
+        this.logger = logger;
         this.initializer = initializer;
         this.haveRanInitializer = false;
     }
 
     private async runInitializerIfNeeded(): Promise<void> {
-        if (this.haveRanInitializer) return;
+        if (this.haveRanInitializer && doesPathExist(this.configFilePath)) return;
         await this.initializer();
         this.haveRanInitializer = true;
     }
@@ -42,7 +49,7 @@ export class ConfigManager {
             // TODO: Write comment that explains this line
             return stats.mtime.getTime() >= this.configInMemoryLastUpdated
         } catch (e) {
-            await generalLogger.write(SeverityEnum.error, `${ConfigManager.name} - isConfigInMemoryMostRecent`, `[${this.consumerName}] Exception - ${e}`);
+            this.logger(SeverityEnum.error, `${ConfigManager.name} - isConfigInMemoryMostRecent`, `[${this.consumerName}] Exception - ${e}`);
             return false;
         }
     }
@@ -53,7 +60,7 @@ export class ConfigManager {
             const jsonConfig = rawData.toString();
             const config = validationUtil.parseAndValidateJson(jsonConfig, true);
             if (!config) {
-                await generalLogger.write(SeverityEnum.error, `${ConfigManager.name} - updateStateFromDisk`, `[${this.consumerName}] JSON in file ${this.configFilePath} is invalid.`);
+                this.logger(SeverityEnum.error, `${ConfigManager.name} - updateStateFromDisk`, `[${this.consumerName}] JSON in file ${this.configFilePath} is invalid.`);
                 return;
             }
 
@@ -61,7 +68,7 @@ export class ConfigManager {
             this.jsonConfigInMemory = jsonConfig;
             this.configInMemoryLastUpdated = Date.now();
         } catch (e) {
-            await generalLogger.write(SeverityEnum.error, `${ConfigManager.name} - updateStateFromDisk`, `[${this.consumerName}] Exception - ${e}`);
+            this.logger(SeverityEnum.error, `${ConfigManager.name} - updateStateFromDisk`, `[${this.consumerName}] Exception - ${e}`);
         }
     }
      
@@ -75,22 +82,22 @@ export class ConfigManager {
             await this.updateStateFromDisk();
             return this.jsonConfigInMemory;
         } catch (e) {
-            await generalLogger.write(SeverityEnum.error, `${ConfigManager.name} - getJson`, `[${this.consumerName}] Exception - ${e}`);
+            this.logger(SeverityEnum.error, `${ConfigManager.name} - getJson`, `[${this.consumerName}] Exception - ${e}`);
             return null;
         }
     }
 
-    async getFromMemory(makeClone: boolean = true): Promise<any> {
+    async getFromMemory(makeClone: boolean = true): Promise<any|null> {
         try {
             await this.runInitializerIfNeeded();
             return makeClone ? systemUtil.deepClone(this.configInMemory) : this.configInMemory;
         } catch (e) {
-            await generalLogger.write(SeverityEnum.error, `${ConfigManager.name} - getFromMemory`, `[${this.consumerName}] Exception - ${e}`);
+            this.logger(SeverityEnum.error, `${ConfigManager.name} - getFromMemory`, `[${this.consumerName}] Exception - ${e}`);
             return null;
         }
     }
 
-    async get(makeClone: boolean = true): Promise<any> {
+    async get(makeClone: boolean = true): Promise<any|null> {
         try {
             await this.runInitializerIfNeeded();
             if (await this.isConfigInMemoryMostRecent()) this.getFromMemory(makeClone);
@@ -98,7 +105,8 @@ export class ConfigManager {
             await this.updateStateFromDisk();
             return await this.getFromMemory(makeClone);
         } catch (e) {
-            await generalLogger.write(SeverityEnum.error, `${ConfigManager.name} - get`, `[${this.consumerName}] Exception - ${e}`);
+            this.logger(SeverityEnum.error, `${ConfigManager.name} - get`, `[${this.consumerName}] Exception - ${e}`);
+            return null;
         }
     }
 
@@ -115,7 +123,7 @@ export class ConfigManager {
                 this.configInMemoryLastUpdated = Date.now();
             });
         } catch (e) {
-            await generalLogger.write(SeverityEnum.error, `${ConfigManager.name} - set`, `[${this.consumerName}] Exception - ${e}`);
+            this.logger(SeverityEnum.error, `${ConfigManager.name} - set`, `[${this.consumerName}] Exception - ${e}`);
         }
     }
 }

@@ -1,18 +1,21 @@
 import chokidar from 'chokidar';
 import * as differ from 'deep-diff';
 import { promises as fsPromises } from 'fs';
-import { generalLogger, SeverityEnum } from '..';
+import { SeverityEnum } from '../logging/SeverityEnum';
 
 type OnFileChangeHandler = (event: string, filePath: string, propsWithDiffs: string[]|null) => Promise<void>;
 type GetConfigFromMemory = (filePath: string) => Promise<any>;
+type Logger = (severity: SeverityEnum, area: string, msg: string) => void;
 
 export class Watcher {
+    private logger: Logger;
     private watchPath: string;
     private watcher: chokidar.FSWatcher | null;
     private getConfigFromMemory: GetConfigFromMemory;
 
-    constructor(watchPath: string, getConfigFromMemory: GetConfigFromMemory) {
+    constructor(watchPath: string, getConfigFromMemory: GetConfigFromMemory, logger: Logger) {
         this.watcher = null;
+        this.logger = logger;
         this.watchPath = watchPath;
         this.getConfigFromMemory = getConfigFromMemory;
     }
@@ -34,7 +37,7 @@ export class Watcher {
                 return paths;
             }, []);
         } catch (e) {
-            await generalLogger.write(SeverityEnum.error, `${Watcher.name} - diffBetweenFileAndMem`, `Exception - ${e}`);
+            this.logger(SeverityEnum.error, `${Watcher.name} - diffBetweenFileAndMem`, `Exception - ${e}`);
             return [];
         }
     }
@@ -48,9 +51,9 @@ export class Watcher {
             });
 
             this.watcher.on('all', async (event: string, filePath: string) => onFileChangeHandler(event, filePath, await this.diffBetweenFileAndMem(filePath)));
-            this.watcher.on('error', async error => await generalLogger.write(SeverityEnum.error, Watcher.name, `Error in watcher: ${error}`));
+            this.watcher.on('error', async error => this.logger(SeverityEnum.error, Watcher.name, `Error in watcher: ${error}`));
         } catch (e) {
-            await generalLogger.write(SeverityEnum.error, `${Watcher.name} - beginWatch`, `Exception - ${e}`);
+            this.logger(SeverityEnum.error, `${Watcher.name} - beginWatch`, `Exception - ${e}`);
         }
     }
 
@@ -61,7 +64,7 @@ export class Watcher {
                 this.watcher = null;
             }
         } catch (e) {
-            await generalLogger.write(SeverityEnum.error, `${Watcher.name} - endWatch`, `Exception - ${e}`);
+            this.logger(SeverityEnum.error, `${Watcher.name} - endWatch`, `Exception - ${e}`);
         }
     }
 }

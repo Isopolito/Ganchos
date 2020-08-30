@@ -5,6 +5,7 @@ import { promises as fsPromises } from 'fs';
 import * as os from 'os';
 import { Watcher } from './watcher';
 import { fileUtil, systemUtil } from '..';
+import * as generalLogger from '../logging/generalLogger';
 
 let configObj = {};
 let watcher: Watcher;
@@ -16,13 +17,13 @@ describe('** Watcher **', async () => {
         configObj = { foo: 'bar' };
         fileUtil.doesPathExist(tempFilePath) && await fsPromises.unlink(tempFilePath);
         await fsPromises.writeFile(tempFilePath, JSON.stringify(configObj));
-        watcher = new Watcher(tempFilePath, async () => configObj);
+        watcher = new Watcher(tempFilePath, async () => configObj, generalLogger.write);
     });
 
     describe('When file (with JSON as contents) on disk has changed', () => {
         it('Property differences should be reported--via watcher callback--between what is on disk verse file', async () => {
             watcher.beginWatch(async (event, filePath, diffs) => {
-                expect(diffs).include('foo');
+                expect(diffs).to.be.eql(['foo']);
             })
 
             await fsPromises.writeFile(tempFilePath, JSON.stringify({ foo: 'baz'}));
