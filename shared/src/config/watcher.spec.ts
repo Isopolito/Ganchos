@@ -1,8 +1,9 @@
 import 'mocha';
-import { expect } from 'chai';
-import * as path from 'path';
-import { promises as fsPromises } from 'fs';
 import * as os from 'os';
+import * as path from 'path';
+import { expect } from 'chai';
+import { promises as fsPromises } from 'fs';
+
 import { Watcher } from './watcher';
 import { fileUtil, systemUtil } from '..';
 import * as generalLogger from '../logging/generalLogger';
@@ -21,7 +22,7 @@ describe('** Watcher **', async () => {
     });
 
     describe('When file (with JSON as contents) on disk has changed', () => {
-        it('Property differences should be reported--via watcher callback--between what is on disk verse file', async () => {
+        it('Property differences should be reported--via watcher callback--between what is on disk verse in memory', async () => {
             watcher.beginWatch(async (event, filePath, diffs) => {
                 expect(diffs).to.be.eql(['foo']);
             })

@@ -2,9 +2,9 @@ import queue from 'queue';
 import { promises as fsPromises } from 'fs';
 
 import * as systemUtil from '../util/system'
+import { doesPathExist } from '../util/files';
 import * as validationUtil from '../util/validation'
 import { SeverityEnum } from '../logging/SeverityEnum';
-import { doesPathExist } from '../util/files';
 
 // Initializer called on first execution or if config file is removed
 // TODO: Maybe this should not be called if config file is removed? Currently only useful for testing
@@ -36,6 +36,7 @@ export class ConfigManager {
 
     private async runInitializerIfNeeded(): Promise<void> {
         if (this.haveRanInitializer && doesPathExist(this.configFilePath)) return;
+
         await this.initializer();
         this.haveRanInitializer = true;
     }
@@ -90,6 +91,8 @@ export class ConfigManager {
     async getFromMemory(makeClone: boolean = true): Promise<any|null> {
         try {
             await this.runInitializerIfNeeded();
+            if (systemUtil.isObjectEmpty(this.configInMemory)) await this.updateStateFromDisk();
+
             return makeClone ? systemUtil.deepClone(this.configInMemory) : this.configInMemory;
         } catch (e) {
             this.logger(SeverityEnum.error, `${ConfigManager.name} - getFromMemory`, `[${this.consumerName}] Exception - ${e}`);
@@ -115,7 +118,7 @@ export class ConfigManager {
             await this.runInitializerIfNeeded();
             if (!configObj) return;
 
-            // Ensure calls to save file to disk always happen sequentially--FIFO
+            // Ensure back-to-back calls to save file to disk always happen sequentially--FIFO
             this.saveQueue.push(async () => {
                 this.configInMemory = systemUtil.deepClone(configObj);
                 this.jsonConfigInMemory = JSON.stringify(this.configInMemory, null, 4);
