@@ -22,7 +22,7 @@ describe('** General Config **', () => {
         };
     });
 
-    describe('This first call to config logic', () => {
+    describe('The first call to config logic', () => {
         it('should create general config defaults', async () => {
             const fetchedConfig = await generalConfig.get() as GeneralConfig;
 

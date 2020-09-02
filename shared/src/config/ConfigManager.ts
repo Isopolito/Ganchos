@@ -5,6 +5,7 @@ import * as systemUtil from '../util/system'
 import { doesPathExist } from '../util/files';
 import * as validationUtil from '../util/validation'
 import { SeverityEnum } from '../logging/SeverityEnum';
+import { exception } from 'console';
 
 // Initializer called on first execution or if config file is removed
 // TODO: Maybe this should not be called if config file is removed? Currently only useful for testing

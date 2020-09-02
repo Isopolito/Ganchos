@@ -1,21 +1,22 @@
-import 'mocha';
-import { expect } from 'chai';
-import * as path from 'path';
-import * as sh from 'shelljs';
-import { promises as fsPromises } from 'fs';
+import 'mocha'
+import { expect } from 'chai'
+import * as path from 'path'
+import * as sh from 'shelljs'
+import { promises as fsPromises } from 'fs'
 
-import { GeneralConfig } from './GeneralConfig';
+import * as fileUtil from '../util/files'
+import { ConfigManager } from './ConfigManager'
+import { SeverityEnum } from '../logging/SeverityEnum'
 import * as generalLogger from '../logging/generalLogger'
-import { ConfigManager } from './ConfigManager';
-import { SeverityEnum } from '../logging/SeverityEnum';
-import * as fileUtil from '../util/files';
+import { systemUtil } from '..'
 
 describe('** Config Manager **', () => {
     let configManager: ConfigManager;
     const configFilePath = path.join(sh.tempdir(), 'test_config_file');
 
     describe(`Calling getJson`, () => {
-        it('when config file does not exist it should return null', async () => {
+        if (fileUtil.doesPathExist(configFilePath)) sh.rm(configFilePath);
+        it('when config file does not exist should return null', async () => {
             configManager = new ConfigManager(configFilePath, generalLogger.write, async () => { });
 
             const jsonConfig = await configManager.getJson();
@@ -23,7 +24,7 @@ describe('** Config Manager **', () => {
             expect(jsonConfig).to.be.null;
         });
 
-        it('when config file does not exist it should log an error', async () => {
+        it('when config file does not exist should log an error', async () => {
             configManager = new ConfigManager(
                 configFilePath,
                 (severity, area, msg) => expect(severity).to.be.equal(SeverityEnum.error, "Error message was not logged"),
@@ -96,7 +97,7 @@ describe('** Config Manager **', () => {
             expect(jsonConfig).to.be.eql({}, "Config instance is not an empty object");
         });
 
-        it(`when config file does not exist it should log an error`, async () => {
+        it(`when config file does not exist should log an error`, async () => {
             if (fileUtil.doesPathExist(configFilePath)) sh.rm(configFilePath);
             configManager = new ConfigManager(
                 configFilePath,
@@ -114,6 +115,43 @@ describe('** Config Manager **', () => {
             const configObj = await configManager.get();
 
             expect(configObj).to.be.eql(JSON.parse(json));
+        });
+    });
+
+    describe(`Calling set`, () => {
+        it(`When the object passed in is null should not result in an error`, async () => {
+            configManager = new ConfigManager(configFilePath, generalLogger.write, async () => { });
+
+            expect(async () => await configManager.set(null)).to.not.throw();
+        });
+
+        it(`Should update the config instance`, async () => {
+        if (fileUtil.doesPathExist(configFilePath)) sh.rm(configFilePath);
+            configManager = new ConfigManager(configFilePath, generalLogger.write, async () => { });
+            const configObj = { foo: 'bar' };
+            await configManager.set(configObj);
+
+            const mostRecentConfig = await configManager.get();
+
+            expect(mostRecentConfig).to.be.eql(configObj);
+        });
+
+        it(`Near simultaneous calls should be run sequentially FIFO`, async () => {
+            configManager = new ConfigManager(configFilePath, generalLogger.write, async () => { });
+            const configObj1 = { foo: 'bar7', baz: 7 };
+            const configObj2 = { foo: 'bar8', baz: 8 };
+            const configObj3 = { foo: 'bar9', baz: 9 };
+            const tasks = [
+                configManager.set(configObj1),
+                configManager.set(configObj2),
+                configManager.set(configObj3)
+            ];
+            await Promise.all(tasks);
+
+            await systemUtil.waitInSeconds(0.3);
+            const mostRecentConfig = await configManager.get();
+
+            expect(mostRecentConfig).to.be.eql(configObj3);
         });
     });
 
