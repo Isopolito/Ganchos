@@ -1,6 +1,6 @@
-import * as sh from 'shelljs';
-import * as path from 'path';
 import * as os from 'os';
+import * as path from 'path';
+import * as sh from 'shelljs';
 import recursive from 'recursive-readdir';
 
 import * as generalConstants from '../constants/names';
@@ -73,12 +73,7 @@ const interpolateHomeTilde = (path: string[] | string): string[] | string => {
 const isChildPathInParentPath = (parentPath: string, childPaths: string[]): boolean => {
     if (!parentPath || !childPaths || childPaths.length < 1) return false;
 
-    for (const childPath of childPaths) {
-        const relative = path.relative(parentPath, childPath);
-        if (relative && !relative.startsWith('..') && !path.isAbsolute(relative)) return true;
-    }
-
-    return false;
+    return childPaths.some(c => c.includes(parentPath));
 }
 
 export {

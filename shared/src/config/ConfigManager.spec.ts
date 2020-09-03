@@ -4,11 +4,10 @@ import * as path from 'path'
 import * as sh from 'shelljs'
 import { promises as fsPromises } from 'fs'
 
-import * as fileUtil from '../util/files'
+import { fileUtil, systemUtil } from '..'
 import { ConfigManager } from './ConfigManager'
 import { SeverityEnum } from '../logging/SeverityEnum'
 import * as generalLogger from '../logging/generalLogger'
-import { systemUtil } from '..'
 
 describe('** Config Manager **', () => {
     let configManager: ConfigManager;
