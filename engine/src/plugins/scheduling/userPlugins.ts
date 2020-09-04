@@ -13,7 +13,7 @@ const pluginInstanceManager = new PluginInstanceManager();
 //======================================================================================================
 
 const runUserPlugin = async (plugin: UserPlugin): Promise<any> => {
-    const mostRecentConfig = await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(plugin.name, JSON.stringify(plugin.defaultJsonConfig));
+    const mostRecentConfig = await pluginConfig.getJson(plugin.name, JSON.stringify(plugin.defaultJsonConfig));
     if (!mostRecentConfig) return null;
 
     const configObj = JSON.parse(mostRecentConfig);

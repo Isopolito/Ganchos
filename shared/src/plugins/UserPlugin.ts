@@ -9,7 +9,6 @@ export interface UserPlugin {
     category: string;
     eventTypes: EventType[];
     defaultJsonConfig: any;
-    watchPaths?: string[],
 
     // Optional
     isEligibleForSchedule?: boolean;

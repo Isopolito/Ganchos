@@ -1,14 +1,18 @@
 import 'mocha';
-import { promises as fsPromises } from 'fs';
 import { expect } from 'chai';
 import * as sh from 'shelljs';
-import { fileUtil } from '..';
+import * as fileUtil from '../util/files';
+import * as validationUtil from '../util/validation';
 import * as generalConfig from './general';
 import { GeneralConfig, implementsGeneralConfig } from './GeneralConfig';
 
 describe('** General Config **', () => {
     let config: GeneralConfig;
+
     before(() => {
+        const testDir = fileUtil.getAppBaseDir();
+        if (testDir.endsWith('test')) sh.rm('-rf', testDir);
+
         config = {
             userPluginPaths: ['/home/user/foo'],
             heartBeatPollIntervalInSeconds: 5,
@@ -18,80 +22,51 @@ describe('** General Config **', () => {
         };
     });
 
-    describe('After saving a general config', () => {
-        before(() => {
-            const testDir = fileUtil.getAppBaseDir();
-            if (testDir.endsWith('test')) sh.rm('-rf', testDir);
-        });
-
-        it('a "get" call should return the same config object', async () => {
-            await generalConfig.save(config);
-
+    describe('The first call to config logic', () => {
+        it('should create general config defaults', async () => {
             const fetchedConfig = await generalConfig.get() as GeneralConfig;
-            fetchedConfig.lastUpdatedTimeStamp = 0; // don't care about this
 
-            expect(fetchedConfig).to.eql(config);
-        });
-
-        after(() => {
-            const testDir = fileUtil.getAppBaseDir();
-            if (testDir.endsWith('test')) sh.rm('-rf', testDir);
-        });
-    });
-
-    describe(`A call to ${generalConfig.getAndCreateDefaultIfNotExist.name}`, () => {
-        beforeEach(() => {
-            const testDir = fileUtil.getAppBaseDir();
-            if (testDir.endsWith('test')) sh.rm('-rf', testDir);
-        });
-
-        it('should return a GeneralConfig obj', async () => {
-            const configObj = await generalConfig.getAndCreateDefaultIfNotExist();
-
-            expect(implementsGeneralConfig(configObj)).to.be.true;
-        });
-
-        it('should create necessary directories and a default general config file', async () => {
-            await generalConfig.getAndCreateDefaultIfNotExist();
-            const configObj = await generalConfig.get();
-
-            expect(implementsGeneralConfig(configObj)).to.be.true;
+            expect(implementsGeneralConfig(fetchedConfig)).to.be.true;
         });
 
         it('should create default plugin directory', async () => {
-            const configObj = await generalConfig.getAndCreateDefaultIfNotExist() as GeneralConfig;
+            const configObj = await generalConfig.get() as GeneralConfig;
 
             const exists = sh.test('-d', configObj.userPluginPaths[0]);
 
             expect(exists).to.be.true;
         });
+    });
 
-        after(() => {
-            const testDir = fileUtil.getAppBaseDir();
-            if (testDir.endsWith('test')) sh.rm('-rf', testDir);
+    describe('After saving a general config', () => {
+        it('a "get" call should return the same config object', async () => {
+            await generalConfig.save(config);
+
+            const fetchedConfig = await generalConfig.get() as GeneralConfig;
+
+            expect(fetchedConfig).to.eql(config);
+        });
+
+        it('a "getJson" call should a valid json string', async () => {
+            await generalConfig.save(config);
+
+            const json = await generalConfig.getJson();
+            const configObj = validationUtil.parseAndValidateJson(json, true);
+
+            expect(implementsGeneralConfig(configObj)).to.be.true;
         });
     });
 
-    describe(`A call to ${generalConfig.diffBetweenFileAndMem.name}`, () => {
-        before(() => {
-            const testDir = fileUtil.getAppBaseDir();
-            if (testDir.endsWith('test')) sh.rm('-rf', testDir);
+    describe(`A call to ${generalConfig.get.name}`, () => {
+        it('should return a valid GeneralConfig obj', async () => {
+            const configObj = await generalConfig.get();
+
+            expect(implementsGeneralConfig(configObj)).to.be.true;
         });
+    });
 
-        it('should accurately report differences between config on disk and in memory', async () => {
-            await generalConfig.save(config);
-            config.userPluginMetaExtension = 'barley';
-            const configPath = fileUtil.getConfigPath();
-            await fsPromises.writeFile(configPath, JSON.stringify(config, null, 4));
-
-            const diffs = await generalConfig.diffBetweenFileAndMem();
-
-            expect(diffs).includes('userPluginMetaExtension');
-        });
-
-        after(() => {
-            const testDir = fileUtil.getAppBaseDir();
-            if (testDir.endsWith('test')) sh.rm('-rf', testDir);
-        });
+    after(() => {
+        const testDir = fileUtil.getAppBaseDir();
+        if (testDir.endsWith('test')) sh.rm('-rf', testDir);
     });
 });

@@ -21,7 +21,7 @@ const fetchGanchosPluginNames = async (convertExtensionToJs?: boolean): Promise<
 }
 
 const createUserPluginFromMetaFile = async (pluginPath: string): Promise<UserPlugin> => {
-    const config = await generalConfig.getAndCreateDefaultIfNotExist();
+    const config = await generalConfig.get();
 
     if (!pluginPath.endsWith(config.userPluginMetaExtension)) return null;
 
@@ -34,7 +34,7 @@ const createUserPluginFromMetaFile = async (pluginPath: string): Promise<UserPlu
     }
 
     // This will ensure a plugin config exists and that it is in memory for comparisons later on
-    await pluginConfig.getConfigJsonAndCreateConfigFileIfNeeded(plugin.name, plugin.defaultJsonConfig);
+    await pluginConfig.getJson(plugin.name, plugin.defaultJsonConfig);
 
     plugin.path = path.dirname(pluginPath);
     return plugin;
@@ -42,7 +42,7 @@ const createUserPluginFromMetaFile = async (pluginPath: string): Promise<UserPlu
 
 const fetchUserPlugins = async (): Promise<UserPlugin[]> => {
     try {
-        const config = await generalConfig.getAndCreateDefaultIfNotExist();
+        const config = await generalConfig.get();
         if (!config.userPluginPaths) return [];
 
         const plugins = [];
@@ -75,7 +75,7 @@ const watchGanchosPlugins = (callback: (event: string, pluginConfigObj: any) => 
 const watchUserPlugins = async (callback: (event: string, pluginFileName: string) => void): Promise<void> => {
     if (userPluginWatcher) return;
 
-    const config = await generalConfig.getAndCreateDefaultIfNotExist();
+    const config = await generalConfig.get();
     if (!config.userPluginPaths) return;
 
     userPluginWatcher = chokidar.watch(config.userPluginPaths, {

@@ -1,6 +1,5 @@
 import * as path from 'path';
 import { spawn, Thread, Worker } from "threads";
-import * as appRoot from 'app-root-path'
 import { generalLogger, pluginLogger, SeverityEnum, GanchosExecutionArguments, systemUtil, fileUtil } from 'ganchos-shared';
 import { fetchGanchosPluginNames } from "../pluginsFinder";
 import { execute as executeGanchosPlugin } from '../execution/ganchosPlugin';
@@ -38,7 +37,7 @@ const runGanchosPluginAndReschedule = async (pluginName: string): Promise<void> 
 
         const configObj = await executeGanchosPlugin(pluginName, GanchosExecutionArguments);
         if (!configObj || !configObj.runEveryXMinutes || configObj.runEveryXMinutes <= 0) {
-            await pluginLogger.write(SeverityEnum.warning, pluginName, logArea,
+            pluginLogger.write(SeverityEnum.warning, pluginName, logArea,
                 `Either configuration for this plugin is missing or invalid, or the 'runEveryXMinutes' option has been set to <= 0. Will try again in ${badConfigWaitTimeInMin} minutes`);
             await systemUtil.waitInMinutes(badConfigWaitTimeInMin);
         } else {
@@ -53,7 +52,7 @@ const runGanchosPluginAndReschedule = async (pluginName: string): Promise<void> 
         pluginInstanceManager.setRunningStatus(pluginName, true);
         await runGanchosPluginAndReschedule(pluginName);
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${runGanchosPluginAndReschedule.name})- ${e}`);
+        pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${runGanchosPluginAndReschedule.name})- ${e}`);
     }
 }
 
@@ -62,6 +61,7 @@ const getSchedulingEligibleGanchosPlugins = async (): Promise<string[]> => {
     for (const pluginName of await fetchGanchosPluginNames(true)) {
         if (await isGanchosPluginEligibleForSchedule(pluginName)) plugins.push(pluginName);
     }
+
     return plugins;
 }
 

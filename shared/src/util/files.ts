@@ -1,16 +1,20 @@
-import * as sh from 'shelljs';
-import * as path from 'path';
 import * as os from 'os';
+import * as path from 'path';
+import * as sh from 'shelljs';
 import recursive from 'recursive-readdir';
 
 import * as generalConstants from '../constants/names';
 import * as pathConstants from '../constants/paths';
 
-const touch = async (configPath: string): Promise<void> => {
+const touch = (configPath: string): void => {
     if (sh.test('-e', configPath)) return;
 
     sh.mkdir('-p', path.dirname(configPath));
     sh.touch(configPath);
+}
+
+const makeAllDirInPath = (configPath: string): void => {
+    sh.mkdir('-p', configPath);
 }
 
 const getEnvBasedAppName = (): string => {
@@ -23,7 +27,8 @@ const doesPathExist = (pathToCheck: string): boolean => sh.test('-f', pathToChec
 const getAllFiles = async (paths: string[], fileNameEndsWith?: string): Promise<string[]> => {
     const files:string[] = [];
 
-    for (const filePath of paths) {
+    for (let filePath of paths) {
+        filePath = interpolateHomeTilde(filePath) as string;
         if (!doesPathExist(filePath)) continue;
 
         for (const fileName of await recursive(filePath)) {
@@ -39,7 +44,7 @@ const removeExtension = (fileName: string): string => fileName ? path.parse(file
 
 const getAppBaseDir = (): string => path.join(os.homedir(), getEnvBasedAppName());
 
-const getConfigPath = (): string => path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config, generalConstants.General);
+const getGeneralConfigPath = (): string => path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config, generalConstants.General);
 
 const getLogBasePath = (): string => path.join(getAppBaseDir(), generalConstants.LogDir);
 
@@ -65,10 +70,17 @@ const interpolateHomeTilde = (path: string[] | string): string[] | string => {
         : path.map(p => p && p.replace('~', os.homedir()));
 }
 
+const isChildPathInParentPath = (parentPath: string, childPaths: string[]): boolean => {
+    if (!parentPath || !childPaths || childPaths.length < 1) return false;
+
+    return childPaths.some(c => c.includes(parentPath));
+}
+
 export {
     removeExtension,
     touch,
-    getConfigPath,
+    makeAllDirInPath,
+    getGeneralConfigPath,
     getAppBaseDir,
     getPluginConfigPath,
     getPluginConfigBasePath,
@@ -77,4 +89,5 @@ export {
     getLogBasePath,
     interpolateHomeTilde,
     getGanchosPluginPath,
+    isChildPathInParentPath,
 }

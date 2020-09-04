@@ -1,141 +1,48 @@
-import queue from 'queue';
 import * as path from 'path';
-import chokidar from 'chokidar';
-import * as shelljs from 'shelljs';
-import * as differ from 'deep-diff';
 import { promises as fsPromises } from 'fs';
 
-import { getConfigPath, doesPathExist, touch, getAppBaseDir } from '../util/files';
-import { generalLogger, SeverityEnum, validationUtil, systemUtil, fileUtil } from '../';
-import { GeneralConfig, implementsGeneralConfig } from './GeneralConfig';
+import { Watcher } from './watcher';
+import { GeneralConfig } from './GeneralConfig';
+import { ConfigManager } from './ConfigManager';
+import { write as genLogger } from '../logging/generalLogger';
+import { makeAllDirInPath, touch, doesPathExist, getGeneralConfigPath, getAppBaseDir } from '../util/files';
 
 /*========================================================================================*/
 
-// Cached for faster access (updated on get())
-let cachedConfig: GeneralConfig;
+const defaultConfig: GeneralConfig = {
+    heartBeatPollIntervalInSeconds: 5,
+    userPluginPaths: [path.join(getAppBaseDir(), 'plugins')],
+    lastUpdatedTimeStamp: 0,
+    userPluginMetaExtension: 'meta',
+};
 
-// Config file from last save (updated on save())
-// This is used to compare what's on disk to what's in memory
-let configOnLastSave: GeneralConfig;
+const configMgrInitializer = async (): Promise<void> => {
+    // create general config path with default config file
+    const configFilePath = getGeneralConfigPath();
+    if (!doesPathExist(configFilePath)) {
+        touch(configFilePath);
+        await fsPromises.writeFile(configFilePath, JSON.stringify(defaultConfig));
+    }
 
-const logArea = "general config";
-let watcher: chokidar.FSWatcher;
-const saveQueue = queue({ results: [], concurrency: 1, autostart: true, timeout: 5000 });
+    // create default plugin path if not exists
+    makeAllDirInPath(defaultConfig.userPluginPaths[0]);
+}
+
+
+const inMemConfigMgr = new ConfigManager(getGeneralConfigPath(), genLogger, configMgrInitializer, 'general');
+const watcher = new Watcher(getGeneralConfigPath(), () => inMemConfigMgr.getFromMemory(), genLogger);
 
 /*========================================================================================*/
 
-const isConfigInMemoryMostRecent = async (configPath: string): Promise<Boolean> => {
-    if (!cachedConfig) return false;
+const getJson = (): Promise<string | null> => inMemConfigMgr.getJson();
 
-    const stats = await fsPromises.stat(configPath);
+const get = (): Promise<GeneralConfig | null> => inMemConfigMgr.get();
 
-    // True if inMemoryConfig was updated after the config file was last written to disk
-    return stats.mtime.getTime() >= cachedConfig.lastUpdatedTimeStamp;
-}
+const save = (config: GeneralConfig): Promise<void> => inMemConfigMgr.set(config);
 
-const getAndCreateDefaultIfNotExist = async (): Promise<GeneralConfig | null> => {
-    const configPath = getConfigPath();
-    if (doesPathExist(configPath)) return await get();
+const watch = (callback: (eventName: string, configFile: string, diffs: string[]|null) => Promise<void>): Promise<void> => watcher.beginWatch(callback);
 
-    const defaultConfig: GeneralConfig = {
-        heartBeatPollIntervalInSeconds: 5,
-        userPluginPaths: [path.join(getAppBaseDir(), 'plugins')],
-        lastUpdatedTimeStamp: 0,
-        userPluginMetaExtension: 'meta',
-    };
-
-    doesPathExist(configPath) || await touch(configPath);
-    shelljs.test('-e', defaultConfig.userPluginPaths[0]) || shelljs.mkdir(defaultConfig.userPluginPaths[0]);
-
-    await save(defaultConfig);
-    return systemUtil.deepClone(defaultConfig);
-}
-
-const get = async (): Promise<GeneralConfig | null> => {
-    const generalConfigFilePath = getConfigPath();
-    try {
-        if (!doesPathExist(generalConfigFilePath)) return null;
-        if (await isConfigInMemoryMostRecent(generalConfigFilePath)) return cachedConfig;
-
-        const configJson = (await fsPromises.readFile(generalConfigFilePath)).toString();
-        const config = validationUtil.parseAndValidateJson(configJson);
-        if (!implementsGeneralConfig(config)) {
-            await generalLogger.write(SeverityEnum.critical, logArea, `The JSON in ${generalConfigFilePath} is not a valid GeneralConfig type`, true);
-            return null;
-        }
-
-        // Only set this here initially, after that only on saves
-        if (!configOnLastSave) configOnLastSave = config;
-
-        cachedConfig = config;
-        cachedConfig.lastUpdatedTimeStamp = Date.now();
-
-        const clonedConfig = JSON.parse(configJson); // deep clone
-        clonedConfig.userPluginPaths = fileUtil.interpolateHomeTilde(clonedConfig.userPluginPaths);
-        return clonedConfig;
-    } catch (e) {
-        await generalLogger.write(SeverityEnum.critical, logArea, `Can't create GeneralConfig with JSON from file - ${generalConfigFilePath}: ${e}`, true);
-        return null;
-    }
-}
-
-const save = async (config: GeneralConfig) => {
-    if (config === null) return;
-
-    try {
-        const configPath = getConfigPath();
-        doesPathExist(configPath) || await touch(configPath);
-
-        saveQueue.push(async () => {
-            await fsPromises.writeFile(configPath, JSON.stringify(config, null, 4))
-
-            const clonedConfig = systemUtil.deepClone(config);
-            cachedConfig = clonedConfig;
-            cachedConfig.lastUpdatedTimeStamp = Date.now();
-            configOnLastSave = clonedConfig;
-        });
-    } catch (e) {
-        await generalLogger.write(SeverityEnum.error, `${logArea} - save`, `Exception - ${e}`, true);
-    }
-}
-
-const watch = (callback : (eventName: string, configFile: string) => Promise<void>): void => {
-    const configPath = getConfigPath();
-    watcher = chokidar.watch(configPath, {
-        persistent: true,
-        usePolling: false,
-        ignoreInitial: true,
-    });
-
-    watcher.on('all', async (event: string, filePath: string) => await callback(event, filePath));
-    watcher.on('error', async error => await generalLogger.write(SeverityEnum.error, logArea, `Error in general config watcher: ${error}`));
-}
-
-const endWatch = async (): Promise<void> => {
-    if (watcher) {
-        await watcher.close();
-        (watcher as any) = null;
-    }
-}
-
-const diffBetweenFileAndMem = async (): Promise<string[]> => {
-    if (!configOnLastSave) return [];
-
-    const fromFile = await get();
-    if (!fromFile) return [];
-
-    const diffs = differ.diff(fromFile, configOnLastSave);
-    if (!diffs) return [];
-
-    const flatDiffs = diffs.reduce((paths: any[], diff) => {
-        if (diff.path) paths = paths.concat(diff.path);
-        return paths;
-    }, []);
-
-    // If config has been changed outside of ganchos, sync up changes
-    if (flatDiffs.length > 1) configOnLastSave = fromFile;
-    return flatDiffs;
-}
+const endWatch = (): Promise<void> => watcher.endWatch();
 
 /*========================================================================================*/
 
@@ -144,6 +51,5 @@ export {
     endWatch,
     save,
     get,
-    getAndCreateDefaultIfNotExist,
-    diffBetweenFileAndMem 
+    getJson,
 };
