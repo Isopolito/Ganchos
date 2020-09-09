@@ -47,7 +47,7 @@ const runGanchosPlugin = async (event: string, filePath: string, pluginName: str
 const dispatch = async (event: string, filePath: string): Promise<void> => {
     const tasks = [];
 
-    await generalLogger.write(SeverityEnum.debug, logArea, `${dispatch.name} - event: ${event}, filePath: ${filePath}`, true);
+    generalLogger.write(SeverityEnum.debug, logArea, `${dispatch.name} - event: ${event}, filePath: ${filePath}`, true);
 
     for (const file of await fetchGanchosPluginNames(true)) {
         tasks.push(runGanchosPlugin(event, filePath, file));

@@ -12,15 +12,17 @@ const logMessageQueue = queue({ results: [], concurrency: 1, autostart: true, ti
 /*========================================================================================*/
 
 const write = (severity: SeverityEnum, pluginName: string, areaInPlugin: string, message: string): void => {
-  const logMessage: PluginLogFileMessage = {
-    pluginName: pluginName,
-    timeStamp: makeTimeStamp(),
-    severity: severity,
-    areaInPlugin: areaInPlugin,
-    message: message,
-  };
+    if (severity === SeverityEnum.debug && !process.env.DEBUG) return;
 
-  logMessageQueue.push(() => writeMessage(generalConstants.Plugin, JSON.stringify(logMessage)));
+    const logMessage: PluginLogFileMessage = {
+        pluginName: pluginName,
+        timeStamp: makeTimeStamp(),
+        severity: severity,
+        areaInPlugin: areaInPlugin,
+        message: message,
+    };
+
+    logMessageQueue.push(() => writeMessage(generalConstants.Plugin, JSON.stringify(logMessage)));
 }
 
 /*========================================================================================*/

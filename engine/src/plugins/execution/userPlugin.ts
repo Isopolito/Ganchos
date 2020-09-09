@@ -63,6 +63,11 @@ const executeNoTimer = async (userPlugin: UserPlugin, event: EventType, eventDat
                 break;
         }
 
+        pluginLogger.write(SeverityEnum.debug, userPlugin.name, `logArea - ${executeNoTimer.name}`, `starting child spawn with pid ${spawned.pid}`);
+        spawned.on('close', code => {
+            pluginLogger.write(SeverityEnum.debug, userPlugin.name, `logArea - ${executeNoTimer.name}`, `spawned child with pid ${spawned.pid} is closing. Code: ${code}`);
+        });
+
         spawned.stdout.on('data', data => {
             const messageParts = prepareInputData(data);
             if (!messageParts) return;

@@ -13,8 +13,8 @@ const touch = (configPath: string): void => {
     sh.touch(configPath);
 }
 
-const makeAllDirInPath = (configPath: string): void => {
-    sh.mkdir('-p', configPath);
+const makeAllDirInPath = (filePath: string): void => {
+    sh.mkdir('-p', filePath);
 }
 
 const getEnvBasedAppName = (): string => {

@@ -8,14 +8,15 @@ const logArea = "pluginFinder";
 let ganchosWatcher: chokidar.FSWatcher;
 let userPluginWatcher: chokidar.FSWatcher;
 
-const fetchGanchosPluginNames = async (convertExtensionToJs?: boolean): Promise<string[]> => {
+const fetchGanchosPluginNames = async (removeExtension?: boolean): Promise<string[]> => {
+    let dirPath: string;
     try {
-        const dirPath = fileUtil.getGanchosPluginPath(appRoot.toString());
+        dirPath = fileUtil.getGanchosPluginPath(appRoot.toString());
         return (await fs.readdir(dirPath))
             .filter(file => file.endsWith('.ts') || file.endsWith('js'))
-            .map(file => convertExtensionToJs ? file.replace(".ts", ".js") : file);
+            .map(file => removeExtension ? fileUtil.removeExtension(file): file);
     } catch (e) {
-        await generalLogger.write(SeverityEnum.critical, logArea, `Unable to fetch ganchos specific plugins: ${e}`);
+        generalLogger.write(SeverityEnum.critical, logArea, `Unable to fetch ganchos plugins in ${dirPath}: ${e}`);
         return [];
     }
 }
@@ -29,7 +30,7 @@ const createUserPluginFromMetaFile = async (pluginPath: string): Promise<UserPlu
     const plugin = validationUtil.parseAndValidateJson(rawData.toString(), true);
 
     if (!implementsUserPlugin(plugin)) {
-        await generalLogger.write(SeverityEnum.error, logArea, `The JSON in plugin meta file '${pluginPath}' is not a valid UserPlugin`);
+        generalLogger.write(SeverityEnum.error, logArea, `The JSON in plugin meta file '${pluginPath}' is not a valid UserPlugin`);
         return null;
     }
 
@@ -52,7 +53,7 @@ const fetchUserPlugins = async (): Promise<UserPlugin[]> => {
         }
         return plugins;
     } catch (e) {
-        await generalLogger.write(SeverityEnum.critical, logArea, `Unable to fetch user plugins: ${e}`);
+        generalLogger.write(SeverityEnum.critical, logArea, `Unable to fetch user plugins: ${e}`);
         return [];
     }
 }
@@ -69,7 +70,7 @@ const watchGanchosPlugins = (callback: (event: string, pluginConfigObj: any) => 
     });
 
     ganchosWatcher.on('all', async (event: string, filePath: string) => callback(event, filePath));
-    ganchosWatcher.on('error', async error => await generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
+    ganchosWatcher.on('error', async error => generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
 }
 
 const watchUserPlugins = async (callback: (event: string, pluginFileName: string) => void): Promise<void> => {
@@ -84,8 +85,8 @@ const watchUserPlugins = async (callback: (event: string, pluginFileName: string
         ignoreInitial: true,
     });
 
-    userPluginWatcher.on('all', async (event: string, filePath: string) => await callback(event, filePath));
-    userPluginWatcher.on('error', async error => await generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
+    userPluginWatcher.on('all', async (event: string, filePath: string) => callback(event, filePath));
+    userPluginWatcher.on('error', async error => generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
 }
 
 const endWatchForGanchosPlugins = async (): Promise<void> => {

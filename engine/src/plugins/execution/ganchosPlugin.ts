@@ -38,9 +38,11 @@ const getAndValidateDefaultConfig = async (pluginName: string): Promise<string> 
 
 const execute = async (pluginName: string, args: GanchosExecutionArguments): Promise<any> => {
     let thread;
+    let worker: any;
     try {
         const pluginPath = path.join('../', fileUtil.getGanchosPluginPath(), pluginName);
-        thread = await spawn(new Worker(pluginPath));
+        worker = new Worker(pluginPath)
+        thread = await spawn(worker);
         const defaultConfig = await thread.getDefaultConfigJson();
         const config = await pluginConfig.getJson(pluginName, defaultConfig);
         if (!config) {
@@ -58,6 +60,7 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
         if (configObj.runDelayInMinutes) await systemUtil.waitInMinutes(configObj.runDelayInMinutes);
 
         await thread.init();
+        pluginLogger.write(SeverityEnum.debug, pluginName, `${logArea} - ${execute.name}`, `ganchos thread started with pid: ${worker.child.pid}`);
 
         thread.getLogSubscription().subscribe((message: PluginLogMessage) => {
             pluginLogger.write(message.severity, pluginName, message.areaInPlugin, message.message);
@@ -73,6 +76,7 @@ const execute = async (pluginName: string, args: GanchosExecutionArguments): Pro
         pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${execute.name}) - ${e}`);
         return null;
     } finally {
+        pluginLogger.write(SeverityEnum.debug, pluginName, `${logArea} - ${execute.name}`, `ending ganchos thread with pid: ${worker.child.pid}`);
         thread && await Thread.terminate(thread);
         thread = null;
     }
