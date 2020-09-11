@@ -10,7 +10,7 @@ import {
 } from 'ganchos-shared';
 import * as userPluginExecute from '../plugins/execution/userPlugin';
 import { fetchGanchosPluginNames, fetchUserPlugins } from "../plugins/pluginsFinder";
-import { execute as executeGanchosPlugin } from '../plugins/execution/ganchosPlugin';
+import { executeOnQueue as executeGanchosPlugin } from '../plugins/execution/ganchosPlugin';
 
 const logArea = "event dispatcher";
 
