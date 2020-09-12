@@ -7,14 +7,12 @@ export interface UserPlugin {
     name: string;
     description: string;
     category: string;
-    eventTypes: EventType[];
     defaultJsonConfig: any;
 
     // Optional
     isEligibleForSchedule?: boolean;
-    enabled?: boolean;
-    runDelayInMinutes?: number;
     runOnlyOnOsTypes?: OsType[],
+    eventTypes: EventType[];
 
     // Handled by Ganchos - no need to put in meta file
     path: string;
