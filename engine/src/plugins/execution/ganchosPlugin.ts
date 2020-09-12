@@ -1,6 +1,7 @@
-import { spawn, Thread, Worker, Pool } from "threads";
-import { performance } from 'perf_hooks';
+import queue from "queue";
 import * as path from 'path';
+import { performance } from 'perf_hooks';
+import { spawn, Thread, Worker } from "threads";
 import {
     osUtil, systemUtil, pluginLogger, SeverityEnum, GanchosExecutionArguments,
     PluginLogMessage, pluginConfig, shouldEventBeIgnored, validationUtil, fileUtil,
@@ -8,20 +9,43 @@ import {
 
 //------------------------------------------------------------------------------------------------
 const logArea = 'ganchos execution';
-const pluginPool: { [pluginName: string]: Pool<any> } = {};
-const registerWorkerOnPoolIfNeeded = (pluginName: string, path: string): void => {
-    // TODO: Make number of workers/plugin configurable
-    pluginPool[pluginName] = Pool(() => spawn(new Worker(path)), 4);
-}
-const createThreadOnPool = (pluginName: string, logic: (thread: any) => Promise<void>): boolean => {
-    if (!pluginPool || !pluginPool[pluginName]) {
-        pluginLogger.write(SeverityEnum.error, pluginName, `${logArea} - ${createThreadOnPool.name}`,
-            `Trying to use thread pool before plugin has registered on thread pool (via ${registerWorkerOnPoolIfNeeded.name}), skipping`);
+const pluginQueues: { [pluginName: string]: queue } = {};
+const pluginWorkerPaths: { [pluginName: string]: string } = {};
 
+// Not using thread.js Pool because we need access to the Worker for the PID
+const registerPluginOnQueueIfNeeded = (pluginName: string, path: string): void => {
+    if (!pluginQueues[pluginName]) {
+        // TODO: Make number of workers per plugin and timeout configurable
+        pluginQueues[pluginName] = queue({ results: [], concurrency: 4, autostart: true, timeout: 99999999999 });
+        pluginWorkerPaths[pluginName] = path;
+    }
+}
+
+const createThreadOnPool = async (pluginName: string, logic: (thread: any) => Promise<void>): Promise<boolean> => {
+    if (!pluginQueues || !pluginQueues[pluginName]) {
+        pluginLogger.write(SeverityEnum.error, pluginName, `${logArea} - ${createThreadOnPool.name}`,
+            `Trying to use plugin queue before plugin has registered on queue (via ${registerPluginOnQueueIfNeeded.name}), skipping`);
         return false;
     }
 
-    pluginPool[pluginName].queue(logic);
+    pluginQueues[pluginName].push(async () => {
+        let worker: any, thread: any;
+        try {
+            worker = new Worker(pluginWorkerPaths[pluginName])
+            thread = await spawn(worker);
+
+            pluginLogger.write(SeverityEnum.debug, pluginName, `${logArea} - ${createThreadOnPool.name}`, `ganchos thread started with pid: ${worker.child.pid}`);
+            await logic(thread);
+        } catch (e) {
+            pluginLogger.write(SeverityEnum.error, pluginName, `${logArea} - ${createThreadOnPool.name}`, `Exception - ${e}`);
+        } finally {
+            thread && await Thread.terminate(thread);
+            pluginLogger.write(SeverityEnum.debug, pluginName, `${logArea} - ${createThreadOnPool.name}`, `terminated thread with pid: ${worker.child.pid}`);
+            thread = null;
+            worker = null;
+        }
+    });
+
     return true;
 }
 
@@ -89,53 +113,51 @@ const isGanchosPluginEligibleForSchedule = async (pluginName: string): Promise<b
 }
 
 const execute = async (thread: any, pluginName: string, args: GanchosExecutionArguments): Promise<any> => {
-    try {
-        const jsonConfig = await getJsonConfigForPlugin(thread, pluginName)
-        const configObj = JSON.parse(jsonConfig);
+    const jsonConfig = await getJsonConfigForPlugin(thread, pluginName)
+    const configObj = JSON.parse(jsonConfig);
 
-        if (configObj.enabled !== undefined && configObj.enabled === false) return configObj;
-        if (args.eventType && args.eventType !== 'none' && shouldEventBeIgnored(args.eventType, await thread.getEventTypes())) return configObj;
-        if (typeof thread.getOsTypesToRunOn === 'function' && osUtil.shouldNotRunOnThisOs(await thread.getOsTypesToRunOn())) return configObj;
-        if (fileUtil.isChildPathInParentPath(args.filePath, configObj.excludeWatchPaths)) return configObj;
+    // Check for any of the conditions that should cause the plugin to NOT be executed
+    if (configObj.enabled !== undefined && configObj.enabled === false) return configObj;
+    if (args.eventType && args.eventType !== 'none' && shouldEventBeIgnored(args.eventType, await thread.getEventTypes())) return configObj;
+    if (typeof thread.getOsTypesToRunOn === 'function' && osUtil.shouldNotRunOnThisOs(await thread.getOsTypesToRunOn())) return configObj;
+    if (fileUtil.isChildPathInParentPath(args.filePath, configObj.excludeWatchPaths)) return configObj;
 
-        if (configObj.runDelayInMinutes) await systemUtil.waitInMinutes(configObj.runDelayInMinutes);
+    if (configObj.runDelayInMinutes) await systemUtil.waitInMinutes(configObj.runDelayInMinutes);
 
-        await thread.init();
-        //pluginLogger.write(SeverityEnum.debug, pluginName, `${logArea} - ${execute.name}`, `ganchos thread started with pid: ${worker.child.pid}`);
+    await thread.init();
 
-        thread.getLogSubscription().subscribe((message: PluginLogMessage) => {
-            pluginLogger.write(message.severity, pluginName, message.areaInPlugin, message.message);
-        });
+    thread.getLogSubscription().subscribe((message: PluginLogMessage) => {
+        pluginLogger.write(message.severity, pluginName, message.areaInPlugin, message.message);
+    });
 
-        args.jsonConfig = jsonConfig;
-        await runAndLogPerfMetrics(thread, pluginName, args);
+    await runAndLogPerfMetrics(thread, pluginName, { ...args, jsonConfig });
 
-        return configObj;
-    } catch (e) {
-        pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${execute.name}) - ${e}`);
-        return null;
-    } finally {
-        //pluginLogger.write(SeverityEnum.debug, pluginName, `${logArea} - ${execute.name}`, `ending ganchos thread with pid: ${worker.child.pid}`);
-        thread && await Thread.terminate(thread);
-        thread = null;
-    }
+    return configObj;
 }
 
 const executeNow = async (pluginName: string, args: GanchosExecutionArguments): Promise<any> => {
+    let worker: any, thread: any;
     try {
         const pluginPath = path.join('../', fileUtil.getGanchosPluginPath(), pluginName);
-        const thread = await spawn(new Worker(pluginPath));
+        worker = new Worker(pluginPath);
+        thread = await spawn(worker);
+        pluginLogger.write(SeverityEnum.debug, pluginName, `${logArea} - ${executeNow.name}`, `ganchos thread started with pid: ${worker.child.pid}`);
         return await execute(thread, pluginName, args);
     } catch (e) {
         pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${executeNow.name}) - ${e}`);
+    } finally {
+        thread && await Thread.terminate(thread);
+        pluginLogger.write(SeverityEnum.debug, pluginName, `${logArea} - ${createThreadOnPool.name}`, `terminated thread with pid: ${worker.child.pid}`);
+        thread = null;
+        worker = null;
     }
 }
 
-const executeOnQueue = (pluginName: string, args: GanchosExecutionArguments): void => {
+const executeOnQueue = async (pluginName: string, args: GanchosExecutionArguments): Promise<void> => {
     try {
         const pluginPath = path.join('../', fileUtil.getGanchosPluginPath(), pluginName);
-        registerWorkerOnPoolIfNeeded(pluginName, pluginPath);
-        createThreadOnPool(pluginName, thread => execute(thread, pluginName, args));
+        registerPluginOnQueueIfNeeded(pluginName, pluginPath);
+        await createThreadOnPool(pluginName, thread => execute(thread, pluginName, args));
     } catch (e) {
         pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${executeOnQueue.name}) - ${e}`);
     }
