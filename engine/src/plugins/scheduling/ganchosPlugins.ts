@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import { generalLogger, pluginLogger, SeverityEnum, GanchosExecutionArguments, systemUtil } from 'ganchos-shared';
+import { generalLogger, pluginLogger, SeverityEnum, GanchosExecutionArguments, systemUtil, generalConfig } from 'ganchos-shared';
 import { fetchGanchosPluginNames } from "../pluginsFinder";
 import { executeNow as executeGanchosPlugin, isGanchosPluginEligibleForSchedule } from '../execution/ganchosPlugin';
 import { PluginInstanceManager } from './PluginInstanceManager';
@@ -22,10 +22,11 @@ const runGanchosPluginAndReschedule = async (pluginName: string): Promise<void> 
         };
 
         const configObj = await executeGanchosPlugin(pluginName, GanchosExecutionArguments);
+        const generalConfigObj = await generalConfig.get();
 
-        if (!configObj || !configObj.runEveryXMinutes || configObj.runEveryXMinutes <= 0) {
+        if (!configObj || !configObj.runEveryXMinutes || configObj.runEveryXMinutes < generalConfigObj.pluginScheduleIntervalFloorInMinutes) {
             pluginLogger.write(SeverityEnum.warning, pluginName, logArea,
-                `Either configuration for this plugin is missing or invalid, or the 'runEveryXMinutes' option has been set to <= 0. Will try again in ${badConfigWaitTimeInMin} minutes`);
+                `Either configuration for this plugin is missing or invalid, or the 'runEveryXMinutes' option has been set to < threshold as defined by pluginScheduleIntervalFloorInMinutes. Will try again in ${badConfigWaitTimeInMin} minutes`);
             await systemUtil.waitInMinutes(badConfigWaitTimeInMin);
         } else {
             await systemUtil.waitInMinutes(configObj.runEveryXMinutes);

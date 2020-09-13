@@ -42,14 +42,15 @@ export class ConfigManager {
         this.haveRanInitializer = true;
     }
 
-    private async isConfigInMemoryMostRecent(): Promise<Boolean> {
+    private async isConfigInMemoryCurrent(): Promise<Boolean> {
         try {
             if (systemUtil.isObjectEmpty(this.configInMemory)) return false;
 
             const stats = await fsPromises.stat(this.configFilePath);
 
-            // TODO: Write comment that explains this line
-            return stats.mtime.getTime() >= this.configInMemoryLastUpdated
+            // Stats time is when the file was last modified. If that is less than the time stamp on what's in memory,
+            // that means it was updated before the version in memory was updated so the in-mem version is current.
+            return stats.mtime.getTime() <= this.configInMemoryLastUpdated
         } catch (e) {
             this.logger(SeverityEnum.error, `${ConfigManager.name} - isConfigInMemoryMostRecent`, `[${this.consumerName}] Exception - ${e}`);
             return false;
@@ -79,7 +80,7 @@ export class ConfigManager {
     async getJson(): Promise<string | null> {
         try {
             await this.runInitializerIfNeeded();
-            if (await this.isConfigInMemoryMostRecent()) return this.jsonConfigInMemory;
+            if (await this.isConfigInMemoryCurrent()) return this.jsonConfigInMemory;
 
             await this.updateStateFromDisk();
             return this.jsonConfigInMemory;
@@ -104,7 +105,7 @@ export class ConfigManager {
     async get(makeClone: boolean = true): Promise<any|null> {
         try {
             await this.runInitializerIfNeeded();
-            if (await this.isConfigInMemoryMostRecent()) this.getFromMemory(makeClone);
+            if (await this.isConfigInMemoryCurrent()) this.getFromMemory(makeClone);
 
             await this.updateStateFromDisk();
             return await this.getFromMemory(makeClone);
