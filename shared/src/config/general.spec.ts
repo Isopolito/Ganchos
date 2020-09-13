@@ -16,9 +16,9 @@ describe('** General Config **', () => {
         config = {
             userPluginPaths: ['/home/user/foo'],
             heartBeatPollIntervalInSeconds: 5,
+            pluginScheduleIntervalFloorInMinutes: 0.5,
             userPluginMetaExtension: 'foo',
             enableDebug: true,
-            lastUpdatedTimeStamp: 0,
         };
     });
 

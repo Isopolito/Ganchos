@@ -111,9 +111,9 @@ const executeNow = async (userPlugin: UserPlugin, event: EventType, eventData: s
 
 const executeOnQueue = async (userPlugin: UserPlugin, event: EventType, eventData: string): Promise<void> => {
     try {
-        if (pluginQueues[userPlugin.name]) {
+        if (!pluginQueues[userPlugin.name]) {
             // TODO: Make concurrency and timeout configurable
-            pluginQueues[userPlugin.name] = queue({ results: [], concurrency: 4, autostart: true, timeout: 99999999999 });
+            pluginQueues[userPlugin.name] = queue({ results: [], concurrency: 4, autostart: true, timeout: 0 });
         }
         pluginQueues[userPlugin.name].push(() => execute(userPlugin, event, eventData));
     } catch (e) {

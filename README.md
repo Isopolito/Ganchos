@@ -29,6 +29,7 @@ There are two types of plugins: **User Plugins** and **Ganchos Plugins**
 ## Configuration
 
 ### General Settings
+Located: `~/.ganchos/config/general`
 
 `TODO`: write this
 * `userPluginPaths`: (*default*: ~/.ganchos/plugins) -
@@ -37,15 +38,17 @@ There are two types of plugins: **User Plugins** and **Ganchos Plugins**
 
 
 ### Plugin Settings
+Located for **User Plugins**: In the `meta` file associated with plugin. See an example of this file type [here](shared/src/plugins/DefaultUserPluginMetaFile.meta).
+<br>
+Located for **Ganchos Plugins**: Implemented in plugin as methods required by contract. These plugins are located in `src/plugins/pluginCollection`.
+The [Template Plugin](engine/src/plugins/pluginCollection/TemplatePlugin.ts) can be copied and used for new plugins since it's has all the boiler plate code already in it.
+
+
 Plugin settings are what Ganchos uses in order to know how to properly run and display a plugin. A user that didn't write a plugin *shouldn't* have to modify this.
 It can be thought of as configuration geared towards Ganchos. The distinction between this and the **Plugin Configuration Files** is that the latter are geared towards 
 the end user. It's what they use to configure how the plugin operates.
 
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
-
-The settings for a plugin are provided in the meta file for user plugins. See an example of this file type [here](shared/src/plugins/DefaultUserPluginMetaFile.meta).
-For ganchos plugins, they are provided through various methods the plugin must implement. These plugins are located in `src/plugins/pluginCollection`.
-The [Template Plugin](engine/src/plugins/pluginCollection/TemplatePlugin.ts) can be copied and used for new plugins since it's has all the boiler plate code already in it.
 
 #### Mandatory
 *Note: Inside the parenthesis is the extra part of the name on the ganchos version since they're methods.*
@@ -68,6 +71,8 @@ The [Template Plugin](engine/src/plugins/pluginCollection/TemplatePlugin.ts) can
 File System Event Values: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir' | 'ready' | 'raw' | 'error' | 'none';
 
 ### Plugin Configuration File Options
+Located: `~/.ganchos/config/plugins`
+
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
 
 Configuration files for the plugins are JSON objects. Located in `~/.ganchos/config/plugins` directory. They most likely won't exist the first time a plugin
@@ -84,6 +89,9 @@ For example if you wanted plugin A and plugin B to respond to the same thing but
 a certain amount of time in order to know how long to delay B for. 
 * `runEveryXMinutes`: *Number*; if a plugin is marked as eligible for scheduling, this will be the value used for the waiting interval between executions. Fractional numbers are acceptable. 
 If the number is less than the value in general settings--`pluginScheduleIntervalFloorInMinutes`--scheduling will be disabled for the plugin. This is a safety mechanism so that a plugin can't accidentally be set to run too often.
+
+## Logs
+`TODO`: write this
 
 ## Using Ganchos
 This will be improved in the future but for now:

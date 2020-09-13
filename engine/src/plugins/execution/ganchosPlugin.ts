@@ -16,7 +16,7 @@ const pluginWorkerPaths: { [pluginName: string]: string } = {};
 const registerPluginOnQueueIfNeeded = (pluginName: string, path: string): void => {
     if (!pluginQueues[pluginName]) {
         // TODO: Make number of workers per plugin and timeout configurable
-        pluginQueues[pluginName] = queue({ results: [], concurrency: 4, autostart: true, timeout: 99999999999 });
+        pluginQueues[pluginName] = queue({ results: [], concurrency: 4, autostart: true, timeout: 0 });
         pluginWorkerPaths[pluginName] = path;
     }
 }

@@ -12,8 +12,8 @@ import { makeAllDirInPath, touch, doesPathExist, getGeneralConfigPath, getAppBas
 const defaultConfig: GeneralConfig = {
     heartBeatPollIntervalInSeconds: 5,
     userPluginPaths: [path.join(getAppBaseDir(), 'plugins')],
-    lastUpdatedTimeStamp: 0,
     userPluginMetaExtension: 'meta',
+    pluginScheduleIntervalFloorInMinutes: 0.5,
 };
 
 const configMgrInitializer = async (): Promise<void> => {
