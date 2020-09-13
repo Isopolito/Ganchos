@@ -9,7 +9,8 @@
             "request": "launch",
             "name": "Engine Run",
             "program": "${workspaceFolder}/engine/dist/app.js",
-            "preLaunchTask": "engine build",
+			"preLaunchTask": "engine build",
+			"env": {"DEBUG": "true" },
             "smartStep": true,
             "outFiles": ["${workspaceFolder}/dist/**/*.js"]
         }

@@ -1,4 +1,5 @@
 import path from "path"
+import queue from "queue";
 import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 import { performance } from 'perf_hooks';
 import {
@@ -9,6 +10,7 @@ import {
 type CommandType = 'cmd' | 'bat' | 'nixShell' | 'exe' | 'nixEx';
 
 const logArea = "userPluginExecute";
+const pluginQueues: { [pluginName: string]: queue } = {};
 
 const getCommandType = (binFileName: string): CommandType => {
     if (binFileName.endsWith('.cmd')) return 'cmd';
@@ -45,12 +47,9 @@ const prepareInputData = (data: any): string[] => {
     return ['n/a', dataString];
 }
 
-const executeNoTimer = async (userPlugin: UserPlugin, event: EventType, eventData: string, config: string): Promise<boolean> => {
+const executeNoTimer = async (userPlugin: UserPlugin, event: EventType, eventData: string, config: string): Promise<void> => {
     let spawned: ChildProcessWithoutNullStreams;
     try {
-        if (shouldEventBeIgnored(event, userPlugin.eventTypes)) return false;
-        if (osUtil.shouldNotRunOnThisOs(userPlugin.runOnlyOnOsTypes)) return false;
-
         switch (getCommandType(userPlugin.binFileName)) {
             case 'cmd':
             case 'nixShell':
@@ -63,6 +62,12 @@ const executeNoTimer = async (userPlugin: UserPlugin, event: EventType, eventDat
                 break;
         }
 
+        const pid = spawned.pid;
+        pluginLogger.write(SeverityEnum.debug, userPlugin.name, `logArea - ${executeNoTimer.name}`, `starting child spawn with pid ${pid}`);
+        spawned.on('close', code => {
+            pluginLogger.write(SeverityEnum.debug, userPlugin.name, `logArea - ${executeNoTimer.name}`, `spawned child with pid ${pid} is closing. Code: ${code}`);
+        });
+
         spawned.stdout.on('data', data => {
             const messageParts = prepareInputData(data);
             if (!messageParts) return;
@@ -74,11 +79,8 @@ const executeNoTimer = async (userPlugin: UserPlugin, event: EventType, eventDat
             if (!messageParts) return;
             pluginLogger.write(SeverityEnum.info, userPlugin.name, messageParts[0], messageParts[1]);
         });
-
-        return true;
     } catch (e) {
         pluginLogger.write(SeverityEnum.error, userPlugin.name, logArea, e);
-        return false;
     } finally {
         (spawned as any) = null;
     }
@@ -89,17 +91,37 @@ const execute = async (userPlugin: UserPlugin, event: EventType, eventData: stri
     let configObj = await pluginConfig.get(userPlugin.name);
     if (!configObj) configObj = JSON.parse(userPlugin.defaultJsonConfig);
 
-    if (configObj !== undefined && configObj.enabled === false) return;
-    if (fileUtil.isChildPathInParentPath(eventData, configObj.excludeWatchPaths)) return;
+    // Check for conditions that result in the plugin NOT being executed
+    if (configObj.enabled !== undefined && configObj.enabled === false) return;
+    if (fileUtil.doesPathExist(eventData) && fileUtil.isChildPathInParentPath(eventData, configObj.excludeWatchPaths)) return;
+    if (shouldEventBeIgnored(event, userPlugin.eventTypes)) return;
+    if (osUtil.shouldNotRunOnThisOs(userPlugin.runOnlyOnOsTypes)) return;
 
     if (configObj.runDelayInMinutes) await systemUtil.waitInMinutes(configObj.runDelayInMinutes);
 
     const beforeTime = performance.now();
-    const didExecute = await executeNoTimer(userPlugin, event, eventData, JSON.stringify(configObj));
+    await executeNoTimer(userPlugin, event, eventData, JSON.stringify(configObj));
     const afterTime = performance.now();
-    didExecute && pluginLogger.write(SeverityEnum.info, userPlugin.name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
+    pluginLogger.write(SeverityEnum.info, userPlugin.name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
+}
+
+const executeNow = async (userPlugin: UserPlugin, event: EventType, eventData: string): Promise<void> => {
+    return execute(userPlugin, event, eventData);
+}
+
+const executeOnQueue = async (userPlugin: UserPlugin, event: EventType, eventData: string): Promise<void> => {
+    try {
+        if (pluginQueues[userPlugin.name]) {
+            // TODO: Make concurrency and timeout configurable
+            pluginQueues[userPlugin.name] = queue({ results: [], concurrency: 4, autostart: true, timeout: 99999999999 });
+        }
+        pluginQueues[userPlugin.name].push(() => execute(userPlugin, event, eventData));
+    } catch (e) {
+        pluginLogger.write(SeverityEnum.error, userPlugin.name, logArea, `Exception (${executeOnQueue.name}) - ${e}`);
+    }
 }
 
 export {
-    execute,
+    executeNow,
+    executeOnQueue,
 }

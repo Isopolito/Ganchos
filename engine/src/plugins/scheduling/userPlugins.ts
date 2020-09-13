@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { generalLogger, pluginLogger, SeverityEnum, pluginConfig, UserPlugin, systemUtil, fileUtil } from 'ganchos-shared';
 import { fetchUserPlugins, createUserPluginFromMetaFile } from "../pluginsFinder";
-import { execute as executeUserPlugin } from '../execution/userPlugin';
+import { executeNow as executeUserPlugin } from '../execution/userPlugin';
 import { PluginInstanceManager } from './PluginInstanceManager';
 
 //======================================================================================================
@@ -16,16 +16,15 @@ const runUserPlugin = async (plugin: UserPlugin): Promise<any> => {
     const mostRecentConfig = await pluginConfig.getJson(plugin.name, JSON.stringify(plugin.defaultJsonConfig));
     if (!mostRecentConfig) return null;
 
-    const configObj = JSON.parse(mostRecentConfig);
-    if (configObj.enabled) await executeUserPlugin(plugin, 'none', null);
+    await executeUserPlugin(plugin, 'none', null);
 
-    return configObj;
+    return JSON.parse(mostRecentConfig);
 }
 
 const runUserPluginAndReschedule = async (plugin: UserPlugin): Promise<void> => {
     try {
         if (!fileUtil.doesPathExist(path.join(plugin.path, plugin.binFileName))) {
-            await pluginLogger.write(SeverityEnum.warning, plugin.name, logArea, `Bin file for plugin doesn't exist. Removing plugin from schedule`);
+            pluginLogger.write(SeverityEnum.warning, plugin.name, logArea, `Bin file for plugin doesn't exist. Removing plugin from schedule`);
             pluginInstanceManager.setRunningStatus(plugin.name, false);
             return;
         }
@@ -39,7 +38,7 @@ const runUserPluginAndReschedule = async (plugin: UserPlugin): Promise<void> => 
         const pluginConfigObj = await runUserPlugin(plugin);
 
         if (!pluginConfigObj || !pluginConfigObj.runEveryXMinutes || pluginConfigObj.runEveryXMinutes <= 0) {
-            await pluginLogger.write(SeverityEnum.warning, plugin.name, logArea,
+            pluginLogger.write(SeverityEnum.warning, plugin.name, logArea,
                 `Either configuration for this plugin is missing or invalid, or the 'runEveryXMinutes' option has been set to <= 0. Will try again in ${badConfigWaitTimeInMin} minutes`);
             await systemUtil.waitInMinutes(badConfigWaitTimeInMin);
         } else {
@@ -48,7 +47,7 @@ const runUserPluginAndReschedule = async (plugin: UserPlugin): Promise<void> => 
 
         return runUserPluginAndReschedule(plugin);
     } catch (e) {
-        await pluginLogger.write(SeverityEnum.error, plugin.name, logArea, `Exception (${runUserPluginAndReschedule.name}) - ${e}`);
+        pluginLogger.write(SeverityEnum.error, plugin.name, logArea, `Exception (${runUserPluginAndReschedule.name}) - ${e}`);
     }
 }
 
@@ -63,7 +62,7 @@ const beginScheduleMonitoring = async (): Promise<void> => {
 
         await Promise.all(tasks);
     } catch (e) {
-        await generalLogger.write(SeverityEnum.critical, logArea, `Exception (${beginScheduleMonitoring.name}) - ${e}`, true);
+        generalLogger.write(SeverityEnum.critical, logArea, `Exception (${beginScheduleMonitoring.name}) - ${e}`, true);
     }
 }
 

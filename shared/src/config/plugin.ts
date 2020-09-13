@@ -1,7 +1,7 @@
 import { promises as fsPromises } from 'fs';
 
-import { getPluginConfigPath, removeExtension, getPluginConfigBasePath } from '../util/files';
-import { SeverityEnum, pluginLogger, validationUtil, fileUtil } from '..';
+import { doesPathExist, touch, makeAllDirInPath, getPluginConfigPath, removeExtension, getPluginConfigBasePath } from '../util/files';
+import { SeverityEnum, pluginLogger, validationUtil }  from '..';
 import * as generalLogger from '../logging/generalLogger';
 import { ConfigManager } from './ConfigManager';
 import { Watcher } from './watcher';
@@ -13,8 +13,8 @@ const logArea = "plugin config";
 // Ensure plugin path always exists, and if necessary create default jsonConfig if available
 const pluginConfigMgrInitializer = (pluginName: string, defaultJsonConfig: string | null) => async (): Promise<void> => {
     const pluginPath = getPluginConfigPath(pluginName);
-    if (!fileUtil.doesPathExist(pluginPath)) {
-        fileUtil.touch(pluginPath);
+    if (!doesPathExist(pluginPath)) {
+        touch(pluginPath);
         if (defaultJsonConfig) await fsPromises.writeFile(pluginPath, defaultJsonConfig);
     }
 }
@@ -96,12 +96,17 @@ const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?
 
         return await inMemConfigManagers[pluginName].set(configObj);
     } catch (e) {
-        await generalLogger.write(SeverityEnum.error, `${logArea} - ${save.name}`, `Exception - ${e}`);
+        generalLogger.write(SeverityEnum.error, `${logArea} - ${save.name}`, `Exception - ${e}`);
     }
 }
 
 const watch = async (callback: (eventName: string, pluginPath: string, diffs: string[] | null) => Promise<void>): Promise<void> => {
     if (!watcher) return;
+
+    // First time app is run on machine the plugin directory config might not exist yet
+    const pluginBasePath = getPluginConfigBasePath();
+    if (!doesPathExist(pluginBasePath)) makeAllDirInPath(pluginBasePath);
+
     return await watcher.beginWatch(callback);
 }
 

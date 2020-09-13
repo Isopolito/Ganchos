@@ -14,12 +14,12 @@ const logMessageQueue = queue({ results: [], concurrency: 1, autostart: true, ti
 const write = (severity: SeverityEnum, area: string, message: string, shouldLogToConsole?: boolean): void => {
     if (severity === SeverityEnum.debug && !process.env.DEBUG) return;
 
-	const logMessage: GeneralLogFileMessage = {
-		timeStamp: makeTimeStamp(),
-		severity: severity,
-		area: area,
-		message: message,
-	};
+    const logMessage: GeneralLogFileMessage = {
+        timeStamp: makeTimeStamp(),
+        severity: severity,
+        area: area,
+        message: message,
+    };
 
     shouldLogToConsole && console.log(message);
     logMessageQueue.push(() => writeMessage(constants.General, JSON.stringify(logMessage)));
@@ -28,5 +28,5 @@ const write = (severity: SeverityEnum, area: string, message: string, shouldLogT
 /*========================================================================================*/
 
 export {
-	write,
+    write,
 }
