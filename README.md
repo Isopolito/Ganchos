@@ -88,7 +88,8 @@ The contents of this file is the JSON configuration that is passed into the plug
 For example if you wanted plugin A and plugin B to respond to the same thing but you want A to run first, you could delay B so that it runs after A is finished. This has it's limitations because plugin A has to consistently finish in
 a certain amount of time in order to know how long to delay B for. 
 * `runEveryXMinutes`: *Number*; if a plugin is marked as eligible for scheduling, this will be the value used for the waiting interval between executions. Fractional numbers are acceptable. 
-If the number is less than the value in general settings--`pluginScheduleIntervalFloorInMinutes`--scheduling will be disabled for the plugin. This is a safety mechanism so that a plugin can't accidentally be set to run too often.
+If the number is less than the value in general settings--`pluginScheduleIntervalFloorInMinutes`--scheduling will be disabled for the plugin. This is a safety mechanism so that a plugin can't accidentally be set to run too often. Ganchos will
+check every 5 minutes to see if the plugin configuration has been updated to an acceptable value, if so it will be reschedule it.
 
 ## Logs
 `TODO`: write this
