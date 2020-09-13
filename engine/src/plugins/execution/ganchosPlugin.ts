@@ -112,7 +112,7 @@ const isGanchosPluginEligibleForSchedule = async (pluginName: string): Promise<b
     }
 }
 
-const execute = async (thread: any, pluginName: string, args: GanchosExecutionArguments): Promise<any> => {
+const executeLogic = async (thread: any, pluginName: string, args: GanchosExecutionArguments): Promise<any> => {
     const jsonConfig = await getJsonConfigForPlugin(thread, pluginName)
     const configObj = JSON.parse(jsonConfig);
 
@@ -142,7 +142,7 @@ const executeNow = async (pluginName: string, args: GanchosExecutionArguments): 
         worker = new Worker(pluginPath);
         thread = await spawn(worker);
         pluginLogger.write(SeverityEnum.debug, pluginName, `${logArea} - ${executeNow.name}`, `ganchos thread started with pid: ${worker.child.pid}`);
-        return await execute(thread, pluginName, args);
+        return await executeLogic(thread, pluginName, args);
     } catch (e) {
         pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${executeNow.name}) - ${e}`);
     } finally {
@@ -157,7 +157,7 @@ const executeOnQueue = async (pluginName: string, args: GanchosExecutionArgument
     try {
         const pluginPath = path.join('../', fileUtil.getGanchosPluginPath(), pluginName);
         registerPluginOnQueueIfNeeded(pluginName, pluginPath);
-        await createThreadOnPool(pluginName, thread => execute(thread, pluginName, args));
+        await createThreadOnPool(pluginName, thread => executeLogic(thread, pluginName, args));
     } catch (e) {
         pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${executeOnQueue.name}) - ${e}`);
     }

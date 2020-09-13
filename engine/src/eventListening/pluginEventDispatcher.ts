@@ -5,8 +5,6 @@ import {
     generalLogger,
     SeverityEnum,
     UserPlugin,
-    pluginConfig,
-    fileUtil
 } from 'ganchos-shared';
 import * as userPluginExecute from '../plugins/execution/userPlugin';
 import { fetchGanchosPluginNames, fetchUserPlugins } from "../plugins/pluginsFinder";
@@ -16,11 +14,7 @@ const logArea = "event dispatcher";
 
 const runUserPlugin = async (event: string, filePath: string, plugin: UserPlugin): Promise<void> => {
     try {
-        // Don't run plugin if the file for the event is inside an excluded directory
-        const config = await pluginConfig.get(plugin.name);
-        if (fileUtil.isChildPathInParentPath(filePath, config.excludeWatchPaths)) return;
-
-        await userPluginExecute.execute(plugin, event as EventType, filePath);
+        await userPluginExecute.executeOnQueue(plugin, event as EventType, filePath);
     } catch (e) {
         pluginLogger.write(SeverityEnum.error, plugin.name, logArea, `Exception (${runUserPlugin.name}) - ${e}`);
     }
@@ -28,10 +22,6 @@ const runUserPlugin = async (event: string, filePath: string, plugin: UserPlugin
 
 const runGanchosPlugin = async (event: string, filePath: string, pluginName: string): Promise<void> => {
     try {
-        // Don't run plugin if the file for the event is inside an excluded directory
-        const config = await pluginConfig.get(pluginName);
-        if (fileUtil.isChildPathInParentPath(filePath, config.excludeWatchPaths)) return;
-
         const GanchosExecutionArguments: GanchosExecutionArguments = {
             eventType: event as EventType,
             filePath: filePath,
