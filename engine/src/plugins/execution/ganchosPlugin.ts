@@ -4,7 +4,7 @@ import { performance } from 'perf_hooks';
 import { spawn, Thread, Worker } from "threads";
 import {
     osUtil, systemUtil, pluginLogger, SeverityEnum, GanchosExecutionArguments,
-    PluginLogMessage, pluginConfig, shouldEventBeIgnored, validationUtil, fileUtil,
+    PluginLogMessage, pluginConfig, shouldEventBeIgnored, validationUtil, fileUtil, generalConfig
 } from 'ganchos-shared';
 
 //------------------------------------------------------------------------------------------------
@@ -13,10 +13,16 @@ const pluginQueues: { [pluginName: string]: queue } = {};
 const pluginWorkerPaths: { [pluginName: string]: string } = {};
 
 // Not using thread.js Pool because we need access to the Worker for the PID
-const registerPluginOnQueueIfNeeded = (pluginName: string, path: string): void => {
+const registerPluginOnQueueIfNeeded = async (pluginName: string, path: string): Promise<void> => {
     if (!pluginQueues[pluginName]) {
-        // TODO: Make number of workers per plugin and timeout configurable
-        pluginQueues[pluginName] = queue({ results: [], concurrency: 4, autostart: true, timeout: 0 });
+            const configObj = await generalConfig.get();
+            pluginQueues[pluginName] = queue({
+                results: [],
+                autostart: true,
+                concurrency: configObj.eventQueuePluginExecutionConcurrency,
+                timeout: configObj.eventQueuePluginExecutionTimeout,
+            });
+
         pluginWorkerPaths[pluginName] = path;
     }
 }
@@ -82,7 +88,7 @@ const getAndValidateDefaultConfig = async (pluginName: string): Promise<string> 
         }
 
         // Comments are not stripped out
-        defaultConfig = JSON.stringify(configObj);
+        defaultConfig = JSON.stringify(configObj, null, 4);
 
         // Ensure plugin config exists (via default create logic) and is in memory for subsequent comparisons
         await pluginConfig.getJson(pluginName, defaultConfig);
@@ -156,7 +162,7 @@ const executeNow = async (pluginName: string, args: GanchosExecutionArguments): 
 const executeOnQueue = async (pluginName: string, args: GanchosExecutionArguments): Promise<void> => {
     try {
         const pluginPath = path.join('../', fileUtil.getGanchosPluginPath(), pluginName);
-        registerPluginOnQueueIfNeeded(pluginName, pluginPath);
+        await registerPluginOnQueueIfNeeded(pluginName, pluginPath);
         await createThreadOnPool(pluginName, thread => executeLogic(thread, pluginName, args));
     } catch (e) {
         pluginLogger.write(SeverityEnum.error, pluginName, logArea, `Exception (${executeOnQueue.name}) - ${e}`);

@@ -18,6 +18,8 @@ describe('** General Config **', () => {
             heartBeatPollIntervalInSeconds: 5,
             pluginScheduleIntervalFloorInMinutes: 0.5,
             userPluginMetaExtension: 'foo',
+            eventQueuePluginExecutionTimeout: 0, 
+            eventQueuePluginExecutionConcurrency: 3,
             enableDebug: true,
         };
     });

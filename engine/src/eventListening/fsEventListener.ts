@@ -27,7 +27,7 @@ const getPluginWatchPathsFromConfig = async (pluginName: string, defaultJsonConf
 const processAllPluginsForWatchPaths = async (): Promise<string[]> => {
     const tasks = [];
     for (const userPlugin of await fetchUserPlugins()) {
-        tasks.push(getPluginWatchPathsFromConfig(userPlugin.name, JSON.stringify(userPlugin.defaultJsonConfig)));
+        tasks.push(getPluginWatchPathsFromConfig(userPlugin.name, JSON.stringify(userPlugin.defaultJsonConfig, null, 4)));
     }
 
     for (const pluginName of await fetchGanchosPluginNames(true)) {
