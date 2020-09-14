@@ -13,7 +13,7 @@ const pluginInstanceManager = new PluginInstanceManager();
 //======================================================================================================
 
 const runUserPlugin = async (plugin: UserPlugin): Promise<any> => {
-    const mostRecentConfig = await pluginConfig.getJson(plugin.name, JSON.stringify(plugin.defaultJsonConfig));
+    const mostRecentConfig = await pluginConfig.getJson(plugin.name, JSON.stringify(plugin.defaultJsonConfig, null, 4));
     if (!mostRecentConfig) return null;
 
     await executeUserPlugin(plugin, 'none', null);

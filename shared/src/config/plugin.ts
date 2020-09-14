@@ -43,7 +43,7 @@ const getJson = async (pluginName: string, defaultJsonConfig: any): Promise<stri
             return null;
         }
     } else if (defaultJsonConfig) {
-        defaultJsonConfig = JSON.stringify(defaultJsonConfig);
+        defaultJsonConfig = JSON.stringify(defaultJsonConfig, null, 4);
     }
 
     if (!inMemConfigManagers[pluginName]) {

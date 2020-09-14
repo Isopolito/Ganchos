@@ -14,6 +14,12 @@ const defaultConfig: GeneralConfig = {
     userPluginPaths: [path.join(getAppBaseDir(), 'plugins')],
     userPluginMetaExtension: 'meta',
     pluginScheduleIntervalFloorInMinutes: 0.5,
+
+    // No timeout. Milliseconds
+    eventQueuePluginExecutionTimeout: 0, 
+
+    // Each plugin can only have 3 executions concurrently when responding to events
+    eventQueuePluginExecutionConcurrency: 3,
 };
 
 const configMgrInitializer = async (): Promise<void> => {
@@ -21,13 +27,12 @@ const configMgrInitializer = async (): Promise<void> => {
     const configFilePath = getGeneralConfigPath();
     if (!doesPathExist(configFilePath)) {
         touch(configFilePath);
-        await fsPromises.writeFile(configFilePath, JSON.stringify(defaultConfig));
+        await fsPromises.writeFile(configFilePath, JSON.stringify(defaultConfig, null, 4));
     }
 
     // create default plugin path if not exists
     makeAllDirInPath(defaultConfig.userPluginPaths[0]);
 }
-
 
 const inMemConfigMgr = new ConfigManager(getGeneralConfigPath(), genLogger, configMgrInitializer, 'general');
 const watcher = new Watcher(getGeneralConfigPath(), () => inMemConfigMgr.getFromMemory(), genLogger);

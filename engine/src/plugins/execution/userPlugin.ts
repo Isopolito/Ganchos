@@ -4,7 +4,7 @@ import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 import { performance } from 'perf_hooks';
 import {
     UserPlugin, pluginConfig, EventType, pluginLogger, fileUtil,
-    SeverityEnum, systemUtil, osUtil, shouldEventBeIgnored
+    SeverityEnum, systemUtil, osUtil, shouldEventBeIgnored, generalConfig
 } from "ganchos-shared"
 
 type CommandType = 'cmd' | 'bat' | 'nixShell' | 'exe' | 'nixEx';
@@ -100,7 +100,7 @@ const execute = async (userPlugin: UserPlugin, event: EventType, eventData: stri
     if (configObj.runDelayInMinutes) await systemUtil.waitInMinutes(configObj.runDelayInMinutes);
 
     const beforeTime = performance.now();
-    await executeNoTimer(userPlugin, event, eventData, JSON.stringify(configObj));
+    await executeNoTimer(userPlugin, event, eventData, JSON.stringify(configObj, null, 4));
     const afterTime = performance.now();
     pluginLogger.write(SeverityEnum.info, userPlugin.name, logArea, `Executed in ${(afterTime - beforeTime).toFixed(2)}ms`);
 }
@@ -112,8 +112,13 @@ const executeNow = async (userPlugin: UserPlugin, event: EventType, eventData: s
 const executeOnQueue = async (userPlugin: UserPlugin, event: EventType, eventData: string): Promise<void> => {
     try {
         if (!pluginQueues[userPlugin.name]) {
-            // TODO: Make concurrency and timeout configurable
-            pluginQueues[userPlugin.name] = queue({ results: [], concurrency: 4, autostart: true, timeout: 0 });
+            const configObj = await generalConfig.get();
+            pluginQueues[userPlugin.name] = queue({
+                results: [],
+                autostart: true,
+                concurrency: configObj.eventQueuePluginExecutionConcurrency,
+                timeout: configObj.eventQueuePluginExecutionTimeout,
+            });
         }
         pluginQueues[userPlugin.name].push(() => execute(userPlugin, event, eventData));
     } catch (e) {
