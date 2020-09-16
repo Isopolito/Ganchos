@@ -70,10 +70,13 @@ const interpolateHomeTilde = (path: string[] | string): string[] | string => {
         : path.map(p => p && p.replace('~', os.homedir()));
 }
 
-const isChildPathInParentPath = (parentPath: string, childPaths: string[]): boolean => {
+const isDirectoryInPath = (parentPath: string, childPaths: string[]): boolean => {
     if (!parentPath || !childPaths || childPaths.length < 1) return false;
 
-    return childPaths.some(c => c.includes(parentPath));
+    return childPaths.some(c => {
+        const interpolatedPath = interpolateHomeTilde(c) as string;
+        return parentPath.includes(interpolatedPath);
+    });
 }
 
 export {
@@ -89,5 +92,5 @@ export {
     getLogBasePath,
     interpolateHomeTilde,
     getGanchosPluginPath,
-    isChildPathInParentPath,
+    isDirectoryInPath,
 }

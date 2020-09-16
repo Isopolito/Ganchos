@@ -14,59 +14,59 @@ describe('** File Util **', () => {
         });
     });
 
-    describe(`When calling ${fileUtil.isChildPathInParentPath.name}`, () => {
-        it('should return true when one child path is nested several layers deep into parent path', () => {
-            const parent = path.join('/', 'test');
-            const child = path.join('/', 'test', 'blah', 'foo', 'bar');
+    describe(`When calling ${fileUtil.isDirectoryInPath.name}`, () => {
+        it('should return true when one directory is nested several layers deep into full path', () => {
+            const fullPath = path.join('/', 'test', 'blah', 'foo', 'bar');
+            const directory = path.join('/', 'test');
 
-            const result = fileUtil.isChildPathInParentPath(parent, [child]);
-
-            expect(result).to.be.true;
-        });
-
-        it('should return true when one of the multiple child paths are nested several layers deep into parent path', () => {
-            const parent = path.join('/', 'test');
-            const child1 = path.join('/', 'test', 'blah', 'foo', 'bar');
-            const child2 = path.join('/', 'baz', 'blah', 'foo', 'bar');
-
-            const result = fileUtil.isChildPathInParentPath(parent, [child1, child2]);
+            const result = fileUtil.isDirectoryInPath(fullPath, [directory]);
 
             expect(result).to.be.true;
         });
 
-        it('should return true when one child path is same as parent path', () => {
-            const parent = path.join('/', 'test');
-            const child = path.join('/', 'test');
+        it('should return true when one of the multiple directories are nested several layers deep into full path', () => {
+            const fullPath = path.join('/', 'test', 'blah', 'foo', 'bar');
+            const directory1 = path.join('/', 'test', 'blah');
+            const directory2 = path.join('/', 'baz', 'blah', 'foo');
 
-            const result = fileUtil.isChildPathInParentPath(parent, [child]);
+            const result = fileUtil.isDirectoryInPath(fullPath, [directory1, directory2]);
 
             expect(result).to.be.true;
         });
 
-        it('should return false when one child path is provided and is not part of parent', () => {
-            const parent = path.join('/', 'test');
-            const child = path.join('/', 'baz', 'blah');
+        it('should return true when one directory is same as full path', () => {
+            const fullPath = path.join('/', 'test');
+            const directory = path.join('/', 'test');
 
-            const result = fileUtil.isChildPathInParentPath(parent, [child]);
+            const result = fileUtil.isDirectoryInPath(fullPath, [directory]);
+
+            expect(result).to.be.true;
+        });
+
+        it('should return false when one directory is provided and is not part of full path', () => {
+            const directory = path.join('/', 'test');
+            const fullPath = path.join('/', 'baz', 'blah');
+
+            const result = fileUtil.isDirectoryInPath(fullPath, [directory]);
 
             expect(result).to.be.false;
         });
 
-        it('should return false when multiple child paths are provided and none of them are part of parent', () => {
-            const parent = path.join('/', 'test');
-            const child1 = path.join('/', 'baz', 'blah');
-            const child2 = path.join('/', 'x', 'y', 'z');
+        it('should return false when multiple directories are provided and none of them are part of the full path', () => {
+            const fullPath = path.join('/', 'test');
+            const directory1 = path.join('/', 'baz', 'blah');
+            const directory2 = path.join('/', 'x', 'y', 'z');
 
-            const result = fileUtil.isChildPathInParentPath(parent, [child1, child2]);
+            const result = fileUtil.isDirectoryInPath(fullPath, [directory1, directory2]);
 
             expect(result).to.be.false;
         });
 
-        it('should return false if parent OR child path(s) are empty or null', () => {
-            const result1 = fileUtil.isChildPathInParentPath('', null as any);
-            const result2 = fileUtil.isChildPathInParentPath(null as any, null as any);
-            const result3 = fileUtil.isChildPathInParentPath('foo', null as any);
-            const result4 = fileUtil.isChildPathInParentPath('foo', []);
+        it('should return false if full path OR directories are empty or null', () => {
+            const result1 = fileUtil.isDirectoryInPath('', null as any);
+            const result2 = fileUtil.isDirectoryInPath(null as any, null as any);
+            const result3 = fileUtil.isDirectoryInPath('foo', null as any);
+            const result4 = fileUtil.isDirectoryInPath('foo', []);
 
             expect(result1).to.be.false;
             expect(result2).to.be.false;

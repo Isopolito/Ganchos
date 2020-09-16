@@ -78,8 +78,8 @@ Located: `~/.ganchos/config/plugins`
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
 
 Configuration files for the plugins are JSON objects. Located in `~/.ganchos/config/plugins` directory. They most likely won't exist the first time a plugin
-is run, they will be created automatically based on the `(get)defaultJsonConfig` value provided in the plugin's settings. The configuration files must have the exact same name as the plugin. 
-The contents of this file is the JSON configuration that is passed into the plugin on execution. 
+is run, they will be created automatically based on the `(get)defaultJsonConfig` value provided in the plugin's settings. The configuration 
+files must have the exact same name as what's in the `name` field of the plugin settings (meta file)--that's how they're located. The contents of this file is the JSON configuration that is passed into the plugin on execution. 
 
 *Note: A plugin can specify any configuration setting that it needs. The ones below are the configuration options recognized and used by Ganchos and are completely optional.* 
 
