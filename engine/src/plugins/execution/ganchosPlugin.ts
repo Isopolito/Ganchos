@@ -12,6 +12,12 @@ const logArea = 'ganchos execution';
 const pluginQueues: { [pluginName: string]: queue } = {};
 const pluginWorkerPaths: { [pluginName: string]: string } = {};
 
+const isPathExcluded = (filePath: string|null, excludePaths: string[] | null): boolean => {
+    return fileUtil.doesPathExist(filePath) && fileUtil.isDirectoryInPath(filePath, excludePaths);
+}
+
+const isPluginDisabled = (enabled: boolean | undefined): boolean => enabled !== undefined && enabled === false;
+
 // Not using thread.js Pool because we need access to the Worker for the PID
 const registerPluginOnQueueIfNeeded = async (pluginName: string, path: string): Promise<void> => {
     if (!pluginQueues[pluginName]) {
@@ -123,10 +129,10 @@ const executeLogic = async (thread: any, pluginName: string, args: GanchosExecut
     const configObj = JSON.parse(jsonConfig);
 
     // Check for any of the conditions that should cause the plugin to NOT be executed
-    if (configObj.enabled !== undefined && configObj.enabled === false) return configObj;
+    if (isPluginDisabled(configObj.enabled)) return configObj;
     if (args.eventType && args.eventType !== 'none' && shouldEventBeIgnored(args.eventType, await thread.getEventTypes())) return configObj;
     if (typeof thread.getOsTypesToRunOn === 'function' && osUtil.shouldNotRunOnThisOs(await thread.getOsTypesToRunOn())) return configObj;
-    if (fileUtil.isDirectoryInPath(args.filePath, configObj.excludeWatchPaths)) return configObj;
+    if (isPathExcluded(args.filePath, configObj.excludeWatchPaths)) return configObj;
 
     if (configObj.runDelayInMinutes) await systemUtil.waitInMinutes(configObj.runDelayInMinutes);
 

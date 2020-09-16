@@ -12,6 +12,12 @@ type CommandType = 'cmd' | 'bat' | 'nixShell' | 'exe' | 'nixEx';
 const logArea = "userPluginExecute";
 const pluginQueues: { [pluginName: string]: queue } = {};
 
+const isPathExcluded = (filePath: string|null, excludePaths: string[] | null): boolean => {
+    return fileUtil.doesPathExist(filePath) && fileUtil.isDirectoryInPath(filePath, excludePaths);
+}
+
+const isPluginDisabled = (enabled: boolean | undefined): boolean => enabled !== undefined && enabled === false;
+
 const getCommandType = (binFileName: string): CommandType => {
     if (binFileName.endsWith('.cmd')) return 'cmd';
     if (binFileName.endsWith('.bat')) return 'bat';
@@ -92,8 +98,8 @@ const execute = async (userPlugin: UserPlugin, event: EventType, eventData: stri
     if (!configObj) configObj = JSON.parse(userPlugin.defaultJsonConfig);
 
     // Check for conditions that result in the plugin NOT being executed
-    if (configObj.enabled !== undefined && configObj.enabled === false) return;
-    if (fileUtil.doesPathExist(eventData) && fileUtil.isDirectoryInPath(eventData, configObj.excludeWatchPaths)) return;
+    if (isPluginDisabled(configObj.enabled)) return;
+    if (isPathExcluded(event, configObj.pathsToExclude)) return;
     if (shouldEventBeIgnored(event, userPlugin.eventTypes)) return;
     if (osUtil.shouldNotRunOnThisOs(userPlugin.runOnlyOnOsTypes)) return;
 
