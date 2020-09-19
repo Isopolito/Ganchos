@@ -2,6 +2,6 @@ import { EventType } from ".";
 
 export type GanchosExecutionArguments = {
     jsonConfig: string;
-    filePath: string;
+    eventData: any;
     eventType: EventType;
 };

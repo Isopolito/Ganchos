@@ -99,7 +99,7 @@ const execute = async (userPlugin: UserPlugin, event: EventType, eventData: stri
 
     // Check for conditions that result in the plugin NOT being executed
     if (isPluginDisabled(configObj.enabled)) return;
-    if (isPathExcluded(event, configObj.pathsToExclude)) return;
+    if (isPathExcluded(eventData, configObj.excludeWatchPaths)) return;
     if (shouldEventBeIgnored(event, userPlugin.eventTypes)) return;
     if (osUtil.shouldNotRunOnThisOs(userPlugin.runOnlyOnOsTypes)) return;
 

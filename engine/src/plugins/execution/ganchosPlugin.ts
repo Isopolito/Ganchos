@@ -132,7 +132,7 @@ const executeLogic = async (thread: any, pluginName: string, args: GanchosExecut
     if (isPluginDisabled(configObj.enabled)) return configObj;
     if (args.eventType && args.eventType !== 'none' && shouldEventBeIgnored(args.eventType, await thread.getEventTypes())) return configObj;
     if (typeof thread.getOsTypesToRunOn === 'function' && osUtil.shouldNotRunOnThisOs(await thread.getOsTypesToRunOn())) return configObj;
-    if (isPathExcluded(args.filePath, configObj.excludeWatchPaths)) return configObj;
+    if (typeof args.eventData === 'string' && isPathExcluded(args.eventData, configObj.excludeWatchPaths)) return configObj;
 
     if (configObj.runDelayInMinutes) await systemUtil.waitInMinutes(configObj.runDelayInMinutes);
 

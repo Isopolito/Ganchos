@@ -20,6 +20,9 @@ const defaultConfig: GeneralConfig = {
 
     // Each plugin can only have 3 executions concurrently when responding to events
     eventQueuePluginExecutionConcurrency: 3,
+
+    ipUpPollingIntervalInMinutes: 0.5,
+    ipChangePollingIntervalInMinutes: 1,
 };
 
 const configMgrInitializer = async (): Promise<void> => {

@@ -96,9 +96,6 @@ In these cases, Ganchos will check every 5 minutes to see if the plugin configur
 ## Logs
 `TODO`: write this
 
-## Logs
-`TODO`: write this
-
 ## Using Ganchos
 This will be improved in the future but for now:
 <br>

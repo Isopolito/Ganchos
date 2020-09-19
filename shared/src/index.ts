@@ -1,4 +1,5 @@
 export * as generalConfig from './config/general';
+export { GeneralConfig, implementsGeneralConfig } from './config/GeneralConfig';
 export * as pluginConfig from './config/plugin';
 export * as generalLogger from './logging/generalLogger';
 export * as pluginLogger from './logging/pluginLogger';

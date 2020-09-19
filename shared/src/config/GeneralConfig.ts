@@ -6,6 +6,8 @@ export interface GeneralConfig {
     pluginScheduleIntervalFloorInMinutes: number,
     eventQueuePluginExecutionTimeout: number,
     eventQueuePluginExecutionConcurrency: number,
+    ipUpPollingIntervalInMinutes: number;
+    ipChangePollingIntervalInMinutes: number;
 }
 
 export const implementsGeneralConfig = (object: any): object is GeneralConfig => {
@@ -17,7 +19,10 @@ export const implementsGeneralConfig = (object: any): object is GeneralConfig =>
     const pluginScheduleIntervalFloorInMinutes = 'pluginScheduleIntervalFloorInMinutes' in object;
     const eventQueuePluginExecutionTimeout = 'eventQueuePluginExecutionTimeout' in object;
     const eventQueuePluginExecutionConcurrency = 'eventQueuePluginExecutionConcurrency' in object;
+    const ipUpPollingIntervalInMinutes = 'ipUpPollingIntervalInMinutes' in object;
+    const ipChangePollingIntervalInMinutes = 'ipChangePollingIntervalInMinutes' in object;
 
     return pluginScheduleIntervalFloorInMinutes && userPluginMetaExtension && userPluginPaths
-        && heartBeatPollIntervalInSeconds && eventQueuePluginExecutionConcurrency && eventQueuePluginExecutionTimeout;
+        && heartBeatPollIntervalInSeconds && eventQueuePluginExecutionConcurrency && eventQueuePluginExecutionTimeout
+        && ipChangePollingIntervalInMinutes && ipUpPollingIntervalInMinutes;
 }
