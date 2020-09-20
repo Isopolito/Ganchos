@@ -15,9 +15,9 @@ const wireUpIpMonitor = (configObj: GeneralConfig) => {
         });
     }
 
-    ipMonitor.on('change', (prevIp, newIp) => dispatch(ipChange));
+    //ipMonitor.on('change', (prevIp, newIp) => dispatch(ipChange));
 
-    ipMonitor.on('error', (error) => {
+    ipMonitor.on('error', (error: any) => {
         console.error(error);
     });
 

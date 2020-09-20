@@ -1,7 +1,7 @@
 import { EventType } from ".";
 import { OsType } from "./os/OsType";
 
-export interface UserPlugin {
+export interface Plugin {
     // Mandatory
     binFileName: string;
     name: string;
@@ -12,13 +12,14 @@ export interface UserPlugin {
     // Optional
     isEligibleForSchedule?: boolean;
     runOnlyOnOsTypes?: OsType[],
+    putDataInEnvironment?: boolean,
     eventTypes: EventType[];
 
     // Handled by Ganchos - no need to put in meta file
     path: string;
 }
 
-export const implementsUserPlugin = (object: any): object is UserPlugin => {
+export const implementsPlugin = (object: any): object is Plugin => {
     if (!object) return false;
 
     const name = 'name' in object;

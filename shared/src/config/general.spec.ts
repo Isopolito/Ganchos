@@ -14,13 +14,15 @@ describe('** General Config **', () => {
         if (testDir.endsWith('test')) sh.rm('-rf', testDir);
 
         config = {
-            userPluginPaths: ['/home/user/foo'],
+            PluginPaths: ['/home/user/foo'],
             heartBeatPollIntervalInSeconds: 5,
             pluginScheduleIntervalFloorInMinutes: 0.5,
-            userPluginMetaExtension: 'foo',
+            PluginMetaExtension: 'foo',
             eventQueuePluginExecutionTimeout: 0, 
             eventQueuePluginExecutionConcurrency: 3,
             enableDebug: true,
+            ipChangePollingIntervalInMinutes: 1,
+            ipUpPollingIntervalInMinutes: 1,
         };
     });
 
@@ -34,7 +36,7 @@ describe('** General Config **', () => {
         it('should create default plugin directory', async () => {
             const configObj = await generalConfig.get() as GeneralConfig;
 
-            const exists = sh.test('-d', configObj.userPluginPaths[0]);
+            const exists = sh.test('-d', configObj.PluginPaths[0]);
 
             expect(exists).to.be.true;
         });

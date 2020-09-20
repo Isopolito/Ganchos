@@ -56,12 +56,6 @@ const getPluginConfigBasePath = (): string => {
     return path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config, generalConstants.Plugin);
 }
 
-const getGanchosPluginPath = (appRoot: string|null = null): string => {
-    return appRoot
-        ? path.join(appRoot, 'dist','plugins', pathConstants.GanchosRelativePluginPath)
-        : pathConstants.GanchosRelativePluginPath;
-}
-
 const interpolateHomeTilde = (path: string[] | string): string[] | string => {
     if (!path) return '';
 
@@ -91,6 +85,5 @@ export {
     getAllFiles,
     getLogBasePath,
     interpolateHomeTilde,
-    getGanchosPluginPath,
     isDirectoryInPath,
 }

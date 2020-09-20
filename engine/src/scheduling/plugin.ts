@@ -1,7 +1,7 @@
 import * as path from 'path';
-import { generalLogger, pluginLogger, SeverityEnum, pluginConfig, UserPlugin, systemUtil, fileUtil, generalConfig } from 'ganchos-shared';
-import { fetchUserPlugins, createUserPluginFromMetaFile } from "../pluginsFinder";
-import { executeNow as executeUserPlugin } from '../execution/userPlugin';
+import { generalLogger, pluginLogger, SeverityEnum, pluginConfig, Plugin, systemUtil, fileUtil, generalConfig } from 'ganchos-shared';
+import { fetchPlugins, createPluginFromMetaFile } from "./pluginsFinder";
+import { executeNow as executePlugin } from '../pluginExecution';
 import { PluginInstanceManager } from './PluginInstanceManager';
 
 //======================================================================================================
@@ -12,16 +12,16 @@ const pluginInstanceManager = new PluginInstanceManager();
 
 //======================================================================================================
 
-const runUserPlugin = async (plugin: UserPlugin): Promise<any> => {
+const runPlugin = async (plugin: Plugin): Promise<any> => {
     const mostRecentConfig = await pluginConfig.getJson(plugin.name, JSON.stringify(plugin.defaultJsonConfig, null, 4));
     if (!mostRecentConfig) return null;
 
-    await executeUserPlugin(plugin, 'none', null);
+    await executePlugin(plugin, 'none', null);
 
     return JSON.parse(mostRecentConfig);
 }
 
-const runUserPluginAndReschedule = async (plugin: UserPlugin): Promise<void> => {
+const runPluginAndReschedule = async (plugin: Plugin): Promise<void> => {
     try {
         if (!fileUtil.doesPathExist(path.join(plugin.path, plugin.binFileName))) {
             pluginLogger.write(SeverityEnum.warning, plugin.name, logArea, `Bin file for plugin doesn't exist. Removing plugin from schedule`);
@@ -35,7 +35,7 @@ const runUserPluginAndReschedule = async (plugin: UserPlugin): Promise<void> => 
         };
 
         pluginInstanceManager.setRunningStatus(plugin.name, true);
-        const pluginConfigObj = await runUserPlugin(plugin);
+        const pluginConfigObj = await runPlugin(plugin);
         const generalConfigObj = await generalConfig.get();
 
         if (!pluginConfigObj || !pluginConfigObj.runEveryXMinutes || pluginConfigObj.runEveryXMinutes <= generalConfigObj.pluginScheduleIntervalFloorInMinutes) {
@@ -46,9 +46,9 @@ const runUserPluginAndReschedule = async (plugin: UserPlugin): Promise<void> => 
             await systemUtil.waitInMinutes(pluginConfigObj.runEveryXMinutes);
         }
 
-        return runUserPluginAndReschedule(plugin);
+        return runPluginAndReschedule(plugin);
     } catch (e) {
-        pluginLogger.write(SeverityEnum.error, plugin.name, logArea, `Exception (${runUserPluginAndReschedule.name}) - ${e}`);
+        pluginLogger.write(SeverityEnum.error, plugin.name, logArea, `Exception (${runPluginAndReschedule.name}) - ${e}`);
     }
 }
 
@@ -56,9 +56,9 @@ const beginScheduleMonitoring = async (): Promise<void> => {
     try {
         const tasks = [];
 
-        const userPlugins = (await fetchUserPlugins()).filter(up => up.isEligibleForSchedule)
-        for (const plugin of userPlugins) {
-            tasks.push(runUserPluginAndReschedule(plugin));
+        const Plugins = (await fetchPlugins()).filter(up => up.isEligibleForSchedule)
+        for (const plugin of Plugins) {
+            tasks.push(runPluginAndReschedule(plugin));
         }
 
         await Promise.all(tasks);
@@ -67,16 +67,16 @@ const beginScheduleMonitoring = async (): Promise<void> => {
     }
 }
 
-const scheduleSingleUserPlugin = async (pluginPath: string): Promise<void> => {
-    const plugin = await createUserPluginFromMetaFile(pluginPath);
+const scheduleSinglePlugin = async (pluginPath: string): Promise<void> => {
+    const plugin = await createPluginFromMetaFile(pluginPath);
     if (!plugin || !plugin.isEligibleForSchedule) return;
 
-    await pluginInstanceManager.setCanceledIfRunning(plugin.name, async () => await runUserPluginAndReschedule(plugin));
+    await pluginInstanceManager.setCanceledIfRunning(plugin.name, async () => await runPluginAndReschedule(plugin));
 }
 
 //======================================================================================================
 
 export {
     beginScheduleMonitoring,
-    scheduleSingleUserPlugin,
+    scheduleSinglePlugin,
 }

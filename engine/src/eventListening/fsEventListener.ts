@@ -1,8 +1,7 @@
 import chokidar from 'chokidar';
-import { fileUtil, generalLogger, SeverityEnum, pluginConfig, systemUtil } from 'ganchos-shared';
+import { fileUtil, generalLogger, SeverityEnum, pluginConfig, systemUtil, EventType } from 'ganchos-shared';
 import { dispatch } from './pluginEventDispatcher';
-import { fetchUserPlugins, fetchGanchosPluginNames } from '../plugins/pluginsFinder';
-import { getAndValidateDefaultConfig } from '../plugins/execution/ganchosPlugin';
+import { fetchPlugins } from '../scheduling/pluginsFinder';
 
 /*========================================================================================*/
 
@@ -26,13 +25,8 @@ const getPluginWatchPathsFromConfig = async (pluginName: string, defaultJsonConf
 
 const processAllPluginsForWatchPaths = async (): Promise<string[]> => {
     const tasks = [];
-    for (const userPlugin of await fetchUserPlugins()) {
-        tasks.push(getPluginWatchPathsFromConfig(userPlugin.name, JSON.stringify(userPlugin.defaultJsonConfig, null, 4)));
-    }
-
-    for (const pluginName of await fetchGanchosPluginNames(true)) {
-        const configString = await getAndValidateDefaultConfig(pluginName);
-        if (configString) tasks.push(getPluginWatchPathsFromConfig(pluginName, configString));
+    for (const Plugin of await fetchPlugins()) {
+        tasks.push(getPluginWatchPathsFromConfig(Plugin.name, JSON.stringify(Plugin.defaultJsonConfig, null, 4)));
     }
 
     const results = await Promise.all(tasks);
@@ -56,7 +50,7 @@ const watchPaths = async (pathsToWatch: string[]): Promise<void> => {
         ignoreInitial: true,
     });
 
-    watcher.on('all', async (event: string, filePath: string) => await dispatch(event, filePath));
+    watcher.on('all', async (event: string, filePath: string) => await dispatch(event as EventType, {filePath: filePath}));
     watcher.on('error', async error => generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
 };
 

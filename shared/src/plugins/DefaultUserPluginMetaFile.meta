@@ -1,6 +1,8 @@
 {
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // The meta file for a user plugin contains the information needed to run and display a plugin.
+    // The meta file for a user plugin contains the information needed for ganchos to execute a plugin and display 
+	// it in the UI (UI will be in future enhancement).
+
     // By default the extension for these types of files ends in '.meta', but this can be configured in general config.
 
     // NOTE: When the application (binFileName) is executed the 3 parameters passed in are:
