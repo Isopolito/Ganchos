@@ -1,6 +1,6 @@
 import { pluginConfig, generalConfig, generalLogger, SeverityEnum } from 'ganchos-shared'
 import * as pluginFinder from './scheduling/pluginsFinder';
-import { beginScheduleMonitoring as beginPluginScheduler, scheduleSinglePlugin } from './scheduling/plugin';
+import { beginScheduleMonitoring as beginPluginScheduler, scheduleSinglePlugin as scheduleSinglePluginIfNeeded } from './scheduling/plugin';
 import { stopIfNeededAndStart as stopStartFsEventListener, stop as stopFsEventListener } from './eventListening/fsEventListener'
 
 const logArea = "main";
@@ -22,18 +22,18 @@ const shutdown = async (): Promise<void> => {
 }
 
 const handleGeneralConfigChanges = async (diffs: string[] | null): Promise<void> => {
-    if (diffs && diffs.includes('PluginPaths')) {
+    if (diffs && diffs.includes('pluginPaths')) {
         // Make sure new user plugin paths are reflected in user plugin watcher
         await pluginFinder.endWatchForPlugins();
-        await pluginFinder.watchPlugins((event, fileName) => scheduleSinglePlugin(fileName));
+        await pluginFinder.watchPlugins((event, fileName) => scheduleSinglePluginIfNeeded(fileName));
     }
 }
 
 (async () => {
     try {
-        process.on('SIGINT', async () => await shutdown());
-        process.on('SIGTERM', async () => await shutdown());
-        process.on('SIGQUIT', async () => await shutdown());
+        process.on('SIGINT', () => shutdown());
+        process.on('SIGTERM', () => shutdown());
+        process.on('SIGQUIT', () => shutdown());
 
         const tasks = [];
 
@@ -51,7 +51,7 @@ const handleGeneralConfigChanges = async (diffs: string[] | null): Promise<void>
 
         // If a plugin is deleted it will automatically be removed from scheduling
         generalLogger.write(SeverityEnum.info, logArea, "Monitoring user plugin paths for changes", true);
-        tasks.push(pluginFinder.watchPlugins((event, fileName) => scheduleSinglePlugin(fileName)));
+        tasks.push(pluginFinder.watchPlugins((event, fileName) => scheduleSinglePluginIfNeeded(fileName)));
 
         await Promise.all(tasks);
     } catch (e) {

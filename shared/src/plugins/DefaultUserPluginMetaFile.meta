@@ -5,7 +5,7 @@
 
     // By default the extension for these types of files ends in '.meta', but this can be configured in general config.
 
-    // NOTE: When the application (binFileName) is executed the 3 parameters passed in are:
+    // NOTE: When the application (execFilePath) is executed the 3 parameters passed in are:
     //  1. The configuration for the plugin. JSON string in the shape of 'defaultJsonConfig'
     //  2. The event type that triggered execution (if run on a schedule, this is 'none')
     //  3. The event data that is part of the triggered execution (if run on a schedule, this is null)
@@ -19,7 +19,7 @@
     //  *** Mandatory fields ***
 
     // The name of the execution file to run
-    "binFileName": "",
+    "execFilePath": "",
 
     // Name of the plugin
     "name": "",

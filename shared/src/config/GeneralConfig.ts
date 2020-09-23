@@ -1,7 +1,7 @@
 export interface GeneralConfig {
-    PluginPaths: string[];
+    pluginPaths: string[];
     heartBeatPollIntervalInSeconds: Number;
-    PluginMetaExtension: string;
+    pluginMetaExtension: string;
     enableDebug?: boolean;
     pluginScheduleIntervalFloorInMinutes: number,
     eventQueuePluginExecutionTimeout: number,
@@ -13,16 +13,16 @@ export interface GeneralConfig {
 export const implementsGeneralConfig = (object: any): object is GeneralConfig => {
     if (!object) return false;
 
-    const PluginPaths = 'PluginPaths' in object;
+    const pluginPaths = 'pluginPaths' in object;
     const heartBeatPollIntervalInSeconds = 'heartBeatPollIntervalInSeconds' in object;
-    const PluginMetaExtension = 'PluginMetaExtension' in object;
+    const pluginMetaExtension = 'pluginMetaExtension' in object;
     const pluginScheduleIntervalFloorInMinutes = 'pluginScheduleIntervalFloorInMinutes' in object;
     const eventQueuePluginExecutionTimeout = 'eventQueuePluginExecutionTimeout' in object;
     const eventQueuePluginExecutionConcurrency = 'eventQueuePluginExecutionConcurrency' in object;
     const ipUpPollingIntervalInMinutes = 'ipUpPollingIntervalInMinutes' in object;
     const ipChangePollingIntervalInMinutes = 'ipChangePollingIntervalInMinutes' in object;
 
-    return pluginScheduleIntervalFloorInMinutes && PluginMetaExtension && PluginPaths
+    return pluginScheduleIntervalFloorInMinutes && pluginMetaExtension && pluginPaths
         && heartBeatPollIntervalInSeconds && eventQueuePluginExecutionConcurrency && eventQueuePluginExecutionTimeout
         && ipChangePollingIntervalInMinutes && ipUpPollingIntervalInMinutes;
 }

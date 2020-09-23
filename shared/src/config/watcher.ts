@@ -23,7 +23,7 @@ export class Watcher {
 
     private async diffBetweenFileAndMem(filePath: string): Promise<string[]> {
         try {
-            const configInMemory = this.getConfigFromMemory(filePath);
+            const configInMemory = await this.getConfigFromMemory(filePath);
             if (!configInMemory) return [];
 
             const rawData = await fsPromises.readFile(filePath);

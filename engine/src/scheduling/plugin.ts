@@ -12,19 +12,38 @@ const pluginInstanceManager = new PluginInstanceManager();
 
 //======================================================================================================
 
-const runPlugin = async (plugin: Plugin): Promise<any> => {
-    const mostRecentConfig = await pluginConfig.getJson(plugin.name, JSON.stringify(plugin.defaultJsonConfig, null, 4));
-    if (!mostRecentConfig) return null;
+const doesConfigPreventScheduling = async (plugin: Plugin, pluginConfigObj) => {
+    if (pluginConfigObj && pluginConfigObj.runEveryXMinutes === 0) return true;
 
-    await executePlugin(plugin, 'none', null);
+    const generalConfigObj = await generalConfig.get();
+    if (!pluginConfigObj || !pluginConfigObj.runEveryXMinutes
+        || pluginConfigObj.runEveryXMinutes <= generalConfigObj.pluginScheduleIntervalFloorInMinutes)
+    {
+        pluginLogger.write(SeverityEnum.warning, plugin.name, logArea,
+            `Either configuration for this plugin is missing or invalid, or the 'runEveryXMinutes' option has been set to < general config's pluginScheduleIntervalFloorInMinutes. Will try again in ${badConfigWaitTimeInMin} minutes`);
 
-    return JSON.parse(mostRecentConfig);
+        return true;
+    }
+
+    return false;
+}
+
+const getPluginConfigOrDefault = async (plugin: Plugin): Promise<any> => {
+    try {
+        const mostRecentConfig = await pluginConfig.getJson(plugin.name, JSON.stringify(plugin.defaultJsonConfig));
+        if (!mostRecentConfig) return null;
+
+        return JSON.parse(mostRecentConfig);
+    }
+    catch (e) {
+        pluginLogger.write(SeverityEnum.error, plugin.name, `${logArea} - ${getPluginConfigOrDefault.name}`, e);
+    }
 }
 
 const runPluginAndReschedule = async (plugin: Plugin): Promise<void> => {
     try {
-        if (!fileUtil.doesPathExist(path.join(plugin.path, plugin.binFileName))) {
-            pluginLogger.write(SeverityEnum.warning, plugin.name, logArea, `Bin file for plugin doesn't exist. Removing plugin from schedule`);
+        if (!fileUtil.doesPathExist(path.join(plugin.path, plugin.execFilePath))) {
+            pluginLogger.write(SeverityEnum.warning, plugin.name, logArea, `Execution file for plugin doesn't exist. Removing plugin from schedule`);
             pluginInstanceManager.setRunningStatus(plugin.name, false);
             return;
         }
@@ -34,15 +53,12 @@ const runPluginAndReschedule = async (plugin: Plugin): Promise<void> => {
             return;
         };
 
-        pluginInstanceManager.setRunningStatus(plugin.name, true);
-        const pluginConfigObj = await runPlugin(plugin);
-        const generalConfigObj = await generalConfig.get();
-
-        if (!pluginConfigObj || !pluginConfigObj.runEveryXMinutes || pluginConfigObj.runEveryXMinutes <= generalConfigObj.pluginScheduleIntervalFloorInMinutes) {
-            pluginLogger.write(SeverityEnum.warning, plugin.name, logArea,
-                `Either configuration for this plugin is missing or invalid, or the 'runEveryXMinutes' option has been set to < general config's pluginScheduleIntervalFloorInMinutes. Will try again in ${badConfigWaitTimeInMin} minutes`);
+        const pluginConfigObj = await getPluginConfigOrDefault(plugin);
+        if (await doesConfigPreventScheduling(plugin, pluginConfigObj)) {
             await systemUtil.waitInMinutes(badConfigWaitTimeInMin);
         } else {
+            pluginInstanceManager.setRunningStatus(plugin.name, true);
+            await executePlugin(plugin, 'none', null);
             await systemUtil.waitInMinutes(pluginConfigObj.runEveryXMinutes);
         }
 
@@ -56,8 +72,8 @@ const beginScheduleMonitoring = async (): Promise<void> => {
     try {
         const tasks = [];
 
-        const Plugins = (await fetchPlugins()).filter(up => up.isEligibleForSchedule)
-        for (const plugin of Plugins) {
+        const plugins = (await fetchPlugins()).filter(up => up.isEligibleForSchedule)
+        for (const plugin of plugins) {
             tasks.push(runPluginAndReschedule(plugin));
         }
 
@@ -68,10 +84,14 @@ const beginScheduleMonitoring = async (): Promise<void> => {
 }
 
 const scheduleSinglePlugin = async (pluginPath: string): Promise<void> => {
-    const plugin = await createPluginFromMetaFile(pluginPath);
-    if (!plugin || !plugin.isEligibleForSchedule) return;
+    try {
+        const plugin = await createPluginFromMetaFile(pluginPath);
+        if (!plugin || !plugin.isEligibleForSchedule) return;
 
-    await pluginInstanceManager.setCanceledIfRunning(plugin.name, async () => await runPluginAndReschedule(plugin));
+        await pluginInstanceManager.setCanceledIfRunning(plugin.name, async () => await runPluginAndReschedule(plugin));
+    } catch (e) {
+        generalLogger.write(SeverityEnum.error, `${logArea} - ${scheduleSinglePlugin.name}`, e);
+    }
 }
 
 //======================================================================================================

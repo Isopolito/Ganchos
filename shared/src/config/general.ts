@@ -11,8 +11,8 @@ import { makeAllDirInPath, touch, doesPathExist, getGeneralConfigPath, getAppBas
 
 const defaultConfig: GeneralConfig = {
     heartBeatPollIntervalInSeconds: 5,
-    PluginPaths: [path.join(getAppBaseDir(), 'plugins')],
-    PluginMetaExtension: 'meta',
+    pluginPaths: [path.join(getAppBaseDir(), 'plugins')],
+    pluginMetaExtension: 'meta',
     pluginScheduleIntervalFloorInMinutes: 0.5,
 
     // No timeout. Milliseconds
@@ -34,7 +34,7 @@ const configMgrInitializer = async (): Promise<void> => {
     }
 
     // create default plugin path if not exists
-    makeAllDirInPath(defaultConfig.PluginPaths[0]);
+    makeAllDirInPath(defaultConfig.pluginPaths[0]);
 }
 
 const inMemConfigMgr = new ConfigManager(getGeneralConfigPath(), genLogger, configMgrInitializer, 'general');

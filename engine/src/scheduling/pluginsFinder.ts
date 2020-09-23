@@ -1,15 +1,25 @@
 import chokidar from 'chokidar';
 import { promises as fs } from 'fs'
 import * as path from 'path'
-import { fileUtil, validationUtil, generalLogger, SeverityEnum, generalConfig, Plugin, implementsPlugin, pluginConfig } from 'ganchos-shared';
+import {
+    fileUtil,
+    validationUtil,
+    generalLogger,
+    SeverityEnum,
+    generalConfig,
+    Plugin,
+    implementsPlugin,
+    pluginConfig,
+    systemUtil
+} from 'ganchos-shared';
 
 const logArea = "pluginFinder";
-let PluginWatcher: chokidar.FSWatcher;
+let pluginWatcher: chokidar.FSWatcher;
 
 const createPluginFromMetaFile = async (pluginPath: string): Promise<Plugin> => {
     const config = await generalConfig.get();
 
-    if (!pluginPath.endsWith(config.PluginMetaExtension)) return null;
+    if (!pluginPath.endsWith(config.pluginMetaExtension)) return null;
 
     const rawData = await fs.readFile(pluginPath);
     const plugin = validationUtil.parseAndValidateJson(rawData.toString(), true);
@@ -29,40 +39,47 @@ const createPluginFromMetaFile = async (pluginPath: string): Promise<Plugin> => 
 const fetchPlugins = async (): Promise<Plugin[]> => {
     try {
         const config = await generalConfig.get();
-        if (!config.PluginPaths) return [];
+        if (!config.pluginPaths) {
+            generalLogger.write(SeverityEnum.debug, `${logArea} - ${fetchPlugins.name}`, `No pluginPaths found in general config`);
+            return [];
+        }
+        generalLogger.write(SeverityEnum.debug, `${logArea} - ${fetchPlugins.name}`, `General config plugin paths: ${systemUtil.safeJoin(config.pluginPaths)}`);
 
         const plugins = [];
-        for (const filePath of await fileUtil.getAllFiles(config.PluginPaths, config.PluginMetaExtension)) {
+        for (const filePath of await fileUtil.getAllFiles(config.pluginPaths, config.pluginMetaExtension)) {
             const plugin = await createPluginFromMetaFile(filePath);
-            if (plugin) plugins.push(plugin);
+            if (plugin) {
+                plugins.push(plugin);
+                generalLogger.write(SeverityEnum.debug, `${logArea} - ${fetchPlugins.name}`, `Found plugin: ${plugin.name}`);
+            }
         }
         return plugins;
     } catch (e) {
-        generalLogger.write(SeverityEnum.critical, logArea, `Unable to fetch user plugins: ${e}`);
+        generalLogger.write(SeverityEnum.critical, `${logArea} - ${fetchPlugins.name}`, `Unable to fetch user plugins: ${e}`);
         return [];
     }
 }
 
 const watchPlugins = async (callback: (event: string, pluginFileName: string) => void): Promise<void> => {
-    if (PluginWatcher) return;
+    if (pluginWatcher) return;
 
     const config = await generalConfig.get();
-    if (!config.PluginPaths) return;
+    if (!config.pluginPaths) return;
 
-    PluginWatcher = chokidar.watch(config.PluginPaths, {
+    pluginWatcher = chokidar.watch(config.pluginPaths, {
         persistent: true,
         usePolling: false,
         ignoreInitial: true,
     });
 
-    PluginWatcher.on('all', async (event: string, filePath: string) => callback(event, filePath));
-    PluginWatcher.on('error', async error => generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
+    pluginWatcher.on('all', async (event: string, filePath: string) => callback(event, filePath));
+    pluginWatcher.on('error', async error => generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
 }
 
 const endWatchForPlugins = async (): Promise<void> => {
-    if (PluginWatcher) {
-        await PluginWatcher.close();
-        (PluginWatcher as any) = null;
+    if (pluginWatcher) {
+        await pluginWatcher.close();
+        (pluginWatcher as any) = null;
     }
 }
 

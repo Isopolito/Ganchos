@@ -26,8 +26,8 @@ of the Ganchos system--things along those lines. Currently this part of Ganchos 
 Located: `~/.ganchos/config/general`
 
 `TODO`: write this
-* `PluginPaths`: (*default*: ~/.ganchos/plugins) -
-* `PluginMetaExtension`: (*default*: 'meta') - 
+* `pluginPaths`: (*default*: ~/.ganchos/plugins) -
+* `pluginMetaExtension`: (*default*: 'meta') - 
 * `pluginScheduleIntervalFloorInMinutes`: (*default*: 0.5) - 
 * `eventQueuePluginExecutionTimeout`: 0, // No timeout
 * `eventQueuePluginExecutionConcurrency`: 3, // Each plugin can only have 3 executions concurrently when responding to events
@@ -49,7 +49,9 @@ the end user. It's what they use to configure how the plugin operates.
 * `category`: *String*; for grouping plugins by function: media, filesystem, etc
 * `defaultJsonConfig`: *JSON String*; will be the configuration used by the plugin the first time it's run. Ganchos will automatically create
  the plugin's JSON configuration file on disk with this after the first run.
-* `binFileName`: [user plugins only] *String*; a path relative to the meta file, that points to plugin's execution file
+* `execFilePath`: *String*; The plugin code file to execute. First Ganchos will check to see if the path exists as provided. 
+This allows a fully qualified path to be used and the plugin can live anywhere on the system. If it's not found, the path will be 
+treated as relative to the plugin directory where the meta file lives.
 
 #### Optional
 * `isEligibleForSchedule`: *Boolean*; when true, plugin will be ran by the scheduler on startup and then on the interval provided by the `runEveryXMinutes` plugin configuration setting
@@ -90,7 +92,7 @@ This will be improved in the future but for now:
 * Install [pm2](https://www.npmjs.com/package/pm2) if needed.
 * Download ganchos code
 * Run like this: `NODE_ENV=prod pm2 start --name ganchos ${GANCHOS_DIRECTORY}/engine/dist/app.js`
-* Ganchos plugins will automatically be available. Drop user plugins into one of the plugin directories configured in the ganchos general config file `~/.ganchos/config/general`
+* Ganchos plugins will automatically be available. Drop plugins into one of the plugin directories configured in the ganchos general config file `~/.ganchos/config/general`
 
 ## Goals
 * Make this rock solid and performant so that it can be used reliably in any environment for important work. The only concern of the end user should be ensuring that their plugins are written correctly.
