@@ -2,6 +2,7 @@ import { pluginConfig, generalConfig, generalLogger, SeverityEnum } from 'gancho
 import * as pluginFinder from './scheduling/pluginsFinder';
 import { beginScheduleMonitoring as beginPluginScheduler, scheduleSinglePlugin as scheduleSinglePluginIfNeeded } from './scheduling/plugin';
 import { stopIfNeededAndStart as stopStartFsEventListener, stop as stopFsEventListener } from './eventListening/fsEventListener'
+import { start as startInetWatch, stop as stopInetWatch } from './eventListening/inetListener'
 
 const logArea = "main";
 
@@ -17,6 +18,9 @@ const shutdown = async (): Promise<void> => {
 
     generalLogger.write(SeverityEnum.info, logArea, "Shutting down - end file system event listener", true);
     await stopFsEventListener();
+
+    generalLogger.write(SeverityEnum.info, logArea, "Shutting down - Inet watcher", true);
+    await stopInetWatch();
 
     generalLogger.write(SeverityEnum.info, logArea, "Goodbye", true);
 }
@@ -52,6 +56,9 @@ const handleGeneralConfigChanges = async (diffs: string[] | null): Promise<void>
         // If a plugin is deleted it will automatically be removed from scheduling
         generalLogger.write(SeverityEnum.info, logArea, "Monitoring user plugin paths for changes", true);
         tasks.push(pluginFinder.watchPlugins((event, fileName) => scheduleSinglePluginIfNeeded(fileName)));
+
+        generalLogger.write(SeverityEnum.info, logArea, "Starting Inet watcher", true);
+        tasks.push(startInetWatch());
 
         await Promise.all(tasks);
     } catch (e) {

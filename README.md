@@ -54,12 +54,23 @@ This allows a fully qualified path to be used and the plugin can live anywhere o
 treated as relative to the plugin directory where the meta file lives.
 
 #### Optional
+* `putDataInEnvironment`: *Boolean*; when true will put the input data to the plugin into the environment instead of using json. Useful for scripts.
 * `isEligibleForSchedule`: *Boolean*; when true, plugin will be ran by the scheduler on startup and then on the interval provided by the `runEveryXMinutes` plugin configuration setting
 * `osTypesToRunOn`: *Array of strings*; if provided, the plugin will only run on the os types in the list. Values are: 'aix' | 'darwin' | 'freebsd' | 'linux' | 'openbsd' | 'sunos' | 'win32'
+* `eventTypes`: *Array of strings*; the plugin will be executed when events in the list occur. For file system events the plugin configuration
+ `watchPaths` and `excludeWatchPaths` can be used to include or ignore a file system event respectively, based on the `filePath` event data property.
+ <br> Below are the following eventType values that are available:
 
-`TODO`: list other types of events
-* `eventTypes`: *Array of strings*; the plugin will be executed when events in the list occur on paths being watched (`watchPaths`) by the plugin. 
-File System Event Values: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir' | 'ready' | 'raw' | 'error' | 'none';
+  File system: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir' | 'ready' | 'raw' | 'error' 
+  EventData properties for this event: `filePath`
+
+  Network: 'inetChange' | 'inetUp' | 'inetDown'. EventData properties for this event: `oldIpAddress`, `newIpAddress`
+
+  General purpose: 'none'
+
+EventData is passed to a plugin on execution (see plugin execution). The shape of that object can change depending on the event. 
+File system events
+
 
 ### Plugin Configuration File Options
 Located: `~/.ganchos/config/plugins`
@@ -67,7 +78,7 @@ Located: `~/.ganchos/config/plugins`
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
 
 Configuration files for the plugins are JSON objects. Located in `~/.ganchos/config/plugins` directory. They most likely won't exist the first time a plugin
-is run, they will be created automatically based on the `(get)defaultJsonConfig` value provided in the plugin's settings. The configuration 
+is run, they will be created automatically based on the `defaultJsonConfig` value provided in the plugin's settings. The configuration 
 files must have the exact same name as what's in the `name` field of the plugin settings (meta file)--that's how they're located. The contents of this file is the JSON configuration that is passed into the plugin on execution. 
 
 *Note: A plugin can specify any configuration setting that it needs. The ones below are the configuration options recognized and used by Ganchos and are completely optional.* 
