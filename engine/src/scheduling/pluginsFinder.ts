@@ -25,7 +25,7 @@ const createPluginFromMetaFile = async (pluginPath: string): Promise<Plugin> => 
     const plugin = validationUtil.parseAndValidateJson(rawData.toString(), true);
 
     if (!implementsPlugin(plugin)) {
-        generalLogger.write(SeverityEnum.error, logArea, `The JSON in plugin meta file '${pluginPath}' is not a valid Plugin`);
+        generalLogger.write(SeverityEnum.error, logArea, `The JSON in plugin meta file '${pluginPath}' is not a valid Plugin. Check that the required properties are present`);
         return null;
     }
 
