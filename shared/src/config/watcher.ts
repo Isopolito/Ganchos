@@ -23,7 +23,7 @@ export class Watcher {
 
     private async diffBetweenFileAndMem(filePath: string): Promise<string[]> {
         try {
-            const configInMemory = this.getConfigFromMemory(filePath);
+            const configInMemory = await this.getConfigFromMemory(filePath);
             if (!configInMemory) return [];
 
             const rawData = await fsPromises.readFile(filePath);
@@ -52,14 +52,14 @@ export class Watcher {
 
             this.logger(SeverityEnum.debug, `${Watcher.name} - beginWatch`, `watching path: ${this.watchPath}`);
 
-            this.watcher = chokidar.watch(this.watchPath, {
+            this.watcher = chokidar.watch(fileUtil.interpolateHomeTilde(this.watchPath), {
                 persistent: true,
                 usePolling: false,
                 ignoreInitial: true,
             });
 
-            this.watcher.on('all', async (event: string, filePath: string) => onFileChangeHandler(event, filePath, await this.diffBetweenFileAndMem(filePath)));
-            this.watcher.on('error', async error => this.logger(SeverityEnum.error, Watcher.name, `Error in watcher: ${error}`));
+            this.watcher.on(`all`, async (event: string, filePath: string) => await onFileChangeHandler(event, filePath, await this.diffBetweenFileAndMem(filePath)));
+            this.watcher.on(`error`, async error => this.logger(SeverityEnum.error, Watcher.name, `Error in watcher: ${error}`));
         } catch (e) {
             this.logger(SeverityEnum.error, `${Watcher.name} - beginWatch`, `Exception - ${e}`);
         }

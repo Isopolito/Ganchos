@@ -13,14 +13,8 @@ the required contract (Plugin settings below) things will work seamlessly.
 A future version will include a web based UI that allows viewing of logs and tracing the activity of a plugin over time spans. As well as configuration of the various plugins, viewing the health
 of the Ganchos system--things along those lines. Currently this part of Ganchos is not yet available.
 
-## Plugin Types
-There are two types of plugins: **User Plugins** and **Ganchos Plugins**
-
-### User Plugins
-`TODO`: write this
-
-### Ganchos Plugins
-`TODO`: write this
+### Plugins
+`TODO`: write this. talk about different ways plugins can receive event data, config. When set as environment ganchos_ and ganchosConfig_
 
 ## Environment Variables
 * `DEBUG`: a truthy value will turn on extra logging for general and plugins
@@ -32,19 +26,15 @@ There are two types of plugins: **User Plugins** and **Ganchos Plugins**
 Located: `~/.ganchos/config/general`
 
 `TODO`: write this
-* `userPluginPaths`: (*default*: ~/.ganchos/plugins) -
-* `userPluginMetaExtension`: (*default*: 'meta') - 
+* `pluginPaths`: (*default*: ~/.ganchos/plugins) -
+* `pluginMetaExtension`: (*default*: 'meta') - 
 * `pluginScheduleIntervalFloorInMinutes`: (*default*: 0.5) - 
 * `eventQueuePluginExecutionTimeout`: 0, // No timeout
 * `eventQueuePluginExecutionConcurrency`: 3, // Each plugin can only have 3 executions concurrently when responding to events
 
-
 ### Plugin Settings
-Located for **User Plugins**: In the `meta` file associated with plugin. See an example of this file type [here](shared/src/plugins/DefaultUserPluginMetaFile.meta).
+Located in the `meta` file associated with plugin. See an example of this file type [here](shared/src/plugins/DefaultPluginMetaFile.meta).
 <br>
-Located for **Ganchos Plugins**: Implemented in plugin as methods required by contract. These plugins are located in `src/plugins/pluginCollection`.
-The [Template Plugin](engine/src/plugins/pluginCollection/TemplatePlugin.ts) can be copied and used for new plugins since it's has all the boiler plate code already in it.
-
 
 Plugin settings are what Ganchos uses in order to know how to properly run and display a plugin. A user that didn't write a plugin *shouldn't* have to modify this.
 It can be thought of as configuration geared towards Ganchos. The distinction between this and the **Plugin Configuration Files** is that the latter are geared towards 
@@ -53,24 +43,33 @@ the end user. It's what they use to configure how the plugin operates.
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
 
 #### Mandatory
-*Note: Inside the parenthesis is the extra part of the name on the ganchos version since they're methods.*
 
-* `(get)name`: *String*; the name of the plugin as it will show up in the UI
-* `(get)description`: *String*; describe what the plugin does
-* `(get)category`: *String*; for grouping plugins by function: media, filesystem, etc
-* `(get)defaultJsonConfig`: *JSON String*; will be the configuration used by the plugin the first time it's run. Ganchos will automatically create
+* `name`: *String*; the name of the plugin as it will show up in the UI
+* `description`: *String*; describe what the plugin does
+* `category`: *String*; for grouping plugins by function: media, filesystem, etc
+* `defaultJsonConfig`: *JSON String*; will be the configuration used by the plugin the first time it's run. Ganchos will automatically create
  the plugin's JSON configuration file on disk with this after the first run.
-<br>
-
-* `binFileName`: [user plugins only] *String*; a path relative to the meta file, that points to plugin's execution file
+* `execFilePath`: *String*; The plugin code file to execute. First Ganchos will check to see if the path exists as provided. 
+This allows a fully qualified path to be used and the plugin can live anywhere on the system. If it's not found, the path will be 
+treated as relative to the plugin directory where the meta file lives.
 
 #### Optional
+* `putDataInEnvironment`: *Boolean*; when true will put the input data to the plugin into the environment instead of using json. Useful for scripts.
 * `isEligibleForSchedule`: *Boolean*; when true, plugin will be ran by the scheduler on startup and then on the interval provided by the `runEveryXMinutes` plugin configuration setting
-* `(get)osTypesToRunOn`: *Array of strings*; if provided, the plugin will only run on the os types in the list. Values are: 'aix' | 'darwin' | 'freebsd' | 'linux' | 'openbsd' | 'sunos' | 'win32'
+* `osTypesToRunOn`: *Array of strings*; if provided, the plugin will only run on the os types in the list. Values are: 'aix' | 'darwin' | 'freebsd' | 'linux' | 'openbsd' | 'sunos' | 'win32'
+* `eventTypes`: *Array of strings*; the plugin will be executed when an event in the list occurs. For file system events, the plugin configuration
+ `watchPaths` and `excludeWatchPaths` properties can be used to include or ignore a plugin respectively.
 
-`TODO`: list other types of events
-* `(get)eventTypes`: *Array of strings*; the plugin will be executed when events in the list occur on paths being watched (`watchPaths`) by the plugin. 
-File System Event Values: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir' | 'ready' | 'raw' | 'error' | 'none';
+  Below are the available eventType values by category, note that EventData is passed to a plugin on execution (see plugin execution). The shape of that object can change depending on the event.
+
+  1. **File system**: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir' | 'ready' | 'raw' | 'error' 
+  <br>EventData properties for this event: `filePath`
+
+  2. **Network**: 'inetChange' | 'inetUp' | 'inetDown'. 
+  <br>EventData properties for this event: `oldIpAddress`, `newIpAddress`
+
+  3. **General purpose**: 'none' (*this causes the plugin to ignore events altogether; equivalent to `eventTypes` = []*)
+
 
 ### Plugin Configuration File Options
 Located: `~/.ganchos/config/plugins`
@@ -78,7 +77,7 @@ Located: `~/.ganchos/config/plugins`
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
 
 Configuration files for the plugins are JSON objects. Located in `~/.ganchos/config/plugins` directory. They most likely won't exist the first time a plugin
-is run, they will be created automatically based on the `(get)defaultJsonConfig` value provided in the plugin's settings. The configuration 
+is run, they will be created automatically based on the `defaultJsonConfig` value provided in the plugin's settings. The configuration 
 files must have the exact same name as what's in the `name` field of the plugin settings (meta file)--that's how they're located. The contents of this file is the JSON configuration that is passed into the plugin on execution. 
 
 *Note: A plugin can specify any configuration setting that it needs. The ones below are the configuration options recognized and used by Ganchos and are completely optional.* 
@@ -96,9 +95,6 @@ In these cases, Ganchos will check every 5 minutes to see if the plugin configur
 ## Logs
 `TODO`: write this
 
-## Logs
-`TODO`: write this
-
 ## Using Ganchos
 This will be improved in the future but for now:
 <br>
@@ -106,7 +102,7 @@ This will be improved in the future but for now:
 * Install [pm2](https://www.npmjs.com/package/pm2) if needed.
 * Download ganchos code
 * Run like this: `NODE_ENV=prod pm2 start --name ganchos ${GANCHOS_DIRECTORY}/engine/dist/app.js`
-* Ganchos plugins will automatically be available. Drop user plugins into one of the plugin directories configured in the ganchos general config file `~/.ganchos/config/general`
+* Ganchos plugins will automatically be available. Drop plugins into one of the plugin directories configured in the ganchos general config file `~/.ganchos/config/general`
 
 ## Goals
 * Make this rock solid and performant so that it can be used reliably in any environment for important work. The only concern of the end user should be ensuring that their plugins are written correctly.
@@ -114,7 +110,8 @@ Ganchos should be robust enough to never fail through any fault of its own, grac
 the developer can easily track down and fix their issues. 
 * Get UI developed so that it can provide an easy and intuitive way to manage this. Ideally you could generate plugin templates from the UI so that the process of creating and using plugins for the first time is intuitive and self-documenting.
 * Make work on other operating systems. Currently only tested on Linux.
+* Build in the ability to chain multiple plugins together. A crude version of this can be implemented via delay configuration, but it's not a robust solution.
 
 ## Contributing 
 
-Contributing is encouraged and a PR is always welcome. Please create issues for bugs and enhancement requests. If you write a typescript plugin that provides something useful that many people would want, create an issue to discuss and maybe it can be included with Ganchos as a Ganchos plugin.
+Contributing is encouraged and a PR is always welcome. Please create issues for bugs and enhancement requests. 

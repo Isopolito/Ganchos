@@ -11,8 +11,8 @@ import { makeAllDirInPath, touch, doesPathExist, getGeneralConfigPath, getAppBas
 
 const defaultConfig: GeneralConfig = {
     heartBeatPollIntervalInSeconds: 5,
-    userPluginPaths: [path.join(getAppBaseDir(), 'plugins')],
-    userPluginMetaExtension: 'meta',
+    pluginPaths: [path.join(getAppBaseDir(), 'plugins')],
+    pluginMetaExtension: 'meta',
     pluginScheduleIntervalFloorInMinutes: 0.5,
 
     // No timeout. Milliseconds
@@ -20,6 +20,9 @@ const defaultConfig: GeneralConfig = {
 
     // Each plugin can only have 3 executions concurrently when responding to events
     eventQueuePluginExecutionConcurrency: 3,
+
+    ipUpPollingIntervalInMinutes: 0.5,
+    ipChangePollingIntervalInMinutes: 1,
 };
 
 const configMgrInitializer = async (): Promise<void> => {
@@ -31,7 +34,7 @@ const configMgrInitializer = async (): Promise<void> => {
     }
 
     // create default plugin path if not exists
-    makeAllDirInPath(defaultConfig.userPluginPaths[0]);
+    makeAllDirInPath(defaultConfig.pluginPaths[0]);
 }
 
 const inMemConfigMgr = new ConfigManager(getGeneralConfigPath(), genLogger, configMgrInitializer, 'general');

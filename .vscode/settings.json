@@ -2,5 +2,8 @@
 	"editor.insertSpaces": false,
 	"editor.detectIndentation": false,
 	"god.tsconfig": "./engine/tsconfig.json",
-	"debug.javascript.usePreview": false 
+	"debug.javascript.usePreview": false,
+	"cSpell.words": [
+		"Inet"
+	]
 }

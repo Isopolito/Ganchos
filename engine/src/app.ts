@@ -1,64 +1,64 @@
-import { pluginConfig, generalConfig, generalLogger, SeverityEnum } from 'ganchos-shared'
-import * as pluginFinder from './plugins/pluginsFinder';
-import { beginScheduleMonitoring as beginGanchosPluginScheduler, scheduleSingleGanchosPlugin } from './plugins/scheduling/ganchosPlugins';
-import { beginScheduleMonitoring as beginUserPluginScheduler, scheduleSingleUserPlugin } from './plugins/scheduling/userPlugins';
+import { pluginConfig, generalConfig, generalLogger, SeverityEnum, EventType } from 'ganchos-shared'
+import * as pluginFinder from './scheduling/pluginsFinder'
+import { beginScheduleMonitoring as beginPluginScheduler, scheduleSinglePlugin as scheduleSinglePluginIfNeeded } from './scheduling/plugin'
 import { stopIfNeededAndStart as stopStartFsEventListener, stop as stopFsEventListener } from './eventListening/fsEventListener'
+import { start as startInetWatch, stop as stopInetWatch } from './eventListening/inetListener'
 
-const logArea = "main";
+const logArea = `main`;
 
 const refreshListenersIfWatchPathChanges = async (diffs: string[]|null): Promise<void> => {
     if (diffs && diffs.includes('watchPaths')) await stopStartFsEventListener();
 }
 
 const shutdown = async (): Promise<void> => {
-    generalLogger.write(SeverityEnum.info, logArea, "Shutting down - end file watching", true);
+    generalLogger.write(SeverityEnum.info, logArea, `Shutting down - end file watching`, true);
     await pluginConfig.endWatch();
     await generalConfig.endWatch();
-    await pluginFinder.endWatchForUserPlugins();
-    await pluginFinder.endWatchForGanchosPlugins();
+    await pluginFinder.endWatchForPlugins();
 
-    generalLogger.write(SeverityEnum.info, logArea, "Shutting down - end file system event listener", true);
+    generalLogger.write(SeverityEnum.info, logArea, `Shutting down - end file system event listener`, true);
     await stopFsEventListener();
 
-    generalLogger.write(SeverityEnum.info, logArea, "Goodbye", true);
+    generalLogger.write(SeverityEnum.info, logArea, `Shutting down - Inet watcher`, true);
+    await stopInetWatch();
+
+    generalLogger.write(SeverityEnum.info, logArea, `Goodbye`, true);
 }
 
 const handleGeneralConfigChanges = async (diffs: string[] | null): Promise<void> => {
-    if (diffs && diffs.includes('userPluginPaths')) {
+    if (diffs && diffs.includes('pluginPaths')) {
         // Make sure new user plugin paths are reflected in user plugin watcher
-        await pluginFinder.endWatchForUserPlugins();
-        await pluginFinder.watchUserPlugins((event, fileName) => scheduleSingleUserPlugin(fileName));
+        await pluginFinder.endWatchForPlugins();
+        await pluginFinder.watchPlugins((event, fileName) => scheduleSinglePluginIfNeeded(fileName));
     }
 }
 
 (async () => {
     try {
-        process.on('SIGINT', async () => await shutdown());
-        process.on('SIGTERM', async () => await shutdown());
-        process.on('SIGQUIT', async () => await shutdown());
+        process.on('SIGINT', () => shutdown());
+        process.on('SIGTERM', () => shutdown());
+        process.on('SIGQUIT', () => shutdown());
 
         const tasks = [];
 
-        generalLogger.write(SeverityEnum.info, logArea, "Started File System Event Listener", true);
+        generalLogger.write(SeverityEnum.info, logArea, `Started File System Event Listener`, true);
         tasks.push(stopStartFsEventListener());
 
-        generalLogger.write(SeverityEnum.info, logArea, "Begin plugin scheduler", true);
-        tasks.push(beginGanchosPluginScheduler());
-        tasks.push(beginUserPluginScheduler());
+        generalLogger.write(SeverityEnum.info, logArea, `Begin plugin scheduler`, true);
+        tasks.push(beginPluginScheduler());
 
-        generalLogger.write(SeverityEnum.info, logArea, "Watching general config files for changes", true);
+        generalLogger.write(SeverityEnum.info, logArea, `Watching general config files for changes`, true);
         generalConfig.watch((event, filePath, diffs) => handleGeneralConfigChanges(diffs));
 
-        generalLogger.write(SeverityEnum.info, logArea, "Watching user plugin config files for changes", true);
+        generalLogger.write(SeverityEnum.info, logArea, `Watching user plugin config files for changes`, true);
         tasks.push(pluginConfig.watch((event, filePath, diffs) => refreshListenersIfWatchPathChanges(diffs)));
 
         // If a plugin is deleted it will automatically be removed from scheduling
-        generalLogger.write(SeverityEnum.info, logArea, "Monitoring ganchos plugin paths for changes", true);
-        tasks.push(pluginFinder.watchGanchosPlugins((event, fileName) => scheduleSingleGanchosPlugin(fileName)));
+        generalLogger.write(SeverityEnum.info, logArea, `Monitoring user plugin paths for changes`, true);
+        tasks.push(pluginFinder.watchPlugins((event: EventType, fileName) => event === `add` && scheduleSinglePluginIfNeeded(fileName)));
 
-        // If a plugin is deleted it will automatically be removed from scheduling
-        generalLogger.write(SeverityEnum.info, logArea, "Monitoring user plugin paths for changes", true);
-        tasks.push(pluginFinder.watchUserPlugins((event, fileName) => scheduleSingleUserPlugin(fileName)));
+        generalLogger.write(SeverityEnum.info, logArea, `Starting Inet watcher`, true);
+        tasks.push(startInetWatch());
 
         await Promise.all(tasks);
     } catch (e) {

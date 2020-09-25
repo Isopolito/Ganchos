@@ -22,7 +22,10 @@ const getEnvBasedAppName = (): string => {
     return env === 'prod' ? generalConstants.AppDir : `${generalConstants.AppDir}-${env}`;
 }
 
-const doesPathExist = (pathToCheck: string): boolean => sh.test('-f', pathToCheck) || sh.test('-d', pathToCheck);
+const doesPathExist = (pathToCheck: string): boolean => {
+    const interpolatedPath = interpolateHomeTilde(pathToCheck) as string;
+    return interpolatedPath && sh.test('-f', interpolatedPath) || sh.test('-d', interpolatedPath);
+}
 
 const getAllFiles = async (paths: string[], fileNameEndsWith?: string): Promise<string[]> => {
     const files:string[] = [];
@@ -56,12 +59,6 @@ const getPluginConfigBasePath = (): string => {
     return path.join(os.homedir(), getEnvBasedAppName(), generalConstants.Config, generalConstants.Plugin);
 }
 
-const getGanchosPluginPath = (appRoot: string|null = null): string => {
-    return appRoot
-        ? path.join(appRoot, 'dist','plugins', pathConstants.GanchosRelativePluginPath)
-        : pathConstants.GanchosRelativePluginPath;
-}
-
 const interpolateHomeTilde = (path: string[] | string): string[] | string => {
     if (!path) return '';
 
@@ -91,6 +88,5 @@ export {
     getAllFiles,
     getLogBasePath,
     interpolateHomeTilde,
-    getGanchosPluginPath,
     isDirectoryInPath,
 }
