@@ -88,7 +88,9 @@ const scheduleSinglePlugin = async (pluginPath: string): Promise<void> => {
         const plugin = await createPluginFromMetaFile(pluginPath);
         if (!plugin || !plugin.isEligibleForSchedule) return;
 
-        await pluginInstanceManager.setCanceledIfRunning(plugin.name, async () => await runPluginAndReschedule(plugin));
+        generalLogger.write(SeverityEnum.debug, `${logArea} - ${scheduleSinglePlugin.name}`, `Scheduling: ${pluginPath}`);
+
+        await pluginInstanceManager.setCanceledIfRunning(plugin.name, () => runPluginAndReschedule(plugin));
     } catch (e) {
         generalLogger.write(SeverityEnum.error, `${logArea} - ${scheduleSinglePlugin.name}`, e);
     }

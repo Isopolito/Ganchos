@@ -1,4 +1,4 @@
-import chokidar from 'chokidar';
+import chokidar from 'chokidar'
 import { promises as fs } from 'fs'
 import * as path from 'path'
 import {
@@ -11,9 +11,9 @@ import {
     implementsPlugin,
     pluginConfig,
     systemUtil
-} from 'ganchos-shared';
+} from 'ganchos-shared'
 
-const logArea = "pluginFinder";
+const logArea = `pluginFinder`;
 let pluginWatcher: chokidar.FSWatcher;
 
 const createPluginFromMetaFile = async (pluginPath: string): Promise<Plugin> => {
@@ -43,7 +43,7 @@ const fetchPlugins = async (): Promise<Plugin[]> => {
             generalLogger.write(SeverityEnum.debug, `${logArea} - ${fetchPlugins.name}`, `No pluginPaths found in general config`);
             return [];
         }
-        generalLogger.write(SeverityEnum.debug, `${logArea} - ${fetchPlugins.name}`, `General config plugin paths: ${systemUtil.safeJoin(config.pluginPaths)}`);
+        generalLogger.write(SeverityEnum.debug, `${logArea} - ${fetchPlugins.name}`, `Plugin paths: ${systemUtil.safeJoin(config.pluginPaths)}`);
 
         const plugins = [];
         for (const filePath of await fileUtil.getAllFiles(config.pluginPaths, config.pluginMetaExtension)) {
@@ -60,20 +60,22 @@ const fetchPlugins = async (): Promise<Plugin[]> => {
     }
 }
 
-const watchPlugins = async (callback: (event: string, pluginFileName: string) => void): Promise<void> => {
+const watchPlugins = async (callback: (event: string, pluginFileName: string) => Promise<void>): Promise<void> => {
     if (pluginWatcher) return;
 
     const config = await generalConfig.get();
     if (!config.pluginPaths) return;
 
-    pluginWatcher = chokidar.watch(config.pluginPaths, {
+    pluginWatcher = chokidar.watch(fileUtil.interpolateHomeTilde(config.pluginPaths), {
         persistent: true,
         usePolling: false,
         ignoreInitial: true,
     });
 
-    pluginWatcher.on('all', async (event: string, filePath: string) => callback(event, filePath));
-    pluginWatcher.on('error', async error => generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
+    generalLogger.write(SeverityEnum.debug, logArea, `Watching the following plugin paths: ${systemUtil.safeJoin(config.pluginPaths)}`);
+
+    pluginWatcher.on(`all`, (event: string, filePath: string) => callback(event, filePath));
+    pluginWatcher.on(`error`, error => generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
 }
 
 const endWatchForPlugins = async (): Promise<void> => {

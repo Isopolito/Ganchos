@@ -22,7 +22,10 @@ const getEnvBasedAppName = (): string => {
     return env === 'prod' ? generalConstants.AppDir : `${generalConstants.AppDir}-${env}`;
 }
 
-const doesPathExist = (pathToCheck: string): boolean => pathToCheck && sh.test('-f', pathToCheck) || sh.test('-d', pathToCheck);
+const doesPathExist = (pathToCheck: string): boolean => {
+    const interpolatedPath = interpolateHomeTilde(pathToCheck) as string;
+    return interpolatedPath && sh.test('-f', interpolatedPath) || sh.test('-d', interpolatedPath);
+}
 
 const getAllFiles = async (paths: string[], fileNameEndsWith?: string): Promise<string[]> => {
     const files:string[] = [];

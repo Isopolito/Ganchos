@@ -43,7 +43,7 @@ const isPathLegit = (path: string): boolean => {
 const watchPaths = async (pathsToWatch: string[]): Promise<void> => {
     if (watcher) await stop();
 
-    watcher = chokidar.watch(pathsToWatch, {
+    watcher = chokidar.watch(fileUtil.interpolateHomeTilde(pathsToWatch), {
         ignored: /(^|[/\\])\../,
         persistent: true,
         usePolling: true,

@@ -57,19 +57,18 @@ treated as relative to the plugin directory where the meta file lives.
 * `putDataInEnvironment`: *Boolean*; when true will put the input data to the plugin into the environment instead of using json. Useful for scripts.
 * `isEligibleForSchedule`: *Boolean*; when true, plugin will be ran by the scheduler on startup and then on the interval provided by the `runEveryXMinutes` plugin configuration setting
 * `osTypesToRunOn`: *Array of strings*; if provided, the plugin will only run on the os types in the list. Values are: 'aix' | 'darwin' | 'freebsd' | 'linux' | 'openbsd' | 'sunos' | 'win32'
-* `eventTypes`: *Array of strings*; the plugin will be executed when events in the list occur. For file system events the plugin configuration
- `watchPaths` and `excludeWatchPaths` can be used to include or ignore a file system event respectively, based on the `filePath` event data property.
- <br> Below are the following eventType values that are available:
+* `eventTypes`: *Array of strings*; the plugin will be executed when an event in the list occurs. For file system events, the plugin configuration
+ `watchPaths` and `excludeWatchPaths` properties can be used to include or ignore a plugin respectively.
 
-  File system: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir' | 'ready' | 'raw' | 'error' 
-  EventData properties for this event: `filePath`
+  Below are the available eventType values by category, note that EventData is passed to a plugin on execution (see plugin execution). The shape of that object can change depending on the event.
 
-  Network: 'inetChange' | 'inetUp' | 'inetDown'. EventData properties for this event: `oldIpAddress`, `newIpAddress`
+  1. **File system**: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir' | 'ready' | 'raw' | 'error' 
+  <br>EventData properties for this event: `filePath`
 
-  General purpose: 'none'
+  2. **Network**: 'inetChange' | 'inetUp' | 'inetDown'. 
+  <br>EventData properties for this event: `oldIpAddress`, `newIpAddress`
 
-EventData is passed to a plugin on execution (see plugin execution). The shape of that object can change depending on the event. 
-File system events
+  3. **General purpose**: 'none' (*this causes the plugin to ignore events altogether; equivalent to `eventTypes` = []*)
 
 
 ### Plugin Configuration File Options

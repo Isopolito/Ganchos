@@ -13,7 +13,8 @@ const wireUpIpMonitor = (configObj: GeneralConfig): void => {
         });
     }
 
-    ipMonitor.on('change', (prevIp, newIp) => dispatch('ipChange', { oldIpAddress: prevIp, newIpAddress: newIp }));
+    // Don't dispatch event first time this fires up
+    ipMonitor.on('change', (prevIp, newIp) => prevIp && dispatch('ipChange', { oldIpAddress: prevIp, newIpAddress: newIp }));
     ipMonitor.on('error', (error: any) => generalLogger.write(SeverityEnum.error, logArea, error.toString()));
 }
 

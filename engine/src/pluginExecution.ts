@@ -15,11 +15,12 @@ const logArea = "pluginExecute";
 const pluginQueues: { [pluginName: string]: queue } = {};
 
 const isFilePathExcludedFromWatchPath = (filePath: string | null, excludePaths: string[] | null): boolean => {
-    return fileUtil.doesPathExist(filePath) && fileUtil.isDirectoryInPath(filePath, excludePaths);
+    return fileUtil.doesPathExist(filePath)
+        && fileUtil.isDirectoryInPath(filePath, fileUtil.interpolateHomeTilde(excludePaths) as string[]);
 }
 
 const isFilePathNotInWatchPaths = (filePath: string | null, watchPaths: string[] | null): boolean => {
-    return filePath && !fileUtil.isDirectoryInPath(filePath, watchPaths);
+    return filePath && !fileUtil.isDirectoryInPath(filePath, fileUtil.interpolateHomeTilde(watchPaths) as string[]);
 }
 
 const isPluginDisabled = (enabled: boolean | undefined): boolean => enabled !== undefined && enabled === false;
