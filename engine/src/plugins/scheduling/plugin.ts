@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { generalLogger, pluginLogger, SeverityEnum, pluginConfig, Plugin, systemUtil, fileUtil, generalConfig } from 'ganchos-shared';
-import { fetchPlugins, createPluginFromMetaFile } from "./pluginsFinder";
+import { fetchPlugins, createPluginFromMetaFile } from "../pluginsFinder";
 import { executeNow as executePlugin } from '../pluginExecution';
 import { PluginInstanceManager } from './PluginInstanceManager';
 
@@ -30,7 +30,7 @@ const doesConfigPreventScheduling = async (plugin: Plugin, pluginConfigObj) => {
 
 const getPluginConfigOrDefault = async (plugin: Plugin): Promise<any> => {
     try {
-        const mostRecentConfig = await pluginConfig.getJson(plugin.name, JSON.stringify(plugin.defaultJsonConfig));
+        const mostRecentConfig = await pluginConfig.getJson(plugin.name, JSON.stringify(plugin.defaultConfig));
         if (!mostRecentConfig) return null;
 
         return JSON.parse(mostRecentConfig);

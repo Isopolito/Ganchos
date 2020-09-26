@@ -1,0 +1,14 @@
+{
+    "execFilePath": "test_inetChange.sh",
+    "name": "test_inetChange",
+    "description": "Test inetChange logic",
+    "category": "FileSystem",
+    "putDataInEnvironment": true,
+    "eventTypes": [ "ipChange" ],
+    "isEligibleForSchedule": false,
+    "defaultConfig": {
+        "watchPaths": [],
+        "runEveryXMinutes": 1
+    },
+    "runOnlyOnOsTypes": ["linux", "freebsd", "sunos"]
+}

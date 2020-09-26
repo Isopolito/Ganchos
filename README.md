@@ -47,9 +47,9 @@ the end user. It's what they use to configure how the plugin operates.
 * `name`: *String*; the name of the plugin as it will show up in the UI
 * `description`: *String*; describe what the plugin does
 * `category`: *String*; for grouping plugins by function: media, filesystem, etc
-* `defaultJsonConfig`: *JSON String*; will be the configuration used by the plugin the first time it's run. Ganchos will automatically create
+* `defaultConfig`: *JSON String*; will be the configuration used by the plugin the first time it's run. Ganchos will automatically create
  the plugin's JSON configuration file on disk with this after the first run.
-* `execFilePath`: *String*; The plugin code file to execute. First Ganchos will check to see if the path exists as provided. 
+* `execFilePath`: *String*; The plugin code file to execute, can be a binary file or a script. First Ganchos will check to see if the path exists as provided. 
 This allows a fully qualified path to be used and the plugin can live anywhere on the system. If it's not found, the path will be 
 treated as relative to the plugin directory where the meta file lives.
 
@@ -57,8 +57,8 @@ treated as relative to the plugin directory where the meta file lives.
 * `putDataInEnvironment`: *Boolean*; when true will put the input data to the plugin into the environment instead of using json. Useful for scripts.
 * `isEligibleForSchedule`: *Boolean*; when true, plugin will be ran by the scheduler on startup and then on the interval provided by the `runEveryXMinutes` plugin configuration setting
 * `osTypesToRunOn`: *Array of strings*; if provided, the plugin will only run on the os types in the list. Values are: 'aix' | 'darwin' | 'freebsd' | 'linux' | 'openbsd' | 'sunos' | 'win32'
-* `eventTypes`: *Array of strings*; the plugin will be executed when an event in the list occurs. For file system events, the plugin configuration
- `watchPaths` and `excludeWatchPaths` properties can be used to include or ignore a plugin respectively.
+* `eventTypes`: *Array of strings*; the plugin will be executed when an event in the list occurs. If this is empty the plugin will ignore events altogether. 
+For file system events, the plugin configuration `watchPaths` and `excludeWatchPaths` properties can be used to include or ignore a plugin respectively.
 
   Below are the available eventType values by category, note that EventData is passed to a plugin on execution (see plugin execution). The shape of that object can change depending on the event.
 
@@ -66,9 +66,10 @@ treated as relative to the plugin directory where the meta file lives.
   <br>EventData properties for this event: `filePath`
 
   2. **Network**: 'inetChange' | 'inetUp' | 'inetDown'. 
-  <br>EventData properties for this event: `oldIpAddress`, `newIpAddress`
+  <br>EventData properties for event `inetChange`: `oldIpAddress`, `newIpAddress`
 
-  3. **General purpose**: 'none' (*this causes the plugin to ignore events altogether; equivalent to `eventTypes` = []*)
+  3. **General purpose**: 'none' 
+  <br> If a plugin executes because of something other than an event (ex: scheduling) the eventType will be 'none'
 
 
 ### Plugin Configuration File Options
@@ -77,7 +78,7 @@ Located: `~/.ganchos/config/plugins`
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
 
 Configuration files for the plugins are JSON objects. Located in `~/.ganchos/config/plugins` directory. They most likely won't exist the first time a plugin
-is run, they will be created automatically based on the `defaultJsonConfig` value provided in the plugin's settings. The configuration 
+is run, they will be created automatically based on the `defaultConfig` value provided in the plugin's settings. The configuration 
 files must have the exact same name as what's in the `name` field of the plugin settings (meta file)--that's how they're located. The contents of this file is the JSON configuration that is passed into the plugin on execution. 
 
 *Note: A plugin can specify any configuration setting that it needs. The ones below are the configuration options recognized and used by Ganchos and are completely optional.* 

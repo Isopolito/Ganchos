@@ -1,17 +1,17 @@
-import path from "path"
-import queue from "queue";
-import { performance } from 'perf_hooks';
-import { spawn, ChildProcessWithoutNullStreams } from "child_process";
+import path from 'path'
+import queue from 'queue'
+import { performance } from 'perf_hooks'
+import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import {
     Plugin, pluginConfig, EventType, EventData, pluginLogger, fileUtil,
     SeverityEnum, systemUtil, osUtil, shouldEventBeIgnored, generalConfig, generalLogger
-} from "ganchos-shared"
+} from 'ganchos-shared'
 
 // --------------------------------------------------------------------------------------------------------------------
 
-type CommandType = 'cmd' | 'bat' | 'nixShell' | 'exe' | 'nixEx';
+type CommandType = `cmd` | `bat` | `nixShell` | `exe` | `nixEx`;
 
-const logArea = "pluginExecute";
+const logArea = `pluginExecute`;
 const pluginQueues: { [pluginName: string]: queue } = {};
 
 const isFilePathExcludedFromWatchPath = (filePath: string | null, excludePaths: string[] | null): boolean => {
@@ -26,12 +26,12 @@ const isFilePathNotInWatchPaths = (filePath: string | null, watchPaths: string[]
 const isPluginDisabled = (enabled: boolean | undefined): boolean => enabled !== undefined && enabled === false;
 
 const getCommandType = (execFilePath: string): CommandType => {
-    if (execFilePath.endsWith('.cmd')) return 'cmd';
-    if (execFilePath.endsWith('.bat')) return 'bat';
-    if (execFilePath.endsWith('.exe')) return 'exe';
-    if (execFilePath.match(/.(sh|zsh|tcsh)$/)) return 'nixShell';
+    if (execFilePath.endsWith(`.cmd`)) return `cmd`;
+    if (execFilePath.endsWith(`.bat`)) return `bat`;
+    if (execFilePath.endsWith(`.exe`)) return `exe`;
+    if (execFilePath.match(/.(sh|zsh|tcsh)$/)) return `nixShell`;
 
-    return 'nixEx';
+    return `nixEx`;
 }
 
 const buildEnvironmentVariables = (startingObject: {}, jsonConfig: string, event: EventType, eventData: EventData): object => {
@@ -75,7 +75,7 @@ const getPluginExecPath = (pluginPath: string, execFilePath: string): string | n
 }
 
 const makeCommandParams = async (jsonConfig: string, plugin: Plugin, event: string, eventData: EventData): Promise<string[]> => {
-    const config = jsonConfig || plugin.defaultJsonConfig;
+    const config = jsonConfig || plugin.defaultConfig;
     return [`"${config}"`, `"${event}"`, `"${eventData}"`];
 }
 
@@ -106,11 +106,11 @@ const prepareInputData = (data: any): string[] => {
         let dataString = data.toString();
         if (!dataString) return null;
 
-        dataString = dataString.replace(/[\r\n]/, "");
+        dataString = dataString.replace(/[\r\n]/, ``);
 
-        const messageParts = dataString.split('|*|');
+        const messageParts = dataString.split(`|*|`);
         if (messageParts.length == 2) return messageParts;
-        return ['n/a', dataString];
+        return [`n/a`, dataString];
     } catch (e) {
         generalLogger.write(SeverityEnum.error, `${logArea} - ${prepareInputData.name}`, e);
     }
@@ -120,34 +120,34 @@ const executeLogic = async (plugin: Plugin, event: EventType, eventData: EventDa
     let spawned: ChildProcessWithoutNullStreams;
     try {
         switch (getCommandType(plugin.execFilePath)) {
-            case 'cmd':
-            case 'nixShell':
-            case 'bat':
+            case `cmd`:
+            case `nixShell`:
+            case `bat`:
                 spawned = await getScriptSpawn(config, plugin, event, eventData);
                 break;
-            case 'exe':
-            case 'nixEx':
+            case `exe`:
+            case `nixEx`:
                 spawned = await getStandardSpawn(config, plugin, event, eventData);
                 break;
         }
 
-        spawned.on('error', (err) => {
-            pluginLogger.write(SeverityEnum.error, plugin.name, `logArea - ${executeLogic.name}`, err.toString());
+        spawned.on(`error`, (err) => {
+            pluginLogger.write(SeverityEnum.error, plugin.name, `${logArea} - ${executeLogic.name}`, err.toString());
         });
 
         const pid = spawned.pid;
-        pluginLogger.write(SeverityEnum.debug, plugin.name, `logArea - ${executeLogic.name}`, `starting child spawn with pid ${pid}`);
-        spawned.on('close', code => {
-            pluginLogger.write(SeverityEnum.debug, plugin.name, `logArea - ${executeLogic.name}`, `spawned child with pid ${pid} is closing. Code: ${code}`);
+        pluginLogger.write(SeverityEnum.debug, plugin.name, `${logArea} - ${executeLogic.name}`, `starting child spawn with pid ${pid}`);
+        spawned.on(`close`, code => {
+            pluginLogger.write(SeverityEnum.debug, plugin.name, `${logArea} - ${executeLogic.name}`, `spawned child with pid ${pid} is closing. Code: ${code}`);
         });
 
-        spawned.stdout.on('data', data => {
+        spawned.stdout.on(`data`, data => {
             const messageParts = prepareInputData(data);
             if (!messageParts) return;
             pluginLogger.write(SeverityEnum.info, plugin.name, messageParts[0], messageParts[1]);
         });
 
-        spawned.stderr.on('data', data => {
+        spawned.stderr.on(`data`, data => {
             const messageParts = prepareInputData(data);
             if (!messageParts) return;
             pluginLogger.write(SeverityEnum.info, plugin.name, messageParts[0], messageParts[1]);
@@ -204,7 +204,7 @@ const execute = async (plugin: Plugin, event: EventType, eventData: EventData): 
         if (!eventData) eventData = {};
 
         let configObj = await pluginConfig.get(plugin.name);
-        if (!configObj) configObj = JSON.parse(plugin.defaultJsonConfig);
+        if (!configObj) configObj = JSON.parse(plugin.defaultConfig);
 
         if (!shouldPluginExecute(plugin, configObj, event, eventData)) return;
         if (configObj.runDelayInMinutes) await systemUtil.waitInMinutes(configObj.runDelayInMinutes);

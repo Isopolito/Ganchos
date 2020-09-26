@@ -1,7 +1,7 @@
 import { promises as fsPromises } from 'fs';
 
-import { doesPathExist, touch, makeAllDirInPath, getPluginConfigPath, removeExtension, getPluginConfigBasePath } from '../util/files';
-import { SeverityEnum, pluginLogger, validationUtil }  from '..';
+import { doesPathExist, touch, makeAllDirInPath, getPluginConfigPath, removeExtension, getPluginConfigBasePath, getAllFiles } from '../util/files';
+import { SeverityEnum, pluginLogger, validationUtil, systemUtil }  from '..';
 import * as generalLogger from '../logging/generalLogger';
 import { ConfigManager } from './ConfigManager';
 import { Watcher } from './watcher';
@@ -11,11 +11,11 @@ import { Watcher } from './watcher';
 const logArea = "plugin config";
 
 // Ensure plugin path always exists, and if necessary create default jsonConfig if available
-const pluginConfigMgrInitializer = (pluginName: string, defaultJsonConfig: string | null) => async (): Promise<void> => {
+const pluginConfigMgrInitializer = (pluginName: string, defaultConfig: string | null) => async (): Promise<void> => {
     const pluginPath = getPluginConfigPath(pluginName);
     if (!doesPathExist(pluginPath)) {
         touch(pluginPath);
-        if (defaultJsonConfig) await fsPromises.writeFile(pluginPath, defaultJsonConfig);
+        if (defaultConfig) await fsPromises.writeFile(pluginPath, defaultConfig);
     }
 }
 const inMemConfigManagers: { [pluginName: string]: ConfigManager } = {};
@@ -33,24 +33,42 @@ const watcher = new Watcher(
 
 /*========================================================================================*/
 
-const getJson = async (pluginName: string, defaultJsonConfig: any): Promise<string | null> => {
+const getAllPluginConfigObjects = async (): Promise<object[]> => {
+    let configObjects: object[] = [];
+
+    const pluginBasePath = getPluginConfigBasePath();
+    for (const pluginConfigPath of await getAllFiles([pluginBasePath])) {
+        const rawConfigData = await fsPromises.readFile(pluginConfigPath);
+        const configObj = validationUtil.parseAndValidateJson(rawConfigData.toString(), true);
+        if (!configObj) {
+            generalLogger.write(SeverityEnum.warning, `${logArea} - ${getAllPluginConfigObjects.name}`,
+                `Invalid JSON in plugin config: ${pluginBasePath}`);
+        } else {
+            configObjects.push(configObj);
+        }
+    }
+
+    return configObjects;
+}
+
+const getJson = async (pluginName: string, defaultConfig: string|object): Promise<string | null> => {
     pluginName = removeExtension(pluginName);
 
-    if (defaultJsonConfig && typeof defaultJsonConfig === 'string') {
-        const configObj = validationUtil.parseAndValidateJson(defaultJsonConfig, true);
+    if (defaultConfig && typeof defaultConfig === 'string') {
+        const configObj = validationUtil.parseAndValidateJson(defaultConfig, true);
         if (!configObj) {
             pluginLogger.write(SeverityEnum.error, pluginName, `${logArea} - ${getJson.name}`, `Attempted to use invalid json as default`);
             return null;
         }
-    } else if (defaultJsonConfig) {
-        defaultJsonConfig = JSON.stringify(defaultJsonConfig, null, 4);
+    } else if (defaultConfig) {
+        defaultConfig = JSON.stringify(defaultConfig, null, 4);
     }
 
     if (!inMemConfigManagers[pluginName]) {
         inMemConfigManagers[pluginName] = new ConfigManager(
             getPluginConfigPath(pluginName),
             async (severityEnum, area, msg) => pluginLogger.write(severityEnum, pluginName, area, msg),
-            pluginConfigMgrInitializer(pluginName, defaultJsonConfig),
+            pluginConfigMgrInitializer(pluginName, defaultConfig),
             pluginName);
     }
 
@@ -72,10 +90,14 @@ const get = (pluginName: string): Promise<any | null> => {
     return inMemConfigManagers[pluginName].get();
 }
 
-const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?: boolean): Promise<void | null> => {
+const save = async (pluginName: string, defaultConfig: string|object, shouldEnable?: boolean): Promise<void | null> => {
     try {
+        let defaultConfigString = defaultConfig && typeof defaultConfig === 'string'
+            ? defaultConfig
+            : JSON.stringify(defaultConfig);
+
         pluginName = removeExtension(pluginName);
-        const configObj = validationUtil.parseAndValidateJson(jsonConfig, true);
+        const configObj = validationUtil.parseAndValidateJson(defaultConfigString, true);
         if (!configObj) {
             pluginLogger.write(SeverityEnum.error, pluginName, `${logArea} - ${save.name}`, `Attempted to save invalid json`);
             return;
@@ -83,14 +105,14 @@ const save = async (pluginName: string, jsonConfig: string | null, shouldEnable?
 
         if (shouldEnable) {
             configObj.enabled = true;
-            jsonConfig = JSON.stringify(configObj, null, 4);
+            defaultConfigString = JSON.stringify(configObj, null, 4);
         }
 
         if (!inMemConfigManagers[pluginName]) {
             inMemConfigManagers[pluginName] = new ConfigManager(
                 getPluginConfigPath(pluginName),
                 async (severityEnum, area, msg) => pluginLogger.write(severityEnum, pluginName, area, msg),
-                pluginConfigMgrInitializer(pluginName, jsonConfig),
+                pluginConfigMgrInitializer(pluginName, defaultConfigString),
                 pluginName);
         }
 
@@ -125,4 +147,5 @@ export {
     save,
     get,
     getJson,
+    getAllPluginConfigObjects,
 };

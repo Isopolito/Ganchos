@@ -86,6 +86,13 @@ describe('** Plugin Config **', () => {
             expect(fetchedConfigJson).to.eql(originalJsonConfig);
         });
     });
+
+    describe(`A call to ${pluginConfig.getAllPluginConfigObjects.name}`, () => {
+        it('Should implement', async () => {
+
+            expect(true).to.eql(false);
+        });
+    });
 });
 
 after(() => {

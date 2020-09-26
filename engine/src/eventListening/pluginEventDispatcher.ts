@@ -6,8 +6,8 @@ import {
     Plugin,
     EventData
 } from 'ganchos-shared';
-import * as pluginExecute from '../pluginExecution';
-import { fetchPlugins } from "../scheduling/pluginsFinder";
+import * as pluginExecute from '../plugins/pluginExecution';
+import { fetchPlugins } from "../plugins/pluginsFinder";
 
 const logArea = "event dispatcher";
 

@@ -30,7 +30,7 @@ const createPluginFromMetaFile = async (pluginPath: string): Promise<Plugin> => 
     }
 
     // This will ensure a plugin config exists and that it is in memory for comparisons later on
-    await pluginConfig.getJson(plugin.name, plugin.defaultJsonConfig);
+    await pluginConfig.getJson(plugin.name, plugin.defaultConfig);
 
     plugin.path = path.dirname(pluginPath);
     return plugin;
@@ -74,7 +74,7 @@ const watchPlugins = async (callback: (event: string, pluginFileName: string) =>
 
     generalLogger.write(SeverityEnum.debug, logArea, `Watching the following plugin paths: ${systemUtil.safeJoin(config.pluginPaths)}`);
 
-    pluginWatcher.on(`all`, (event: string, filePath: string) => callback(event, filePath));
+    pluginWatcher.on(`all`, async (event: string, filePath: string) => await callback(event, filePath));
     pluginWatcher.on(`error`, error => generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
 }
 
