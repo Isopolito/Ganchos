@@ -1,12 +1,12 @@
 {
     "execFilePath": "test_5minuteSchedule.sh",
     "name": "test_5minuteSchedule",
-    "description": "Every 5 minutes",
+    "description": "Every 1 minutes",
     "category": "FileSystem",
     "isEligibleForSchedule": true,
     "putDataInEnvironment": true,
     "defaultConfig": {
-        "runEveryXMinutes": 5
+        "runEveryXMinutes": 1
     },
     "runOnlyOnOsTypes": ["linux", "freebsd", "sunos"]
 }

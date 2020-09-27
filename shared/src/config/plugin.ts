@@ -1,7 +1,7 @@
 import { promises as fsPromises } from 'fs';
 
 import { doesPathExist, touch, makeAllDirInPath, getPluginConfigPath, removeExtension, getPluginConfigBasePath, getAllFiles } from '../util/files';
-import { SeverityEnum, pluginLogger, validationUtil, systemUtil }  from '..';
+import { SeverityEnum, pluginLogger, validationUtil }  from '..';
 import * as generalLogger from '../logging/generalLogger';
 import { ConfigManager } from './ConfigManager';
 import { Watcher } from './watcher';
@@ -94,7 +94,7 @@ const save = async (pluginName: string, defaultConfig: string|object, shouldEnab
     try {
         let defaultConfigString = defaultConfig && typeof defaultConfig === 'string'
             ? defaultConfig
-            : JSON.stringify(defaultConfig);
+            : JSON.stringify(defaultConfig, null, 4);
 
         pluginName = removeExtension(pluginName);
         const configObj = validationUtil.parseAndValidateJson(defaultConfigString, true);
