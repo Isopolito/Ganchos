@@ -6,7 +6,7 @@
     "putDataInEnvironment": true,
     "eventTypes": [ "add", "unlink", "addDir", "unlinkDir" ],
     "defaultConfig": {
-        "watchPaths": ["~/tmp/tests"],
+        "watchPaths": ["~/tmp/tests"]
     },
     "runOnlyOnOsTypes": ["linux", "freebsd", "sunos"]
 }

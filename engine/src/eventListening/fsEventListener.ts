@@ -35,6 +35,7 @@ const getVerifiedWatchPathsFromPluginConfig = (configs: any[]): string[] => {
     let allWatchPaths = [];
     for (const configObj of configs) {
         const watchPaths = fileUtil.interpolateHomeTilde(configObj.watchPaths) as string[];
+        if (!watchPaths) continue;
         allWatchPaths = allWatchPaths.concat(watchPaths.filter((wp: string) => isPathLegit(wp)));
     }
 
