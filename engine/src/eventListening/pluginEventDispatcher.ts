@@ -5,11 +5,11 @@ import {
     SeverityEnum,
     Plugin,
     EventData
-} from 'ganchos-shared';
-import * as pluginExecute from '../plugins/pluginExecution';
-import { fetchPlugins } from "../plugins/pluginsFinder";
+} from 'ganchos-shared'
+import * as pluginExecute from '../plugins/pluginExecution'
+import { fetchPlugins } from '../plugins/pluginsFinder'
 
-const logArea = "event dispatcher";
+const logArea = `event dispatcher`;
 
 const runPlugin = async (event: EventType, eventData: EventData, plugin: Plugin): Promise<void> => {
     try {

@@ -1,10 +1,11 @@
 import { promises as fsPromises } from 'fs';
 
 import { doesPathExist, touch, makeAllDirInPath, getPluginConfigPath, removeExtension, getPluginConfigBasePath, getAllFiles } from '../util/files';
-import { SeverityEnum, pluginLogger, validationUtil }  from '..';
+import { SeverityEnum, pluginLogger, validationUtil, fileUtil, generalConfig }  from '..';
 import * as generalLogger from '../logging/generalLogger';
 import { ConfigManager } from './ConfigManager';
 import { Watcher } from './watcher';
+import { basename } from 'path';
 
 /*========================================================================================*/
 
@@ -42,13 +43,32 @@ const getAllPluginConfigObjects = async (): Promise<object[]> => {
         const configObj = validationUtil.parseAndValidateJson(rawConfigData.toString(), true);
         if (!configObj) {
             generalLogger.write(SeverityEnum.warning, `${logArea} - ${getAllPluginConfigObjects.name}`,
-                `Invalid JSON in plugin config: ${pluginBasePath}`);
+                `Invalid JSON in plugin config: ${pluginConfigPath}`);
         } else {
             configObjects.push(configObj);
         }
     }
 
     return configObjects;
+}
+
+const ensurePluginConfigExists = async (pluginPath: string): Promise<void> => {
+    const generalConfigObj = await generalConfig.get();
+    if (!generalConfigObj) return;
+    if (!pluginPath.endsWith(generalConfigObj.pluginMetaExtension)) return;
+
+    const pluginName = basename(pluginPath);
+    const pluginConfigPath = getPluginConfigPath(pluginName);
+    if (fileUtil.doesPathExist(pluginConfigPath)) return;
+
+    const rawConfigData = await fsPromises.readFile(pluginPath);
+    const configObj = validationUtil.parseAndValidateJson(rawConfigData.toString(), true);
+    if (!configObj || !configObj.defaultConfig) {
+        pluginLogger.write(SeverityEnum.error, pluginName, `${logArea} - ${getJson.name}`, `Attempted to use invalid json as default`);
+        return;
+    }
+
+    await save(pluginName, configObj.defaultConfig);
 }
 
 const getJson = async (pluginName: string, defaultConfig: string|object): Promise<string | null> => {
@@ -148,4 +168,5 @@ export {
     get,
     getJson,
     getAllPluginConfigObjects,
+    ensurePluginConfigExists,
 };

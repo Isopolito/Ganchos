@@ -29,7 +29,8 @@ const wireUpIpChangeMonitor = (configObj: GeneralConfig): void => {
         // But, there can be a slight lag before the inet is registered as down and the IpChangeMonitor is stopped. So, filter out those error messages since
         // they are not a real error. 
         // TODO: This needs to be improved since it's possible that legit errors with 'getaddrinfo EAI_AGAIN' could be lost
-        if (errorMessage.includes("getaddrinfo EAI_AGAIN")) return;
+        if (errorMessage.includes(`getaddrinfo EAI_AGAIN`)) return;
+        if (errorMessage.includes(`Request timed out from`)) return;
 
         generalLogger.write(SeverityEnum.error, logArea, errorMessage);
     });
@@ -43,20 +44,24 @@ const startIpChangeMonitor = (configObj: GeneralConfig) => {
 const stopIpChangeMonitor = () => ipChangeMonitor && ipChangeMonitor.stop();
 
 const checkOnlineStatusAndDispatchEventIfNeeded = async () => {
-    if (await isOnline()) {
-        if (!isInetUp) {
-            // Internet was off, now it's on
-            startIpChangeMonitor(await generalConfig.get());
-            await dispatch(`inetUp`, null);
-            isInetUp = true;
+    try {
+        if (await isOnline()) {
+            if (!isInetUp) {
+                // Internet was off, now it's on
+                startIpChangeMonitor(await generalConfig.get());
+                await dispatch(`inetUp`, null);
+                isInetUp = true;
+            }
+        } else {
+            if (isInetUp) {
+                // Internet was on, now it's off
+                stopIpChangeMonitor();
+                await dispatch(`inetDown`, null);
+                isInetUp = false;
+            }
         }
-    } else {
-        if (isInetUp) {
-            // Internet was on, now it's off
-            stopIpChangeMonitor();
-            await dispatch(`inetDown`, null);
-            isInetUp = false;
-        }
+    } catch (e) {
+        generalLogger.write(SeverityEnum.error, `${logArea} - ${checkOnlineStatusAndDispatchEventIfNeeded.name}`, e);
     }
 }
 
@@ -71,14 +76,22 @@ const startIpUpDownWatcher = async (configObj: GeneralConfig): Promise<void> => 
 }
 
 const start = async (): Promise<void> => {
-    const configObj = await generalConfig.get();
-    startIpChangeMonitor(configObj);
-    await startIpUpDownWatcher(configObj);
+    try {
+        const configObj = await generalConfig.get();
+        startIpChangeMonitor(configObj);
+        await startIpUpDownWatcher(configObj);
+    } catch (e) {
+        generalLogger.write(SeverityEnum.error, `${logArea} - ${start.name}`, e);
+    }
 }
 
 const stop = async (): Promise<void> => {
-    isStopped = true;
-    stopIpChangeMonitor();
+    try {
+        isStopped = true;
+        stopIpChangeMonitor();
+    } catch (e) {
+        generalLogger.write(SeverityEnum.error, `${logArea} - ${stop.name}`, e);
+    }
 }
 
 export {

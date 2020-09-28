@@ -9,7 +9,7 @@ import {
 
 // --------------------------------------------------------------------------------------------------------------------
 
-type CommandType = `cmd` | `bat` | `nixShell` | `exe` | `nixEx`;
+type CommandType = `js`| `cmd` | `bat` | `nixShell` | `exe` | `nixEx`;
 
 const logArea = `pluginExecute`;
 const pluginQueues: { [pluginName: string]: queue } = {};
@@ -29,6 +29,7 @@ const getCommandType = (execFilePath: string): CommandType => {
     if (execFilePath.endsWith(`.cmd`)) return `cmd`;
     if (execFilePath.endsWith(`.bat`)) return `bat`;
     if (execFilePath.endsWith(`.exe`)) return `exe`;
+    if (execFilePath.endsWith(`.js`)) return `js`;
     if (execFilePath.match(/.(sh|zsh|tcsh)$/)) return `nixShell`;
 
     return `nixEx`;
@@ -99,6 +100,20 @@ const getScriptSpawn = async (jsonConfig: string, plugin: Plugin, event: EventTy
     }
 }
 
+const getJavascriptSpawn = async (jsonConfig: string, plugin: Plugin, event: EventType, eventData: EventData): Promise<ChildProcessWithoutNullStreams> => {
+    const pluginPath = getPluginExecPath(plugin.path, plugin.execFilePath);
+    try {
+        if (plugin.putDataInEnvironment) {
+            return spawn(`node`, [pluginPath], buildEnvironmentVariables({shell:true}, jsonConfig, event, eventData));
+        } else {
+            const args = systemUtil.flattenAndDistinct([pluginPath, await makeCommandParams(jsonConfig, plugin, event, eventData)]);
+            return spawn(`node`, args, {shell: true});
+        }
+    } catch (e) {
+        pluginLogger.write(SeverityEnum.error, plugin.name, `${logArea} - ${getScriptSpawn.name}`, e);
+    }
+}
+
 const prepareInputData = (data: any): string[] => {
     try {
         if (!data) return null;
@@ -120,6 +135,9 @@ const executeLogic = async (plugin: Plugin, event: EventType, eventData: EventDa
     let spawned: ChildProcessWithoutNullStreams;
     try {
         switch (getCommandType(plugin.execFilePath)) {
+            case `js`:
+                spawned = await getJavascriptSpawn(config, plugin, event, eventData);
+                break;
             case `cmd`:
             case `nixShell`:
             case `bat`:

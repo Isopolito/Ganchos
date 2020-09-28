@@ -1,5 +1,5 @@
 {
-    "execFilePath": "test_addOrDelete.sh",
+    "execFilePath": "test_addOrDelete.js",
     "name": "test_addOrDelete",
     "description": "Test the add, unlink, addDir, unlinkDir events",
     "category": "FileSystem",
