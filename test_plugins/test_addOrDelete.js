@@ -1,1 +1,1 @@
-console.log(`eventType: ${process.env.ganchos_eventType}`);
+console.log(`test eventType: ${process.env.ganchos_eventType}`);

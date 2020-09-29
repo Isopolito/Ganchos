@@ -21,7 +21,7 @@ const pluginConfigMgrInitializer = (pluginName: string, defaultConfig: string | 
 }
 const inMemConfigManagers: { [pluginName: string]: ConfigManager } = {};
 
-const watcher = new Watcher(
+let watcher = new Watcher(
     getPluginConfigBasePath(),
     async (filePath) => {
         const pluginName = removeExtension(filePath);
