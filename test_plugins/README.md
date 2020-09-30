@@ -16,6 +16,9 @@ To run: `nodejs verifyLogs.js GANCHOS_DIR_PATH` where GANCHOS_DIR_PATH is the di
 
 TODO: 
 	* Rewrite the bash plugins to javascript files so it's not OS dependent
-	* Automate as much of this process as possible
+	* Automate as much of this process as possible. One potential way to make this a little smoother
+  is to start the verifyLogs script before the test. It will monitor the log file for the expected actions,
+  and print to screen the log messages it expects to find when it finds them. Once everything
+  is found, the program will says so and then exit.
 
 
