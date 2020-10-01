@@ -1,6 +1,6 @@
 {
-    "execFilePath": "test_5minuteSchedule.sh",
-    "name": "test_5minuteSchedule",
+    "execFilePath": "test_schedule.sh",
+    "name": "test_schedule",
     "description": "Every 1 minutes",
     "category": "FileSystem",
     "isEligibleForSchedule": true,
