@@ -1,0 +1,12 @@
+{
+    "execFilePath": "test_inetUpDown.sh",
+    "name": "test_inetUpDown",
+    "description": "Test when the internet goes up and down",
+    "category": "Network",
+    "eventTypes": ["inetUp", "inetDown"],
+    "isEligibleForSchedule": false,
+    "putDataInEnvironment": true,
+    "defaultConfig": {
+    },
+    "runOnlyOnOsTypes": ["linux", "freebsd", "sunos"]
+}

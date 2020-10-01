@@ -7,7 +7,7 @@ export interface Plugin {
     name: string;
     description: string;
     category: string;
-    defaultJsonConfig: any;
+    defaultConfig: any;
 
     // Optional
     isEligibleForSchedule?: boolean;
@@ -25,7 +25,7 @@ export const implementsPlugin = (object: any): object is Plugin => {
     const name = 'name' in object;
     const execFilePath = 'execFilePath' in object;
     const description = 'description' in object;
-    const defaultJsonConfig = 'defaultJsonConfig' in object;
+    const defaultConfig = 'defaultConfig' in object;
 
-    return name && execFilePath && description && defaultJsonConfig;
+    return name && execFilePath && description && defaultConfig;
 }

@@ -1,6 +1,6 @@
 import { pluginConfig, generalConfig, generalLogger, SeverityEnum, EventType } from 'ganchos-shared'
-import * as pluginFinder from './scheduling/pluginsFinder'
-import { beginScheduleMonitoring as beginPluginScheduler, scheduleSinglePlugin as scheduleSinglePluginIfNeeded } from './scheduling/plugin'
+import * as pluginFinder from './plugins/pluginsFinder'
+import { beginScheduleMonitoring as beginPluginScheduler, scheduleSinglePlugin as scheduleSinglePluginIfNeeded } from './plugins/scheduling/plugin'
 import { stopIfNeededAndStart as stopStartFsEventListener, stop as stopFsEventListener } from './eventListening/fsEventListener'
 import { start as startInetWatch, stop as stopInetWatch } from './eventListening/inetListener'
 
@@ -8,6 +8,11 @@ const logArea = `main`;
 
 const refreshListenersIfWatchPathChanges = async (diffs: string[]|null): Promise<void> => {
     if (diffs && diffs.includes('watchPaths')) await stopStartFsEventListener();
+}
+
+const processPluginChanges = async (event: EventType, filePath: string): Promise<void> => {
+    await pluginConfig.ensurePluginConfigExists(filePath);
+    if (event === `add`) scheduleSinglePluginIfNeeded(filePath);
 }
 
 const shutdown = async (): Promise<void> => {
@@ -55,7 +60,7 @@ const handleGeneralConfigChanges = async (diffs: string[] | null): Promise<void>
 
         // If a plugin is deleted it will automatically be removed from scheduling
         generalLogger.write(SeverityEnum.info, logArea, `Monitoring user plugin paths for changes`, true);
-        tasks.push(pluginFinder.watchPlugins((event: EventType, fileName) => event === `add` && scheduleSinglePluginIfNeeded(fileName)));
+        tasks.push(pluginFinder.watchPlugins((event: EventType, fileName) => processPluginChanges(event, fileName)));
 
         generalLogger.write(SeverityEnum.info, logArea, `Starting Inet watcher`, true);
         tasks.push(startInetWatch());

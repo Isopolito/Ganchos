@@ -6,7 +6,7 @@
     // By default the extension for these types of files ends in '.meta', but this can be configured in general config.
 
     // NOTE: When the application (execFilePath) is executed the 3 parameters passed in are:
-    //  1. The configuration for the plugin. JSON string in the shape of 'defaultJsonConfig'
+    //  1. The configuration for the plugin. JSON string in the shape of 'defaultConfig'
     //  2. The event type that triggered execution (if run on a schedule, this is 'none')
     //  3. The event data that is part of the triggered execution (if run on a schedule, this is null)
 
@@ -38,7 +38,7 @@
 
     // The configuration the plugin will start off with the first time it's run. The first time it executes this will be written
     // to the plugin configuration file and can be modified to control the plugin
-    "defaultJsonConfig": {
+    "defaultConfig": {
 	    // Pause for a number of minutes before executing plugin (number can be less than 1). Defaults to 0
 		"runDelayInMinutes": 0,
 
