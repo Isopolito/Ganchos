@@ -44,7 +44,15 @@ const watcher = new Watcher(getGeneralConfigPath(), () => inMemConfigMgr.getFrom
 
 const getJson = (): Promise<string | null> => inMemConfigMgr.getJson();
 
-const get = (): Promise<GeneralConfig | null> => inMemConfigMgr.get();
+const get = async (): Promise<GeneralConfig | null> => {
+    const configObj = await inMemConfigMgr.get();
+    
+    // Make sure if necessary config settings were remove from file that defaults are put back in
+    for (const configSetting in defaultConfig) {
+        if (!configObj[configSetting]) configObj[configSetting] = (defaultConfig as any)[configSetting];
+    }
+    return configObj;
+}
 
 const save = (config: GeneralConfig): Promise<void> => inMemConfigMgr.set(config);
 
