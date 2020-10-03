@@ -19,7 +19,12 @@ export class PluginInstanceManager {
 
     async cancel(pluginName: string): Promise<void> {
         this.runningStatus[pluginName] = false;
-        this.pluginInstanceCancelHandlers[pluginName] && await this.pluginInstanceCancelHandlers[pluginName]();
+
+        // Null out pluginInstanceCancelHandlers before calling handler so that isCanceled 
+        // will work correctly if called from within handler logic
+        const handler = this.pluginInstanceCancelHandlers[pluginName];
         this.pluginInstanceCancelHandlers[pluginName] = null;
+
+        handler && await handler();
     }
 }

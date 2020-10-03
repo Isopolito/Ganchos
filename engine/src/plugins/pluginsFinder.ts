@@ -19,7 +19,15 @@ let pluginWatcher: chokidar.FSWatcher;
 const createPluginFromMetaFile = async (pluginPath: string): Promise<Plugin> => {
     const config = await generalConfig.get();
 
-    if (!pluginPath.endsWith(config.pluginMetaExtension)) return null;
+    if (!pluginPath.endsWith(config.pluginMetaExtension)) {
+        // If this isn't the meta file, check in the same directory to see if one is there
+        pluginPath = `${pluginPath.replace(/\.[^/.]+$/, ``)}.${config.pluginMetaExtension}`;
+        if (!fileUtil.doesPathExist) {
+            generalLogger.write(SeverityEnum.debug, `${logArea} - ${createPluginFromMetaFile.name}`,
+                `${path.basename(pluginPath)} is not a meta file. One was searched for in the same directory, but not found. Skipping plugin creation from meta file`);
+            return null;
+        }
+    }
 
     const rawData = await fs.readFile(pluginPath);
     const plugin = validationUtil.parseAndValidateJson(rawData.toString(), true);
