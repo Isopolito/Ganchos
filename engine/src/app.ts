@@ -1,4 +1,4 @@
-import { pluginConfig, generalConfig, generalLogger, SeverityEnum, EventType } from 'ganchos-shared'
+import { pluginConfig, generalConfig, generalLogger, SeverityEnum, EventType, fileUtil } from 'ganchos-shared'
 import * as pluginFinder from './plugins/pluginsFinder'
 import { beginScheduleMonitoring as beginPluginScheduler, scheduleSinglePlugin as scheduleSinglePluginIfNeeded } from './plugins/scheduling/plugin'
 import { stopIfNeededAndStart as stopStartFsEventListener, stop as stopFsEventListener } from './eventListening/fsEventListener'
@@ -11,20 +11,22 @@ const refreshListenersIfWatchPathChanges = async (diffs: string[]|null): Promise
 }
 
 const processPluginChanges = async (event: EventType, filePath: string): Promise<void> => {
+    if (!fileUtil.doesPathExist(filePath)) return;
+
     await pluginConfig.ensurePluginConfigExists(filePath);
     if (event === `add`) scheduleSinglePluginIfNeeded(filePath);
 }
 
 const shutdown = async (): Promise<void> => {
-    generalLogger.write(SeverityEnum.info, logArea, `Shutting down - end file watching`, true);
+    generalLogger.write(SeverityEnum.info, logArea, `Shutting down - file watching`, true);
     await pluginConfig.endWatch();
     await generalConfig.endWatch();
     await pluginFinder.endWatchForPlugins();
 
-    generalLogger.write(SeverityEnum.info, logArea, `Shutting down - end file system event listener`, true);
+    generalLogger.write(SeverityEnum.info, logArea, `Shutting down - file system event listener`, true);
     await stopFsEventListener();
 
-    generalLogger.write(SeverityEnum.info, logArea, `Shutting down - Inet watcher`, true);
+    generalLogger.write(SeverityEnum.info, logArea, `Shutting down - inet watcher`, true);
     await stopInetWatch();
 
     generalLogger.write(SeverityEnum.info, logArea, `Goodbye`, true);

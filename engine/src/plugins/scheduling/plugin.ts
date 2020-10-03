@@ -49,6 +49,7 @@ const runPluginAndReschedule = async (plugin: Plugin): Promise<void> => {
         }
 
         if (pluginInstanceManager.isCanceled(plugin.name)) {
+            pluginLogger.write(SeverityEnum.debug, plugin.name, logArea, `Plugin ${plugin.name} has been canceled`);
             await pluginInstanceManager.cancel(plugin.name);
             return;
         };
