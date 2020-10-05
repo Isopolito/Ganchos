@@ -31,9 +31,14 @@ const createPluginFromMetaFile = async (pluginPath: string): Promise<Plugin> => 
 
     const rawData = await fs.readFile(pluginPath);
     const plugin = validationUtil.parseAndValidateJson(rawData.toString(), true);
+    if (!plugin) {
+        generalLogger.write(SeverityEnum.error, `${logArea} - ${createPluginFromMetaFile.name}`, `The JSON in plugin meta file '${pluginPath}' is not a valid Plugin`);
+        return null;
+    }
 
-    if (!implementsPlugin(plugin)) {
-        generalLogger.write(SeverityEnum.error, `${logArea} - ${createPluginFromMetaFile.name}`, `The JSON in plugin meta file '${pluginPath}' is not a valid Plugin. Check that the required properties are present`);
+    const missingProps = implementsPlugin(plugin);
+    if (missingProps) {
+        generalLogger.write(SeverityEnum.error, `${logArea} - ${createPluginFromMetaFile.name}`, `${pluginPath} is missing the required plugin properties: ${missingProps}`);
         return null;
     }
 

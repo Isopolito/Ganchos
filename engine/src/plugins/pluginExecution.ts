@@ -9,7 +9,7 @@ import {
 
 // --------------------------------------------------------------------------------------------------------------------
 
-type CommandType = `js`| `cmd` | `bat` | `nixShell` | `exe` | `nixEx`;
+type CommandType = `js` | `cmd` | `bat` | `nixShell` | `exe` | `nixEx`;
 
 const logArea = `pluginExecute`;
 const pluginQueues: { [pluginName: string]: queue } = {};
@@ -77,7 +77,7 @@ const getPluginExecPath = (pluginPath: string, execFilePath: string): string | n
 
 const makeCommandParams = async (jsonConfig: string, plugin: Plugin, event: string, eventData: EventData): Promise<string[]> => {
     const config = jsonConfig || plugin.defaultConfig;
-    return [`"${config}"`, `"${event}"`, `"${eventData}"`];
+    return [`"${config}"`, `"${event}"`, `"${JSON.stringify(eventData)}"`];
 }
 
 const getStandardSpawn = async (jsonConfig: string, plugin: Plugin, event: EventType, eventData: EventData): Promise<ChildProcessWithoutNullStreams> => {
@@ -94,7 +94,7 @@ const getScriptSpawn = async (jsonConfig: string, plugin: Plugin, event: EventTy
     try {
         return plugin.putDataInEnvironment
             ? spawn(`"${getPluginExecPath(plugin.path, plugin.execFilePath)}"`, [], buildEnvironmentVariables({ shell: true }, jsonConfig, event, eventData))
-            : spawn(`"${getPluginExecPath(plugin.path, plugin.execFilePath)}"`, await makeCommandParams(jsonConfig, plugin, event, eventData), {shell: true});
+            : spawn(`"${getPluginExecPath(plugin.path, plugin.execFilePath)}"`, await makeCommandParams(jsonConfig, plugin, event, eventData), { shell: true });
     } catch (e) {
         pluginLogger.write(SeverityEnum.error, plugin.name, `${logArea} - ${getScriptSpawn.name}`, e);
     }
@@ -104,10 +104,10 @@ const getJavascriptSpawn = async (jsonConfig: string, plugin: Plugin, event: Eve
     const pluginPath = getPluginExecPath(plugin.path, plugin.execFilePath);
     try {
         if (plugin.putDataInEnvironment) {
-            return spawn(`node`, [pluginPath], buildEnvironmentVariables({shell:true}, jsonConfig, event, eventData));
+            return spawn(`node`, [pluginPath], buildEnvironmentVariables({ shell: true }, jsonConfig, event, eventData));
         } else {
             const args = systemUtil.flattenAndDistinct([pluginPath, await makeCommandParams(jsonConfig, plugin, event, eventData)]);
-            return spawn(`node`, args, {shell: true});
+            return spawn(`node`, args, { shell: true });
         }
     } catch (e) {
         pluginLogger.write(SeverityEnum.error, plugin.name, `${logArea} - ${getScriptSpawn.name}`, e);
@@ -162,13 +162,13 @@ const executeLogic = async (plugin: Plugin, event: EventType, eventData: EventDa
         spawned.stdout.on(`data`, data => {
             const messageParts = prepareInputData(data);
             if (!messageParts) return;
-            pluginLogger.write(SeverityEnum.info, plugin.name, messageParts[0], messageParts[1]);
+            pluginLogger.write(SeverityEnum.pluginInfo, plugin.name, messageParts[0], messageParts[1]);
         });
 
         spawned.stderr.on(`data`, data => {
             const messageParts = prepareInputData(data);
             if (!messageParts) return;
-            pluginLogger.write(SeverityEnum.info, plugin.name, messageParts[0], messageParts[1]);
+            pluginLogger.write(SeverityEnum.pluginError, plugin.name, messageParts[0], messageParts[1]);
         });
     } catch (e) {
         // TODO: killing might be a bad idea here, keep an eye on this logic

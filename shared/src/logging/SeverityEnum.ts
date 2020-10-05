@@ -4,4 +4,6 @@ export enum SeverityEnum {
 	warning,
 	error,
     critical,
+    pluginInfo,
+    pluginError,
 } 

@@ -1,4 +1,5 @@
 import { EventType } from ".";
+import { systemUtil } from "..";
 import { OsType } from "./os/OsType";
 
 export interface Plugin {
@@ -19,13 +20,15 @@ export interface Plugin {
     path: string;
 }
 
-export const implementsPlugin = (object: any): object is Plugin => {
-    if (!object) return false;
+export const implementsPlugin = (object: any): string|null => {
+    if (!object) return null;
 
-    const name = 'name' in object;
-    const execFilePath = 'execFilePath' in object;
-    const description = 'description' in object;
-    const defaultConfig = 'defaultConfig' in object;
+    const missingProps = [];
+    if (!('name' in object)) missingProps.push('name');
+    if (!('execFilePath' in object)) missingProps.push('execFilePath');
+    if (!('description' in object)) missingProps.push('description');
+    if (!('defaultConfig' in object)) missingProps.push('defaultConfig');
 
-    return name && execFilePath && description && defaultConfig;
+    if (missingProps.length) return systemUtil.safeJoin(missingProps);
+    return null;
 }
