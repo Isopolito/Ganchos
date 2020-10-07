@@ -11,7 +11,7 @@ import {
     implementsPlugin,
     pluginConfig,
     systemUtil
-} from 'ganchos-shared'
+} from '../shared'
 
 const logArea = `pluginFinder`;
 let pluginWatcher: chokidar.FSWatcher;

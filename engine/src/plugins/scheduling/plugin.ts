@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { generalLogger, pluginLogger, SeverityEnum, pluginConfig, Plugin, systemUtil, fileUtil, generalConfig } from 'ganchos-shared';
+import { generalLogger, pluginLogger, SeverityEnum, pluginConfig, Plugin, systemUtil, fileUtil, generalConfig } from '../../shared';
 import { fetchPlugins, createPluginFromMetaFile } from "../pluginsFinder";
 import { executeNow as executePlugin } from '../pluginExecution';
 import { PluginInstanceManager } from './PluginInstanceManager';

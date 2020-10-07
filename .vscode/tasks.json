@@ -3,24 +3,13 @@
 	"tasks": [
         {
             "type": "typescript",
-            "tsconfig": "shared/tsconfig.json",
-            "problemMatcher": [
-                "$tsc"
-            ],
-            "group": "build",
-            "label": "shared build"
-        },
-        {
-            "type": "typescript",
             "tsconfig": "engine/tsconfig.json",
             "problemMatcher": [
                 "$tsc"
             ],
             "group": "build",
             "label": "engine build",
-            "dependsOn": [
-                "shared build",
-            ],
+            "dependsOn": [ ],
         }
     ]
 }

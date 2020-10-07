@@ -5,7 +5,7 @@ import {
     SeverityEnum,
     Plugin,
     EventData
-} from 'ganchos-shared'
+} from '../shared'
 import * as pluginExecute from '../plugins/pluginExecution'
 import { fetchPlugins } from '../plugins/pluginsFinder'
 
