@@ -1,4 +1,4 @@
-import { pluginConfig, generalConfig, generalLogger, SeverityEnum, EventType, fileUtil } from 'ganchos-shared'
+import { pluginConfig, generalConfig, generalLogger, SeverityEnum, EventType, fileUtil } from './shared'
 import * as pluginFinder from './plugins/pluginsFinder'
 import { beginScheduleMonitoring as beginPluginScheduler, scheduleSinglePlugin as scheduleSinglePluginIfNeeded } from './plugins/scheduling/plugin'
 import { stopIfNeededAndStart as stopStartFsEventListener, stop as stopFsEventListener } from './eventListening/fsEventListener'

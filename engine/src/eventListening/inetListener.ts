@@ -1,6 +1,6 @@
 import IpMonitor from 'ip-monitor'
 import isOnline from 'is-online'
-import { GeneralConfig, generalConfig, generalLogger, SeverityEnum, systemUtil } from 'ganchos-shared'
+import { GeneralConfig, generalConfig, generalLogger, SeverityEnum, systemUtil } from '../shared'
 import { dispatch } from './pluginEventDispatcher'
 
 const logArea = `inetListener`;

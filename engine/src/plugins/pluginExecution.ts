@@ -5,7 +5,7 @@ import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import {
     Plugin, pluginConfig, EventType, EventData, pluginLogger, fileUtil,
     SeverityEnum, systemUtil, osUtil, shouldEventBeIgnored, generalConfig, generalLogger
-} from 'ganchos-shared'
+} from '../shared'
 
 // --------------------------------------------------------------------------------------------------------------------
 

@@ -88,7 +88,7 @@ const getJson = async (pluginName: string, defaultConfig: string|object): Promis
         inMemConfigManagers[pluginName] = new ConfigManager(
             getPluginConfigPath(pluginName),
             async (severityEnum, area, msg) => pluginLogger.write(severityEnum, pluginName, area, msg),
-            pluginConfigMgrInitializer(pluginName, defaultConfig),
+            pluginConfigMgrInitializer(pluginName, defaultConfig as string),
             pluginName);
     }
 
