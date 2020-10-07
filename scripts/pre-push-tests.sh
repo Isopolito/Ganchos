@@ -23,7 +23,7 @@ remote="$1"
 url="$2"
 
 # make sure we're in the root of the directory
-cd shared
+cd engine
 npm test
 if [ $? -ne 0 ]; then
     echo "Unit tests must pass before pushing code"
