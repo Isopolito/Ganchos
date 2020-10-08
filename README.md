@@ -1,7 +1,7 @@
 # Ganchos
 
 ## What is it?
-A tool written in typescript and node.js designed to run in the background on a machine listening for events such as file system events (deleting, adding files, etc), certain network events, and other events like key presses (future enhancement). Events are broadcasted out to plugins and the ones that are configured to care about a certain event will be executed. There is also a simple scheduling ability to optionally turn on for a plugin so it can be run on an interval. A plugin can be anything. A program you built, or an existing one someone else made that has a thin wrapper around it to make it work with Ganchos.
+A tool written in typescript and node.js designed to run in the background on a machine listening for events such as file system events (deleting, adding files, etc), certain network events, and other events like key presses (future enhancement). Events are broadcasted out to plugins and the ones that are configured to care about a certain event will be executed. There is also the option for simple scheduling to be turned on for a plugin so that it can be run on an interval. This can be combined with event based execution. A plugin can be anything. A program you built, or an existing one someone else made that has a thin wrapper around it to make it work with Ganchos.
 
 ## Why? 
 The idea behind Ganchos is to provide a cross-platform way to easily hook into events and run code in response without having to worry about common concerns:
