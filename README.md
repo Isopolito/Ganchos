@@ -1,17 +1,16 @@
 # Ganchos
 
-A tool written in typescript and node.js designed to run in the background on a machine listening for events such as file system events (deleting, adding files, etc), certain network events, and other 
-events like key presses. Events are broadcasted out to the plugins and the ones that are configured to care about a certain event will be executed. There is also a simple scheduling
-ability to optionally turn on for a plugin so it can be run on an interval. Everything is driven from JSON config files and configuration and new plugins are hot-loaded so 
-that the app won't have to be restarted when modifying, removing, configuring or adding plugins. Logging occurs both on the plugin level and a general operational level. 
+## What is it?
+A tool written in typescript and node.js designed to run in the background on a machine listening for events such as file system events (deleting, adding files, etc), certain network events, and other events like key presses (future enhancement). Events are broadcasted out to plugins and the ones that are configured to care about a certain event will be executed. There is also a simple scheduling ability to optionally turn on for a plugin so it can be run on an interval. A plugin can be anything. A program you built, or an existing one someone else made that has a thin wrapper around it to make it work with Ganchos.
 
-There are mechanisms to make all of this robust and safe in the sense that plugins won't get called out of control and bog down the system. Also with the logging and hot-reload configuration,
-it's meant to handle all the drudgery and complications like concurrency issues, consistent configuration, and thread safe logging--things of that nature--so that you can write simple code 
-to do stuff automatically on your machine in any language and seamlessly plug it in to the ganchos system and not have to worry about anything else. As long as the plugin implements 
-the required contract (Plugin settings below) things will work seamlessly.
+## Why? 
+The idea behind Ganchos is to provide a cross-platform way to easily hook into events and run code in response without having to worry about common concerns:
+ 1. __Logging__. Things that happen in Ganchos, and for what comes from the plugins. Ganchos will use the stderr and stdout from a plugin. The intent is to make it very easy to track down issues when things go wrong.
+ 2. __Configuration__. How ganchos operates is highly configurable, though it should just work with the defaults. The other type of configuration is for the plugins. Ganchos provides some basic configration for all plugins: enabling/disabling, limiting a plugin to only run on a certain OS, etc. The rest is up to plugin itself. Everything is driven from JSON config files, and all config related files and plugins are hot-loaded so that the app won't have to be restarted when making changes.
+ 3. __Encapuslate the drudgery__. A goal of Ganchos is to handle the tedious work of ensuring plugins don't run out of control, that they are not interferring with themselves or other plugins when running, that issues of conccurency are handled properly. It manages these types of concerns so that the user can just drop a plugin into a directory and not have to worry about all the other stuff that goes on behind the scenes to make it work. A future version will include a web based UI that allows viewing of logs and tracing the activity of a plugin over time spans. As well as configuration of the various plugins, viewing the health of the Ganchos system--things along those lines. Currently this is not yet available.
 
-A future version will include a web based UI that allows viewing of logs and tracing the activity of a plugin over time spans. As well as configuration of the various plugins, viewing the health
-of the Ganchos system--things along those lines. Currently this part of Ganchos is not yet available.
+## What is a plugin in Ganchos?
+
 
 ### Plugins
 `TODO`: write this. talk about different ways plugins can receive event data, config. When set as environment ganchos_ and ganchosConfig_
