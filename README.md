@@ -58,9 +58,9 @@ The plugin configuration file is what the user modifies in order to control how 
 
 Configuration files for the plugins are JSON objects. Located in `~/.ganchos/config/plugins` directory. They most likely won't exist the first time a plugin
 is run, they will be created automatically based on the `defaultConfig` value provided in the plugin's settings. The configuration 
-files must have the exact same name as what's in the `name` field of the plugin settings (meta file)--that's how they're located. The contents of this file is the JSON configuration that is passed into the plugin on execution (or put into the environment if that meta file setting is used)
+files must have the exact same name as what's in the `name` field of the plugin settings (meta file)--that's how they're located. The contents of this file is the JSON configuration that is passed into the plugin on execution (or put into the environment if that meta file setting is used).
 
-*Note: A plugin can specify any configuration setting that it needs in the meta file `defaultJson` property. The ones below are the configuration options recognized and used by Ganchos and are completely optional.* 
+*Note: A plugin can specify any configuration setting that it needs in the meta file `defaultJson` property and it will be in the plugin configuration file when it's created the first time. The ones below are completely optional and are used by Ganchos if they are in the plugin config file* 
 
 * `enabled`: *Boolean*; if provided and true (or when not provided at all) the plugin will be turned on. If value is false, the plugin is turned off and ignored.
 * `watchPaths`: *Array of strings*; listen for events on these file system paths
