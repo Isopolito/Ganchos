@@ -13,7 +13,7 @@ The idea behind Ganchos is to provide a cross-platform way to easily hook into e
 A plugin has two parts: the file to execute and the meta file. All the directorys in general config's `pluginPaths` will be monitored for plugins.
 
 #### The file to execute
-This should be a script or a binary file. Ganchos looks at the file extension to determine what type of file it is and how to run it. Files ending in '.js' will be ran with node.js. Other types of files should be have read/execute permsissions. 
+This should be a script or a binary file. Ganchos looks at the file extension to determine what type of file it is and how to run it. Files ending in '.js' will be ran with node.js. Other types of files should have read/execute permsissions. When using an existing program as a Ganchos plugin, this file can be script that takes the input data from Ganchos and calls the program passing in the data in the form it needs. You can get fancy and download the program if it doesn't exist, or compile it if the sou
 
 #### The meta file
 A [meta file](engine/src/shared/plugins/DefaultPluginMetaFile.meta) is a text file in JSON that describes to Ganchos what the plugin is, and how to run it.
@@ -21,7 +21,7 @@ Typcially a user that didn't write a plugin *shouldn't* have to modify this.
 
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
 
-#### Mandatory Meta File Properties
+##### Mandatory Meta File Properties
 
 * `name`: *String*; the name of the plugin as it will show up in the UI
 * `description`: *String*; describe what the plugin does
@@ -32,8 +32,8 @@ Typcially a user that didn't write a plugin *shouldn't* have to modify this.
 This allows a fully qualified path to be used and the plugin can live anywhere on the system. If it's not found, the path will be 
 treated as relative to the plugin directory where the meta file lives.
 
-#### Optional Meta File Properities
-* `putDataInEnvironment`: *Boolean*; when true will put the input data to the plugin into the environment instead of passing it in as parameters to the exec file. Useful for shell scripts. Ganchos Event Type and [Event Data](engine/src/shared/plugins/EventData.ts) will be preceded by `ganchos_`. For instance: `ganchos_eventType`.   All the plugin configuration settings will be saved into the environmnet like `ganchosConfig_SETTINGNAME`.
+##### Optional Meta File Properities
+* `putDataInEnvironment`: *Boolean*; when true will put the input data to the plugin into the environment instead of passing it in as parameters to the exec file. Useful for shell scripts. Ganchos Event Type and [Event Data](engine/src/shared/plugins/EventData.ts) will be preceded by `ganchos_`. For instance: `ganchos_eventType`.   All the [plugin configuration](https://github.com/Isopolito/Ganchos#plugin-configuration-file-options) settings will be saved into the environmnet like `ganchosConfig_SETTINGNAME`.
 * `isEligibleForSchedule`: *Boolean*; when true, plugin will be ran by the scheduler on startup and then on the interval provided by the `runEveryXMinutes` plugin configuration setting
 * `osTypesToRunOn`: *Array of strings*; if provided, the plugin will only run on the os types in the list. Values are: 'aix' | 'darwin' | 'freebsd' | 'linux' | 'openbsd' | 'sunos' | 'win32'
 * `eventTypes`: *Array of strings*; the plugin will be executed when an event in the list occurs. If this is empty the plugin will ignore events altogether. 
@@ -50,33 +50,17 @@ For file system events, the plugin configuration `watchPaths` and `excludeWatchP
   3. **General purpose**: 'none' 
   <br> If a plugin executes because of something other than an event (ex: scheduling) the eventType will be 'none'
 
-## Environment Variables
-* `DEBUG`: a truthy value will turn on extra logging for general and plugins
-* `NODE_ENV`: will determine which config directory to use, `~/.ganchos` in production mode.
-
-## Configuration
-
-### General Settings
-Located: `~/.ganchos/config/general`
-
-`TODO`: write this
-* `pluginPaths`: (*default*: ~/.ganchos/plugins) -
-* `pluginMetaExtension`: (*default*: 'meta') - 
-* `pluginScheduleIntervalFloorInMinutes`: (*default*: 0.5) - 
-* `eventQueuePluginExecutionTimeout`: 0, // No timeout
-* `eventQueuePluginExecutionConcurrency`: 3, // Each plugin can only have 3 executions concurrently when responding to events
-
-
-### Plugin Configuration File Options
+## Plugin Configuration Files
 Located: `~/.ganchos/config/plugins`
+The plugin configuration file is what the user modifies in order to control how the plugin operates
 
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
 
 Configuration files for the plugins are JSON objects. Located in `~/.ganchos/config/plugins` directory. They most likely won't exist the first time a plugin
 is run, they will be created automatically based on the `defaultConfig` value provided in the plugin's settings. The configuration 
-files must have the exact same name as what's in the `name` field of the plugin settings (meta file)--that's how they're located. The contents of this file is the JSON configuration that is passed into the plugin on execution. 
+files must have the exact same name as what's in the `name` field of the plugin settings (meta file)--that's how they're located. The contents of this file is the JSON configuration that is passed into the plugin on execution (or put into the environment if that meta file setting is used)
 
-*Note: A plugin can specify any configuration setting that it needs. The ones below are the configuration options recognized and used by Ganchos and are completely optional.* 
+*Note: A plugin can specify any configuration setting that it needs in the meta file `defaultJson` property. The ones below are the configuration options recognized and used by Ganchos and are completely optional.* 
 
 * `enabled`: *Boolean*; if provided and true (or when not provided at all) the plugin will be turned on. If value is false, the plugin is turned off and ignored.
 * `watchPaths`: *Array of strings*; listen for events on these file system paths
@@ -87,6 +71,21 @@ a certain amount of time in order to know how long to delay B for.
 * `runEveryXMinutes`: *Number*; if a plugin is marked as eligible for scheduling, this will be the value used for the waiting interval between executions. Fractional numbers are acceptable. 
 If the number is less than the value in general settings--`pluginScheduleIntervalFloorInMinutes`--scheduling will be disabled for the plugin. This is a safety mechanism so that a plugin can't accidentally be set to run too often. 
 In these cases, Ganchos will check every 5 minutes to see if the plugin configuration has been updated to an acceptable value, if so it will be reschedule it.
+
+## Environment Variables
+* `DEBUG`: a truthy value will turn on extra logging for general and plugins
+* `NODE_ENV`: will determine which config directory to use, `~/.ganchos` in production mode.
+
+## General Configuration
+Located: `~/.ganchos/config/general`
+
+`TODO`: write this
+* `pluginPaths`: (*default*: ~/.ganchos/plugins) -
+* `pluginMetaExtension`: (*default*: 'meta') - 
+* `pluginScheduleIntervalFloorInMinutes`: (*default*: 0.5) - 
+* `eventQueuePluginExecutionTimeout`: 0, // No timeout
+* `eventQueuePluginExecutionConcurrency`: 3, // Each plugin can only have 3 executions concurrently when responding to events
+
 
 ## Logs
 `TODO`: write this
