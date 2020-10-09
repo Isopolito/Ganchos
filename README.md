@@ -12,16 +12,16 @@ The idea behind Ganchos is to provide a cross-platform way to easily hook into e
 ## What is a plugin in Ganchos?
 A plugin has two parts: the file to execute and the meta file. All the directorys in general config's `pluginPaths` will be monitored for plugins.
 
-#### File to execute
-This should be a script, or a binary file. Ganchos looks at the file extension to determine what type of file it is and how to run it. Files ending in '.js' will be ran with node.js. Other types of files should be have read/execute permsissions. 
+#### The file to execute
+This should be a script or a binary file. Ganchos looks at the file extension to determine what type of file it is and how to run it. Files ending in '.js' will be ran with node.js. Other types of files should be have read/execute permsissions. 
 
-#### Meta Files
+#### The meta file
 A [meta file](engine/src/shared/plugins/DefaultPluginMetaFile.meta) is a text file in JSON that describes to Ganchos what the plugin is, and how to run it.
 Typcially a user that didn't write a plugin *shouldn't* have to modify this. 
 
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
 
-#### Mandatory Properties
+#### Mandatory Meta File Properties
 
 * `name`: *String*; the name of the plugin as it will show up in the UI
 * `description`: *String*; describe what the plugin does
@@ -32,8 +32,8 @@ Typcially a user that didn't write a plugin *shouldn't* have to modify this.
 This allows a fully qualified path to be used and the plugin can live anywhere on the system. If it's not found, the path will be 
 treated as relative to the plugin directory where the meta file lives.
 
-#### Optional Properities
-* `putDataInEnvironment`: *Boolean*; when true will put the input data to the plugin into the environment instead of passing in parameters to the exec file. Useful for scripts. Ganchos Event Type and [Event Data](engine/src/shared/plugins/EventData.ts) will be preceded by `ganchos_`. For instance: `ganchos_eventType`.   All the plugin configuration settings will be saved into the environmnet like `ganchosConfig_SETTINGNAME`.
+#### Optional Meta File Properities
+* `putDataInEnvironment`: *Boolean*; when true will put the input data to the plugin into the environment instead of passing it in as parameters to the exec file. Useful for shell scripts. Ganchos Event Type and [Event Data](engine/src/shared/plugins/EventData.ts) will be preceded by `ganchos_`. For instance: `ganchos_eventType`.   All the plugin configuration settings will be saved into the environmnet like `ganchosConfig_SETTINGNAME`.
 * `isEligibleForSchedule`: *Boolean*; when true, plugin will be ran by the scheduler on startup and then on the interval provided by the `runEveryXMinutes` plugin configuration setting
 * `osTypesToRunOn`: *Array of strings*; if provided, the plugin will only run on the os types in the list. Values are: 'aix' | 'darwin' | 'freebsd' | 'linux' | 'openbsd' | 'sunos' | 'win32'
 * `eventTypes`: *Array of strings*; the plugin will be executed when an event in the list occurs. If this is empty the plugin will ignore events altogether. 
