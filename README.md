@@ -1,19 +1,20 @@
 # Ganchos
 
 ## What is it?
-A tool written in typescript and node.js designed to run in the background on a machine listening for events such as file system events (deleting, adding files, etc), certain network events, and other events like key presses (future enhancement). Events are broadcasted out to plugins and the ones that are configured to care about a certain event will be executed. There is also the option for simple scheduling to be turned on for a plugin so that it can be run on an interval. This can be combined with event based execution. A plugin can be anything. A program you built, or an existing one someone else made that has a thin wrapper around it to make it work with Ganchos.
+A tool written in typescript and node.js designed to run in the background on a machine listening for events such as file system events (deleting, adding files, etc), certain network events, and other events like key presses (future enhancement). Events are broadcasted out to plugins and the ones that are configured to care about a certain event will be executed. There is also the option for simple scheduling to be turned on for a plugin so that it can be run on an interval. This can be combined with the event based execution. A plugin can be anything. A program you built, or an existing one someone else made that has a thin wrapper around it to make it work with Ganchos.
 
 ## Why? 
-The idea behind Ganchos is to provide a cross-platform way to easily hook into events and run code in response without having to worry about common concerns:
- 1. __Logging__. There is consistent logging that happens in Ganchos in order to make things as transparent as possible if things go wrong. Logging is also available to the plugins, Ganchos will automatically use their use stderr/stdout to manage logging at the plugin level. The intent is to make it easy to track down issues, wherever they occur, so that time is not wasted when something is not working as expected.
+The idea behind Ganchos is to provide a cross-platform way to easily hook into events and run code in response without having to worry about common concerns like:
+ 1. __Logging__. There is consistent logging that happens in Ganchos in order to make things as transparent as possible if something goes wrong. Logging is also   available to the plugins, Ganchos will automatically use their use stderr/stdout to manage logging at the plugin level. The intent is to make it easy to track down issues--wherever they occur--so that time is not wasted when something is not working as expected.
  2. __Configuration__. How ganchos operates is highly configurable, though it should just work with the defaults. The other type of configuration is for the plugins. Ganchos provides some basic configration for all plugins: enabling/disabling, limiting a plugin to only run on a certain OS, etc. The rest is up to the plugin itself. Everything is driven from JSON config files, and all config related files and plugins are hot-loaded so that the app won't have to be restarted when making changes.
- 3. __Encapuslate the drudgery__. A goal of Ganchos is to handle the tedious work of ensuring plugins don't run out of control, when they should or should not run, that they are not interferring with themselves or other plugins when running, that issues of conccurency are handled properly, etc. It manages these types of concerns so that the user can just drop a plugin into a directory and not have to worry about all the other stuff that goes on behind the scenes to make it work. A future version will include a web based UI that allows viewing of logs and tracing the activity of a plugin over time spans. As well as configuration of the various plugins, viewing the health of the Ganchos system--things along those lines. Currently this is not yet available.
+ 3. __Encapuslate the drudgery__. A goal of Ganchos is to handle the tedious work of ensuring plugins don't run out of control, determining when they should or should not run, that they are not interferring with themselves or other plugins when running, that issues of conccurency are handled properly, etc. It manages these types of concerns so that the user can just drop a plugin into a directory and not have to worry about all the other stuff that goes on behind the scenes to make it work. A future version will include a web based UI that allows viewing of logs and tracing the activity of a plugin over time spans. As well as configuration of the various plugins, viewing the health of the Ganchos system--things along those lines. Currently this is not yet available.
 
 ## What is a plugin in Ganchos?
+A plugin has two parts: the meta file and the file to execute.
 
-
-### Plugins
-`TODO`: write this. talk about different ways plugins can receive event data, config. When set as environment ganchos_ and ganchosConfig_
+#### Meta Files
+A [meta file](engine/src/shared/plugins/DefaultPluginMetaFile.meta) is a text file in JSON that describes to Ganchos what the plugin is, and how to run it.
+Typcially a user that didn't write a plugin *shouldn't* have to modify this. talk about different ways plugins can receive event data, config. When set as environment ganchos_ and ganchosConfig_
 
 ## Environment Variables
 * `DEBUG`: a truthy value will turn on extra logging for general and plugins
@@ -32,11 +33,7 @@ Located: `~/.ganchos/config/general`
 * `eventQueuePluginExecutionConcurrency`: 3, // Each plugin can only have 3 executions concurrently when responding to events
 
 ### Plugin Settings
-Located in the `meta` file associated with plugin. See an example of this file type [here](shared/src/plugins/DefaultPluginMetaFile.meta).
-<br>
-
-Plugin settings are what Ganchos uses in order to know how to properly run and display a plugin. A user that didn't write a plugin *shouldn't* have to modify this.
-It can be thought of as configuration geared towards Ganchos. The distinction between this and the **Plugin Configuration Files** is that the latter are geared towards 
+. The distinction between this and the **Plugin Configuration Files** is that the latter are geared towards 
 the end user. It's what they use to configure how the plugin operates.
 
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
