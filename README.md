@@ -9,6 +9,9 @@ The idea behind Ganchos is to provide a cross-platform way to easily hook into e
  2. __Configuration__. How ganchos operates is highly configurable, though it should just work with the defaults. The other type of configuration is for the plugins. Ganchos provides some basic configration for all plugins: enabling/disabling, limiting a plugin to only run on a certain OS, etc. The rest is up to the plugin itself. Everything is driven from JSON config files, and all config related files and plugins are hot-loaded so that the app won't have to be restarted when making changes.
  3. __Encapuslate the drudgery__. A goal of Ganchos is to handle the tedious work of ensuring plugins don't run out of control, determining when they should or should not run, that they are not interferring with themselves or other plugins when running, that issues of conccurency are handled properly, etc. It manages these types of concerns so that the user can just drop a plugin into a directory and not have to worry about all the other stuff that goes on behind the scenes to make it work. A future version will include a web based UI that allows viewing of logs and tracing the activity of a plugin over time spans. As well as configuration of the various plugins, viewing the health of the Ganchos system--things along those lines. Currently this is not yet available.
 
+## How to use it?
+Simple simple examples here
+
 ## What is a plugin in Ganchos?
 A plugin has two parts: the file to execute and the meta file. All the directorys in [general config's](https://github.com/Isopolito/Ganchos#general-settings) `pluginPaths` will be monitored for plugins.
 
@@ -57,10 +60,10 @@ The plugin configuration file is what the user modifies in order to control how 
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
 
 Configuration files for the plugins are JSON objects. Located in `~/.ganchos/config/plugins` directory. They most likely won't exist the first time a plugin
-is run, they will be created automatically based on the `defaultConfig` value provided in the plugin's settings. The configuration 
-files must have the exact same name as what's in the `name` field of the plugin settings (meta file)--that's how they're located. The contents of this file is the JSON configuration that is passed into the plugin on execution (or put into the environment if that meta file setting is used).
+is run, however they will be created automatically based on the `defaultConfig` value provided in the plugin's meta file. The configuration 
+files must have the exact same name as what's in the `name` field of the plugin meta file--that's how they're located. The contents of this file is the JSON configuration that is passed into the plugin on execution (or put into the environment if that meta file setting is used).
 
-*Note: A plugin can specify any configuration setting that it needs in the meta file `defaultJson` property and it will be in the plugin configuration file when it's created the first time. The ones below are completely optional and are used by Ganchos if they are in the plugin config file* 
+*Note: The config settings below are completely optional and are used by Ganchos if they are in the plugin config file* 
 
 * `enabled`: *Boolean*; if provided and true (or when not provided at all) the plugin will be turned on. If value is false, the plugin is turned off and ignored.
 * `watchPaths`: *Array of strings*; listen for events on these file system paths
