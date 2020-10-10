@@ -27,8 +27,7 @@ If however the meta file setting `putDataInEnvironment` is true, the above data 
 This should be a script or a binary file. Ganchos looks at the file extension to determine what type of file it is and how to run it. Files ending in `.js` will be ran with node.js. Other types of files should have execute permsissions. When using an existing program as a Ganchos plugin, this file can be a script that takes the input data from Ganchos and calls the program passing in the data in the form it needs. The script can get fancy and download the program if it doesn't exist, or compile it if the source code is provided with the plugin. A plugin and its files can be in a separate directory inside of `pluginPaths`, which helps in organizing plugins since there can be many files as part of a plugin.
 
 #### The meta file
-A [meta file](engine/src/shared/plugins/DefaultPluginMetaFile.meta) is a text file in JSON that describes to Ganchos what the plugin is, and how to run it.
-Typcially a user that didn't write a plugin *shouldn't* have to modify this. 
+A meta file is a text file in JSON that describes to Ganchos what the plugin is, and how to run it. Typcially a user that didn't write a plugin *shouldn't* have to modify this. 
 
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
 
@@ -97,7 +96,7 @@ These are the [configuration settings](engine/src/shared/config/GeneralConfig.ts
 
 ## Command line arguments
 -t, --template: Print out a template. Takes a value that specifies what type of template to generate
-   * meta: A standard plugin meta file. Will prompt for the name of the plugin.
+   * meta: A standard plugin meta file.
    * bashwrapper: A bash script file stubbed out to wrap around an existing program to use a Ganchos plugin.
 
 ## Logs
