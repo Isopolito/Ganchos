@@ -10,7 +10,7 @@ Provide a simple and straightforward way to add custom automation to your machin
  3. __Encapuslate the drudgery__. A goal of Ganchos is to handle the tedious work of ensuring plugins don't run out of control, determining when they should or should not run, that they are not interferring with themselves or other plugins when running, that issues of conccurency are handled properly, etc. It manages these types of concerns so that the user can just drop a plugin into a directory and not have to worry about all the other stuff that goes on behind the scenes to make it work. A future version will include a web based UI that allows viewing of logs and tracing the activity of a plugin over time spans. As well as configuration of the various plugins, viewing the health of the Ganchos system--things along those lines. Currently this is not yet available.
 
 ## How to use it?
-Simple simple examples here
+The following examples assume that Ganchos is [installed and running](https://github.com/Isopolito/Ganchos/blob/master/README.md#installing-and-running-ganchos)
 
 ---
 
