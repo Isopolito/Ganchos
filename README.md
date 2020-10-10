@@ -73,8 +73,7 @@ Configuration files for the plugins are JSON objects. LThey most likely won't ex
 * `enabled`: *Boolean*; if provided and true (or when not provided at all) the plugin will be turned on. If value is false, the plugin is turned off and ignored.
 * `watchPaths`: *Array of strings*; listen for events on these file system paths
 * `excludeWatchPaths`: *Array of strings*; ignore these paths when listening for events
-* `runDelayInMinutes`: *Number*; if provided and greater than 0, will wait for desired number of minutes (fractional values acceptable) before executing plugin logic. This can be used as rudimentary means for chaining together plugins.
-For example if you wanted plugin A and plugin B to respond to the same thing but you want A to run first, you could delay B so that it runs after A is finished. This has it's limitations because plugin A has to consistently finish in
+* `runDelayInMinutes`: *Number*; if provided and greater than 0, will wait for desired number of minutes (fractional values acceptable) before executing plugin logic. This can be used as rudimentary means for chaining together plugins. For example if you wanted plugin A and plugin B to respond to the same thing but you want A to run first, you could delay B so that it runs after A is finished. This has it's limitations because plugin A has to consistently finish in
 a certain amount of time in order to know how long to delay B for. 
 * `runEveryXMinutes`: *Number*; if a plugin is marked as eligible for scheduling, this will be the value used for the waiting interval between executions. Fractional numbers are acceptable. 
 If the number is less than the value in general settings--`pluginScheduleIntervalFloorInMinutes`--scheduling will be disabled for the plugin. This is a safety mechanism so that a plugin can't accidentally be set to run too often. 
@@ -91,15 +90,23 @@ These are the [configuration settings](engine/src/shared/config/GeneralConfig.ts
 * `eventQueuePluginExecutionConcurrency`: (*default* 3) How many instances of the same plugin can run conccurently.
 
 ## Environment Variables
-* `DEBUG`: a truthy value will turn on extra logging for general and plugins
-* `NODE_ENV`: will determine which config directory to use, `~/.ganchos` in production mode. Setting this to DEV is usefult for local development.
+* `DEBUG`: a truthy value will turn on extra logging
+* `NODE_ENV`: will determine which config directory to use, `~/.ganchos` in production mode (the default). Setting this to DEV is useful for local development.
+
+## Command line arguments
+-t, --template: Print out a template. Takes a value that specifies what type of template to generate
+   * meta: A standard plugin meta file. Will prompt for the name of the plugin.
+   * bashwrapper: A bash script file stubbed out to wrap around an existing program to use a Ganchos plugin.
 
 ## Logs
-`TODO`: write this
+Located: `~/.ganchos/logs`
+
+Logs are split into two files: general and plugins. Each log file is named with the date and the type of log file it is (general or plugin). All the logging that is specific to Ganchos will be in the `-general` file. Log messages coming from a plugin will be in the `-plugin` files. The severity (what type of log message it is) can be found [here](engine/src/shared/logging/SeverityEnum.ts).
+
+Ganchos will take all plugin output from stderr and mark it will mark it with a severity of `pluginError`. Stdout will be logged as `pluginInfo`. There's an area field in the log output, this can be useful for pinpointing exactly where the message is coming from. If Ganchos detects a `|*|` separator in the plugin output (stderr and stdout) it will split the message on it and the first part will be the log area, the second part will be the message itself.
 
 ## Using Ganchos
 This will be improved in the future but for now:
-<br>
 
 * Install [pm2](https://www.npmjs.com/package/pm2) if needed.
 * Download ganchos code
@@ -107,11 +114,9 @@ This will be improved in the future but for now:
 * Ganchos plugins will automatically be available. Drop plugins into one of the plugin directories configured in the ganchos general config file `~/.ganchos/config/general`
 
 ## Goals
-* Make this rock solid and performant so that it can be used reliably in any environment for important work. The only concern of the end user should be ensuring that their plugins are written correctly.
-Ganchos should be robust enough to never fail through any fault of its own, gracefully handle bad plugins and expose any potential problems via clear logging so that in the case of a plugin with a bug, 
-the developer can easily track down and fix their issues. 
+* Make this rock solid and performant so that it can be used reliably in any environment for important work. The only concern of the end user should be ensuring that their plugins are working correctly.Ganchos should be robust enough to never fail through any fault of its own, gracefully handle bad plugins and expose any potential problems via clear logging so that in the case of a plugin with a bug, the developer can easily track down and fix their issues. 
 * Get UI developed so that it can provide an easy and intuitive way to manage this. Ideally you could generate plugin templates from the UI so that the process of creating and using plugins for the first time is intuitive and self-documenting.
-* Make work on other operating systems. Currently only tested on Linux.
+* Make it work on other operating systems. Currently only tested on Linux.
 * Build in the ability to chain multiple plugins together. A crude version of this can be implemented via delay configuration, but it's not a robust solution.
 * Continue to add logic for detecting events. Key presses, more advanced networking, etc. 
 
