@@ -11,7 +11,7 @@ The idea behind Ganchos is to provide a cross-platform way to easily hook into e
 
 ## How to use it?
 Simple simple examples here
-
+<hr>
 ## What is a plugin in Ganchos?
 A plugin has two parts: the file to execute and the meta file. All the directories in [general config's](https://github.com/Isopolito/Ganchos#general-settings) `pluginPaths` will be monitored for plugins. Restarting Ganchos is not necessary when a plugin has been added, deleted, or modified. When it's time to run a plugin, by default Ganchos will pass in the data as parameters to the executionary file in the following order:
 
@@ -59,7 +59,7 @@ For file system events, the plugin configuration `watchPaths` and `excludeWatchP
   3. **General purpose**: 'none' 
   <br> If a plugin executes because of something other than an event (ex: scheduling) the eventType will be 'none'
 
-## Plugin Configuration Files
+## Plugin Configuration
 Located: `~/.ganchos/config/plugins/PLUGIN_NAME`
 
 The plugin configuration file is what the user modifies in order to control how the plugin operates
