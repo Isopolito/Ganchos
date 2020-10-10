@@ -101,11 +101,11 @@ These are the [configuration settings](engine/src/shared/config/GeneralConfig.ts
 ## Logs
 Located: `~/.ganchos/logs`
 
-Logs are split into two files: general and plugins. Each log file is named with the date and the type of log file it is (general or plugin). All the logging that is specific to Ganchos will be in the `-general` file. Log messages coming from a plugin will be in the `-plugin` files. The severity (what type of log message it is) can be found [here](engine/src/shared/logging/SeverityEnum.ts).
+Logs are split into two files: general and plugins. Each log file is named with the date and the type of log file it is (general or plugin). All the logging that is specific to Ganchos will be in the `-general` file. Log messages coming from a plugin will be in the `-plugin` files. The severity options (what type of log message it is) can be found [here](engine/src/shared/logging/SeverityEnum.ts).
 
-Ganchos will take all plugin output from stderr and mark it will mark it with a severity of `pluginError`. Stdout will be logged as `pluginInfo`. There's an area field in the log output, this can be useful for pinpointing exactly where the message is coming from. If Ganchos detects a `|*|` separator in the plugin output (stderr and stdout) it will split the message on it and the first part will be the log area, the second part will be the message itself.
+Ganchos will take all plugin output from stderr and will mark it with a severity of `pluginError`. Stdout will be logged as `pluginInfo`. There's an area field in the log output, this can be useful for pinpointing exactly where the message is coming from. If Ganchos detects a `|*|` separator in the plugin output (stderr and stdout) it will split the message on it and the first part will be the log area, the second part will be the message itself.
 
-## Using Ganchos
+## Installing and Running Ganchos
 This will be improved in the future but for now:
 
 * Install [pm2](https://www.npmjs.com/package/pm2) if needed.
@@ -123,3 +123,8 @@ This will be improved in the future but for now:
 ## Contributing 
 
 Contributing is encouraged and a PR is always welcome. Please create issues for bugs and enhancement requests. 
+
+For PR's:
+ 1. Turn on the pre-push git script for running unit tests before pushing commits. This can be done by running `scripts/install-hooks.sh`
+ 2. After making changes, the [test_plugins](testplugins/README.md) can be used as a semi-automated version of integration tests. The readme in that directory explains how to use.
+ 3. In general, backticks are used for strings. Single quotes for imports.
