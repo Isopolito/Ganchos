@@ -13,7 +13,7 @@ The idea behind Ganchos is to provide a cross-platform way to easily hook into e
 Simple simple examples here
 
 ## What is a plugin in Ganchos?
-A plugin has two parts: the file to execute and the meta file. All the directorys in [general config's](https://github.com/Isopolito/Ganchos#general-settings) `pluginPaths` will be monitored for plugins.
+A plugin has two parts: the file to execute and the meta file. All the directorys in [general config's](https://github.com/Isopolito/Ganchos#general-settings) `pluginPaths` will be monitored for plugins. Restarting Ganchos is not necessary when a plugin has been added, deleted, or modified.
 
 #### The file to execute
 This should be a script or a binary file. Ganchos looks at the file extension to determine what type of file it is and how to run it. Files ending in '.js' will be ran with node.js. Other types of files should have read/execute permsissions. When using an existing program as a Ganchos plugin, this file can be script that takes the input data from Ganchos and calls the program passing in the data in the form it needs. You can get fancy and download the program if it doesn't exist, or compile it if the source code is provided with the plugin. A plugin and its files can be in a separate directory inside of `pluginPaths`. 
