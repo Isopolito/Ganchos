@@ -14,7 +14,7 @@ So have the integration test run for at a couple of minutes.
 Finally, once all the events have been triggered there is a script that will check the logs to ensure that the plugins responded properly to the events. 
 To run: `nodejs verifyLogs.js GANCHOS_DIR_PATH` where GANCHOS_DIR_PATH is the directory where you're currently testing Ganchos.
 
-*TODO:*
+__TODO:__
 1. Rewrite the bash plugins to javascript files so it's not OS dependent
 2. Automate as much of this process as possible. One potential way to make this a little smoother
   is to start the verifyLogs script before the test. It will monitor the log file for the expected actions,
