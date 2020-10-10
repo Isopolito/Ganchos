@@ -126,7 +126,7 @@ This will be improved in the future but for now:
 
 Contributing is encouraged and a PR is always welcome. Please create issues for bugs and enhancement requests. 
 
-For PR's:
+__For PR's:__
  1. Turn on the pre-push git script for running unit tests before pushing commits. This can be done by running `scripts/install-hooks.sh`
  2. After making changes, the [test_plugins](test_plugins/README.md) can be used as a semi-automated version of integration tests. The readme in that directory explains how to use.
  3. In general, backticks are used for strings. Single quotes for imports, no semi-colon after import statements.
