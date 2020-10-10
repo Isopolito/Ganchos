@@ -60,7 +60,7 @@ For file system events, the plugin configuration `watchPaths` and `excludeWatchP
   <br> If a plugin executes because of something other than an event (ex: scheduling) the eventType will be 'none'
 
 ## Plugin Configuration Files
-Located: `~/.ganchos/config/plugins`
+Located: `~/.ganchos/config/plugins/PLUGIN_NAME`
 
 The plugin configuration file is what the user modifies in order to control how the plugin operates
 
@@ -87,7 +87,7 @@ These are the [configuration settings](engine/src/shared/config/GeneralConfig.ts
 * `pluginPaths`: Array of string. (*default*: ~/.ganchos/plugins) - All the paths to monitor for plugins.
 * `pluginMetaExtension`: (*default*: 'meta') - The extension Ganchos uses to identify the `meta` file of a plugin.
 * `pluginScheduleIntervalFloorInMinutes`: (*default*: 0.5) - If a plugin configuration has scheduling interval lower than this number, it will not be executed. This is a way to protect against a misconfigured plugin running out of control.
-* `eventQueuePluginExecutionTimeout`: (*default* 0) If a plugin takes longer than this amount of time to execute (milliseconds) it will killed. 0 disables this.
+* `eventQueuePluginExecutionTimeout`: (*default* 0) If a plugin takes longer than this amount of time to execute (milliseconds) it will be killed. 0 disables this.
 * `eventQueuePluginExecutionConcurrency`: (*default* 3) How many instances of the same plugin can run conccurently.
 
 ## Environment Variables
