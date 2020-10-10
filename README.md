@@ -13,11 +13,11 @@ The idea behind Ganchos is to provide a cross-platform way to easily hook into e
 Simple simple examples here
 
 ## What is a plugin in Ganchos?
-A plugin has two parts: the file to execute and the meta file. All the directorys in [general config's](https://github.com/Isopolito/Ganchos#general-settings) `pluginPaths` will be monitored for plugins. Restarting Ganchos is not necessary when a plugin has been added, deleted, or modified. When it's time to run a plugin, by default Ganchos will pass in the data as parameters to the executionary file in the following order:
+A plugin has two parts: the file to execute and the meta file. All the directories in [general config's](https://github.com/Isopolito/Ganchos#general-settings) `pluginPaths` will be monitored for plugins. Restarting Ganchos is not necessary when a plugin has been added, deleted, or modified. When it's time to run a plugin, by default Ganchos will pass in the data as parameters to the executionary file in the following order:
 
 1. Plugin Configuration (JSON string): This is the [plugin configuration](https://github.com/Isopolito/Ganchos#plugin-configuration-files) file that lives in `~/.ganchos/config/plugins/PLUGIN_NAME`. 
-2. Event name (string): You can see the options [here](engine/src/shared/plugins/EventType.ts). Will be 'none' if plugins is called because of something other than an event.
-3. Event Data (JSON string): A serialized instance of [this](engine/src/shared/plugins/EventData.ts)
+2. Event Type (string): You can see the options [here](engine/src/shared/plugins/EventType.ts). Will be 'none' if plugins is called because of something other than an event.
+3. Event Data (JSON string): A serialized instance of [this](engine/src/shared/plugins/EventData.ts). Will be empty if not executed because of an event.
 
 <br>If However the meta file setting `putDataInEnvironment` is true, the above data will be placed into the environment the plugin executes in. See below _Optional Meta File Properities_ for details.
 
