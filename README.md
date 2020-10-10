@@ -61,13 +61,12 @@ For file system events, the plugin configuration `watchPaths` and `excludeWatchP
 
 ## Plugin Configuration Files
 Located: `~/.ganchos/config/plugins`
-<br>The plugin configuration file is what the user modifies in order to control how the plugin operates
+
+The plugin configuration file is what the user modifies in order to control how the plugin operates
 
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
 
-Configuration files for the plugins are JSON objects. Located in `~/.ganchos/config/plugins` directory. They most likely won't exist the first time a plugin
-is run, however they will be created automatically based on the `defaultConfig` value provided in the plugin's meta file. The configuration 
-files must have the exact same name as what's in the `name` field of the plugin meta file--that's how they're located. The contents of this file is the JSON configuration that is passed into the plugin on execution (or put into the environment if that meta file setting is used). These will be hot loaded by Ganchos, so no need to restart the application after modification.
+Configuration files for the plugins are JSON objects. LThey most likely won't exist the first time a plugin is run, however they will be created automatically based on the `defaultConfig` value provided in the plugin's meta file. The configuration files must have the exact same name as what's in the `name` field of the plugin meta file--that's how they're located. The contents of this file is the JSON configuration that is passed into the plugin on execution (or put into the environment if that meta file setting is used). These will be hot loaded by Ganchos, so no need to restart the application after modification.
 
 *Note: The config settings below are completely optional and are used by Ganchos if they are in the plugin config file* 
 
