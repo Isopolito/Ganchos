@@ -84,7 +84,7 @@ In these cases, Ganchos will check every 5 minutes to see if the plugin configur
 ## General Configuration
 Located: `~/.ganchos/config/general`
 
-These are the configuration settings that will control how ganchos operates.
+These are the [configuration settings](engine/src/shared/config/GeneralConfig.ts) that will control how ganchos operates.
 * `pluginPaths`: Array<string>. (*default*: ~/.ganchos/plugins) - All the paths to monitor for plugins.
 * `pluginMetaExtension`: (*default*: 'meta') - The extension Ganchos uses to identify the `meta` file of a plugin.
 * `pluginScheduleIntervalFloorInMinutes`: (*default*: 0.5) - If a plugin configuration has scheduling interval lower than this number, it will not be executed. This is a way to protect against a misconfigured plugin running out of control.
