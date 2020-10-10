@@ -81,20 +81,19 @@ a certain amount of time in order to know how long to delay B for.
 If the number is less than the value in general settings--`pluginScheduleIntervalFloorInMinutes`--scheduling will be disabled for the plugin. This is a safety mechanism so that a plugin can't accidentally be set to run too often. 
 In these cases, Ganchos will check every 5 minutes to see if the plugin configuration has been updated to an acceptable value, if so it will be reschedule it.
 
-## Environment Variables
-* `DEBUG`: a truthy value will turn on extra logging for general and plugins
-* `NODE_ENV`: will determine which config directory to use, `~/.ganchos` in production mode.
-
 ## General Configuration
 Located: `~/.ganchos/config/general`
 
-`TODO`: write this
-* `pluginPaths`: (*default*: ~/.ganchos/plugins) -
-* `pluginMetaExtension`: (*default*: 'meta') - 
-* `pluginScheduleIntervalFloorInMinutes`: (*default*: 0.5) - 
-* `eventQueuePluginExecutionTimeout`: 0, // No timeout
-* `eventQueuePluginExecutionConcurrency`: 3, // Each plugin can only have 3 executions concurrently when responding to events
+These are the configuration settings that will control how ganchos operates.
+* `pluginPaths`: Array<string>. (*default*: ~/.ganchos/plugins) - All the paths to monitor for plugins.
+* `pluginMetaExtension`: (*default*: 'meta') - The extension Ganchos uses to identify the `meta` file of a plugin.
+* `pluginScheduleIntervalFloorInMinutes`: (*default*: 0.5) - If a plugin configuration has scheduling interval lower than this number, it will not be executed. This is a way to protect against a misconfigured plugin running out of control.
+* `eventQueuePluginExecutionTimeout`: (*default* 0) If a plugin takes longer than this amount of time to execute (milliseconds) it will killed. 0 disables this.
+* `eventQueuePluginExecutionConcurrency`: (*default* 3) How many instances of the same plugin can run conccurently.
 
+## Environment Variables
+* `DEBUG`: a truthy value will turn on extra logging for general and plugins
+* `NODE_ENV`: will determine which config directory to use, `~/.ganchos` in production mode. Setting this to DEV is usefult for local development.
 
 ## Logs
 `TODO`: write this
@@ -115,6 +114,7 @@ the developer can easily track down and fix their issues.
 * Get UI developed so that it can provide an easy and intuitive way to manage this. Ideally you could generate plugin templates from the UI so that the process of creating and using plugins for the first time is intuitive and self-documenting.
 * Make work on other operating systems. Currently only tested on Linux.
 * Build in the ability to chain multiple plugins together. A crude version of this can be implemented via delay configuration, but it's not a robust solution.
+* Continue to add logic for detecting events. Key presses, more advanced networking, etc. 
 
 ## Contributing 
 
