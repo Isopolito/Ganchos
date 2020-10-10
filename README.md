@@ -42,13 +42,13 @@ This allows a fully qualified path to be used and the plugin can live anywhere o
 treated as relative to the plugin directory where the meta file lives.
 
 ##### Optional Meta File Properities
-* `putDataInEnvironment`: *Boolean*; when true will put the input data to the plugin into the environment instead of passing it in as parameters to the exec file. Useful for shell scripts. Ganchos [Event Type](engine/src/shared/plugins/EventType.ts) and [Event Data](engine/src/shared/plugins/EventData.ts) will be preceded by `ganchos_`. For instance: `ganchos_eventType`. EventData will have all the non-null properties provdied in the same format, for instance: `ganchos_filePath`.  All the [plugin configuration](https://github.com/Isopolito/Ganchos#plugin-configuration-file-options) settings will be saved into the environmnet like `ganchosConfig_SETTINGNAME`.
+* `putDataInEnvironment`: *Boolean*; when true will put the input data to the plugin into the environment instead of passing it in as parameters to the exec file. Useful for shell scripts. Ganchos [Event Type](engine/src/shared/plugins/EventType.ts) and [Event Data](engine/src/shared/plugins/EventData.ts) will be preceded by `ganchos_`. For instance: `ganchos_eventType`. EventData will have all the non-null properties provdied in the same format, ex: `ganchos_filePath`.  All the [plugin configuration](https://github.com/Isopolito/Ganchos#plugin-configuration-file-options) settings will be saved into the environmnet like `ganchosConfig_SETTINGNAME`.
 * `isEligibleForSchedule`: *Boolean*; when true, plugin will be ran by the scheduler on startup and then on the interval provided by the `runEveryXMinutes` plugin configuration setting
 * `osTypesToRunOn`: *Array of strings*; if provided, the plugin will only run on the os types in the list. Values are: 'aix' | 'darwin' | 'freebsd' | 'linux' | 'openbsd' | 'sunos' | 'win32'
 * `eventTypes`: *Array of strings*; the plugin will be executed when an event in the list occurs. If this is empty the plugin will ignore events altogether. 
 For file system events, the plugin configuration `watchPaths` and `excludeWatchPaths` properties can be used to include or ignore a plugin respectively.
 
-  Below are the available EventTypes by category.
+  Below are the available [Event Types](engine/src/shared/plugins/EventType.ts) by category.
 
   1. **File system**: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir' | 'ready' | 'raw' | 'error' 
   <br>EventData properties for this event: `filePath`
@@ -61,7 +61,7 @@ For file system events, the plugin configuration `watchPaths` and `excludeWatchP
 
 ## Plugin Configuration Files
 Located: `~/.ganchos/config/plugins`
-The plugin configuration file is what the user modifies in order to control how the plugin operates
+<br>The plugin configuration file is what the user modifies in order to control how the plugin operates
 
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
 
@@ -85,7 +85,7 @@ In these cases, Ganchos will check every 5 minutes to see if the plugin configur
 Located: `~/.ganchos/config/general`
 
 These are the [configuration settings](engine/src/shared/config/GeneralConfig.ts) that will control how ganchos operates.
-* `pluginPaths`: Array<string>. (*default*: ~/.ganchos/plugins) - All the paths to monitor for plugins.
+* `pluginPaths`: Array of string. (*default*: ~/.ganchos/plugins) - All the paths to monitor for plugins.
 * `pluginMetaExtension`: (*default*: 'meta') - The extension Ganchos uses to identify the `meta` file of a plugin.
 * `pluginScheduleIntervalFloorInMinutes`: (*default*: 0.5) - If a plugin configuration has scheduling interval lower than this number, it will not be executed. This is a way to protect against a misconfigured plugin running out of control.
 * `eventQueuePluginExecutionTimeout`: (*default* 0) If a plugin takes longer than this amount of time to execute (milliseconds) it will killed. 0 disables this.
