@@ -19,10 +19,10 @@ A plugin has two parts: the file to execute and the meta file. All the directori
 2. Event Type (string): You can see the options [here](engine/src/shared/plugins/EventType.ts). Will be 'none' if plugins is called because of something other than an event.
 3. Event Data (JSON string): A serialized instance of [this](engine/src/shared/plugins/EventData.ts). Will be empty if not executed because of an event.
 
-<br>If However the meta file setting `putDataInEnvironment` is true, the above data will be placed into the environment the plugin executes in. See below _Optional Meta File Properities_ for details.
+If However the meta file setting `putDataInEnvironment` is true, the above data will be placed into the environment the plugin executes in. See below _Optional Meta File Properities_ for details.
 
 #### The file to execute
-This should be a script or a binary file. Ganchos looks at the file extension to determine what type of file it is and how to run it. Files ending in `.js` will be ran with node.js. Other types of files should have execute permsissions. When using an existing program as a Ganchos plugin, this file can be script that takes the input data from Ganchos and calls the program passing in the data in the form it needs. You can get fancy and download the program if it doesn't exist, or compile it if the source code is provided with the plugin. A plugin and its files can be in a separate directory inside of `pluginPaths`. 
+This should be a script or a binary file. Ganchos looks at the file extension to determine what type of file it is and how to run it. Files ending in `.js` will be ran with node.js. Other types of files should have execute permsissions. When using an existing program as a Ganchos plugin, this file can be script that takes the input data from Ganchos and calls the program passing in the data in the form it needs. You can get fancy and download the program if it doesn't exist, or compile it if the source code is provided with the plugin. A plugin and its files can be in a separate directory inside of `pluginPaths`, which helps in organizing plugins since there can be many files as part of a plugin.
 
 #### The meta file
 A [meta file](engine/src/shared/plugins/DefaultPluginMetaFile.meta) is a text file in JSON that describes to Ganchos what the plugin is, and how to run it.
@@ -48,7 +48,7 @@ treated as relative to the plugin directory where the meta file lives.
 * `eventTypes`: *Array of strings*; the plugin will be executed when an event in the list occurs. If this is empty the plugin will ignore events altogether. 
 For file system events, the plugin configuration `watchPaths` and `excludeWatchPaths` properties can be used to include or ignore a plugin respectively.
 
-  Below are the available eventType values by category, note that EventData is passed to a plugin on execution (see plugin execution). The shape of that object can change depending on the event.
+  Below are the available EventTypes by category.
 
   1. **File system**: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir' | 'ready' | 'raw' | 'error' 
   <br>EventData properties for this event: `filePath`
@@ -67,7 +67,7 @@ The plugin configuration file is what the user modifies in order to control how 
 
 Configuration files for the plugins are JSON objects. Located in `~/.ganchos/config/plugins` directory. They most likely won't exist the first time a plugin
 is run, however they will be created automatically based on the `defaultConfig` value provided in the plugin's meta file. The configuration 
-files must have the exact same name as what's in the `name` field of the plugin meta file--that's how they're located. The contents of this file is the JSON configuration that is passed into the plugin on execution (or put into the environment if that meta file setting is used).
+files must have the exact same name as what's in the `name` field of the plugin meta file--that's how they're located. The contents of this file is the JSON configuration that is passed into the plugin on execution (or put into the environment if that meta file setting is used). These will be hot loaded by Ganchos, so no need to restart the application after modification.
 
 *Note: The config settings below are completely optional and are used by Ganchos if they are in the plugin config file* 
 
