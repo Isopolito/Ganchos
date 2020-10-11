@@ -1,8 +1,12 @@
+import createCommandLineOptions from 'command-line-args'
+import * as commandLineArgs from './commandLineArgs'
 import { pluginConfig, generalConfig, generalLogger, SeverityEnum, EventType, fileUtil } from './shared'
 import * as pluginFinder from './plugins/pluginsFinder'
 import { beginScheduleMonitoring as beginPluginScheduler, scheduleSinglePlugin as scheduleSinglePluginIfNeeded } from './plugins/scheduling/plugin'
 import { stopIfNeededAndStart as stopStartFsEventListener, stop as stopFsEventListener } from './eventListening/fsEventListener'
 import { start as startInetWatch, stop as stopInetWatch } from './eventListening/inetListener'
+
+// --------------------------------------------------------------------------------------------
 
 const logArea = `main`;
 
@@ -40,11 +44,16 @@ const handleGeneralConfigChanges = async (diffs: string[] | null): Promise<void>
     }
 }
 
+// --------------------------------------------------------------------------------------------
+
 (async () => {
     try {
         process.on('SIGINT', () => shutdown());
         process.on('SIGTERM', () => shutdown());
         process.on('SIGQUIT', () => shutdown());
+
+        const commandLineOptions = createCommandLineOptions(commandLineArgs.availableCommandLineOptions);
+        commandLineArgs.executeCommandLineArgumentHandlers(commandLineOptions);
 
         const tasks = [];
 

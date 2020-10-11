@@ -6,8 +6,8 @@ A tool written in typescript and node.js designed to run in the background on a 
 ## Why? 
 Provide a simple and straightforward way to add custom automation to your machine. The idea behind Ganchos is to provide a cross-platform way to easily hook into events and run code in response without having to worry about common concerns like:
  1. __Logging__. There is consistent logging that happens in Ganchos in order to make things as transparent as possible if something goes wrong. Logging is also   available to the plugins, Ganchos will automatically use their use stderr/stdout to manage logging at the plugin level. The intent is to make it easy to track down issues--wherever they occur--so that time is not wasted when something is not working as expected.
- 2. __Configuration__. How ganchos operates is highly configurable, though it should just work with the defaults. The other type of configuration is for the plugins. Ganchos provides some basic configration for all plugins: enabling/disabling, limiting a plugin to only run on a certain OS, etc. The rest is up to the plugin itself. Everything is driven from JSON config files, and all config related files and plugins are hot-loaded so that the app won't have to be restarted when making changes.
- 3. __Encapuslate the drudgery__. A goal of Ganchos is to handle the tedious work of ensuring plugins don't run out of control, determining when they should or should not run, that they are not interferring with themselves or other plugins when running, that issues of conccurency are handled properly, etc. It manages these types of concerns so that the user can just drop a plugin into a directory and not have to worry about all the other stuff that goes on behind the scenes to make it work. A future version will include a web based UI that allows viewing of logs and tracing the activity of a plugin over time spans. As well as configuration of the various plugins, viewing the health of the Ganchos system--things along those lines. Currently this is not yet available.
+ 2. __Configuration__. How ganchos operates is highly configurable, though it should just work with the defaults. The other type of configuration is for the plugins. Ganchos provides some basic configuration for all plugins: enabling/disabling, limiting a plugin to only run on a certain OS, etc. The rest is up to the plugin itself. Everything is driven from JSON config files, and all config related files and plugins are hot-loaded so that the app won't have to be restarted when making changes.
+ 3. __Encapsulate the drudgery__. A goal of Ganchos is to handle the tedious work of ensuring plugins don't run out of control, determining when they should or should not run, that they are not interfering with themselves or other plugins when running, that issues of concurrency are handled properly, etc. It manages these types of concerns so that the user can just drop a plugin into a directory and not have to worry about all the other stuff that goes on behind the scenes to make it work. A future version will include a web based UI that allows viewing of logs and tracing the activity of a plugin over time spans. As well as configuration of the various plugins, viewing the health of the Ganchos system--things along those lines. Currently this is not yet available.
 
 ## How to use it?
 The following examples assume that Ganchos is [installed and running](https://github.com/Isopolito/Ganchos/blob/master/README.md#installing-and-running-ganchos)
@@ -15,19 +15,19 @@ The following examples assume that Ganchos is [installed and running](https://gi
 ---
 
 ## What is a plugin in Ganchos?
-A plugin has two parts: the file to execute and the meta file. All the directories in [general config's](https://github.com/Isopolito/Ganchos#general-settings) `pluginPaths` will be monitored for plugins. Restarting Ganchos is not necessary when a plugin has been added, deleted, or modified. When it's time to run a plugin, by default Ganchos will pass in the data as parameters to the executionary file in the following order:
+A plugin has two parts: the file to execute and the meta file. All the directories in [general config's](https://github.com/Isopolito/Ganchos#general-settings) `pluginPaths` will be monitored for plugins. Restarting Ganchos is not necessary when a plugin has been added, deleted, or modified. When it's time to run a plugin, by default Ganchos will pass in the data as parameters to the execution file in the following order:
 
 1. __Plugin Configuration__ (JSON string): This is the [plugin configuration](https://github.com/Isopolito/Ganchos#plugin-configuration-files) file that lives in `~/.ganchos/config/plugins/PLUGIN_NAME`. 
 2. __Event Type__ (string): You can see the options [here](engine/src/shared/plugins/EventType.ts). Will be 'none' if the plugin is called because of something other than an event.
 3. __Event Data__ (JSON string): A serialized instance of [this](engine/src/shared/plugins/EventData.ts). Will be empty if executed because of something other than an event.
 
-If however the meta file setting `putDataInEnvironment` is true, the above data will be placed into the environment the plugin executes in. See below _Optional Meta File Properities_ for details.
+If however the meta file setting `putDataInEnvironment` is true, the above data will be placed into the environment the plugin executes in. See below _Optional Meta File Properties_ for details.
 
 #### The file to execute
-This should be a script or a binary file. Ganchos looks at the file extension to determine what type of file it is and how to run it. Files ending in `.js` will be ran with node.js. Other types of files should have execute permsissions. When using an existing program as a Ganchos plugin, this file can be a script that takes the input data from Ganchos and calls the program passing in the data in the form it needs. The script can get fancy and download the program if it doesn't exist, or compile it if the source code is provided with the plugin. A plugin and its files can be in a separate directory inside of `pluginPaths`, which helps in organizing plugins since there can be many files as part of a plugin.
+This should be a script or a binary file. Ganchos looks at the file extension to determine what type of file it is and how to run it. Files ending in `.js` will be ran with node.js. Other types of files should have execute permissions. When using an existing program as a Ganchos plugin, this file can be a script that takes the input data from Ganchos and calls the program passing in the data in the form it needs. The script can get fancy and download the program if it doesn't exist, or compile it if the source code is provided with the plugin. A plugin and its files can be in a separate directory inside of `pluginPaths`, which helps in organizing plugins since there can be many files as part of a plugin.
 
 #### The meta file
-A meta file is a text file in JSON that describes to Ganchos what the plugin is, and how to run it. Typcially a user that didn't write a plugin *shouldn't* have to modify this. 
+A meta file is a text file in JSON that describes to Ganchos what the plugin is, and how to run it. Typically a user that didn't write a plugin *shouldn't* have to modify this. 
 
 *Note: Any JSON consumed by ganchos can have comments included like this: `// rest of this line is ignored`. These will be stripped out internally before Ganchos parses it.*
 
@@ -42,8 +42,8 @@ A meta file is a text file in JSON that describes to Ganchos what the plugin is,
 This allows a fully qualified path to be used and the plugin can live anywhere on the system. If it's not found, the path will be 
 treated as relative to the plugin directory where the meta file lives.
 
-##### Optional Meta File Properities
-* `putDataInEnvironment`: *Boolean*; when true will put the input data to the plugin into the environment instead of passing it in as parameters to the exec file. Useful for shell scripts. Ganchos [Event Type](engine/src/shared/plugins/EventType.ts) and [Event Data](engine/src/shared/plugins/EventData.ts) will be preceded by `ganchos_`. For instance: `ganchos_eventType`. EventData will have all the non-null properties provdied in the same format, ex: `ganchos_filePath`.  All the [plugin configuration](https://github.com/Isopolito/Ganchos#plugin-configuration-file-options) settings will be saved into the environmnet like `ganchosConfig_SETTINGNAME`.
+##### Optional Meta File Properties
+* `putDataInEnvironment`: *Boolean*; when true will put the input data to the plugin into the environment instead of passing it in as parameters to the exec file. Useful for shell scripts. Ganchos [Event Type](engine/src/shared/plugins/EventType.ts) and [Event Data](engine/src/shared/plugins/EventData.ts) will be preceded by `ganchos_`. For instance: `ganchos_eventType`. EventData will have all the non-null properties provided in the same format, ex: `ganchos_filePath`.  All the [plugin configuration](https://github.com/Isopolito/Ganchos#plugin-configuration-file-options) settings will be saved into the environment like `ganchosConfig_SETTINGNAME`.
 * `isEligibleForSchedule`: *Boolean*; when true, plugin will be ran by the scheduler on startup and then on the interval provided by the `runEveryXMinutes` plugin configuration setting
 * `osTypesToRunOn`: *Array of strings*; if provided, the plugin will only run on the os types in the list. Values are: 'aix' | 'darwin' | 'freebsd' | 'linux' | 'openbsd' | 'sunos' | 'win32'
 * `eventTypes`: *Array of strings*; the plugin will be executed when an event in the list occurs. If this is empty the plugin will ignore events altogether. 
@@ -88,7 +88,7 @@ These are the [configuration settings](engine/src/shared/config/GeneralConfig.ts
 * `pluginMetaExtension`: (*default*: 'meta') - The extension Ganchos uses to identify the `meta` file of a plugin.
 * `pluginScheduleIntervalFloorInMinutes`: (*default*: 0.5) - If a plugin configuration has scheduling interval lower than this number, it will not be executed. This is a way to protect against a misconfigured plugin running out of control.
 * `eventQueuePluginExecutionTimeout`: (*default* 0) If a plugin takes longer than this amount of time to execute (milliseconds) it will be killed. 0 disables this.
-* `eventQueuePluginExecutionConcurrency`: (*default* 3) How many instances of the same plugin can run conccurently.
+* `eventQueuePluginExecutionConcurrency`: (*default* 3) How many instances of the same plugin can run concurrently.
 
 ## Environment Variables
 * `DEBUG`: a truthy value will turn on extra logging
@@ -128,4 +128,4 @@ Contributing is encouraged and a PR is always welcome. Please create issues for 
 __For PR's:__
  1. Turn on the pre-push git script for running unit tests before pushing commits. This can be done by running `scripts/install-hooks.sh`
  2. After making changes, the [test_plugins](test_plugins/README.md) can be used as a semi-automated version of integration tests. The README in that directory explains how to use it.
- 3. In general, backticks are used for strings. Single quotes for imports, no semi-colon after import statements.
+ 3. In general, back ticks are used for strings. Single quotes for imports, no semi-colon after import statements.
