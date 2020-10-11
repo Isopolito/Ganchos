@@ -63,6 +63,7 @@ const runPluginAndReschedule = async (plugin: Plugin): Promise<void> => {
             await systemUtil.waitInMinutes(pluginConfigObj.runEveryXMinutes);
         }
 
+        // TODO: Refactor to avoid recursion because long running jobs could result in stack overflow (maybe, need to investigate)
         return runPluginAndReschedule(plugin);
     } catch (e) {
         pluginLogger.write(SeverityEnum.error, plugin.name, logArea, `Exception (${runPluginAndReschedule.name}) - ${e}`);
