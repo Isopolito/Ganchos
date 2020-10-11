@@ -3,8 +3,7 @@ import { Template } from './Template'
 const bashWrapper: Template = {
     commandLineName: `bashwrapper`,
     description: `A stubbed out bash script that will provide a wrapper to make another program work as a Ganchos plugin`,
-    body: `
-#!/usr/bin/bash
+    body: `#!/usr/bin/bash
 
 # Set the path of the program to execute
 programToExec='ls'
