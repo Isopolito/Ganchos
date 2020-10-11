@@ -12,7 +12,7 @@ Provide a simple and straightforward way to add custom automation to your machin
 ## How to use it?
 The following examples assume that Ganchos is [installed and running](https://github.com/Isopolito/Ganchos/blob/master/README.md#installing-and-running-ganchos).
 <br>When testing plugins, it's helpful to have a terminal up with a `tail -f` on today's log. If in production these would be in: `~/.ganchos/logs/DATE-plugin`.
-<br>*Note most file related activity in Ganchos is hot-loaded so no need to restart the app after creating these examples.*
+*Note most file related activity in Ganchos is hot-loaded so no need to restart the app after creating these examples.*
 
 __Example 1: Create a plugin to wrap around the unix command `ls` that runs every minute__
   1. Go to the default plugin directory
