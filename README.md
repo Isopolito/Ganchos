@@ -20,11 +20,14 @@ __Example 1: Create a plugin to wrap around the unix command `ls` that runs ever
 
   2. Create the new plugin using the stubbed out bash script template. *Note that the template already uses `ls` command as an example.*
      <br>`ganchos --template bashwrapper > newPlugin.sh`
+  
+  3. Give execute permissions to new script
+    <br>`chmod 755 newPlugin.sh`
 
-  3. Create meta file for new plugin
+  5. Create meta file for new plugin
      <br>`ganchos --template meta > newPlugin.meta`
   
-  4. Configure it. For this example make sure to set:
+  5. Configure it. For this example make sure to set:
      * `putDataInEnvironment`: true 
      * `execFilePath`: "newPlugin.sh"
      * `isEligibleForSchedule`: true
