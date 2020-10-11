@@ -10,7 +10,7 @@
             "name": "Engine Run",
             "program": "${workspaceFolder}/engine/dist/app.js",
 			"preLaunchTask": "engine build",
-			"args": [],
+			//"args": ["--template", "bashwrapper"],
 			"env": {"DEBUG": "false" },
 			"smartStep": true,
             "outFiles": ["${workspaceFolder}/dist/**/*.js"]

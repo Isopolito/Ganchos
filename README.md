@@ -10,7 +10,25 @@ Provide a simple and straightforward way to add custom automation to your machin
  3. __Encapsulate the drudgery__. A goal of Ganchos is to handle the tedious work of ensuring plugins don't run out of control, determining when they should or should not run, that they are not interfering with themselves or other plugins when running, that issues of concurrency are handled properly, etc. It manages these types of concerns so that the user can just drop a plugin into a directory and not have to worry about all the other stuff that goes on behind the scenes to make it work. A future version will include a web based UI that allows viewing of logs and tracing the activity of a plugin over time spans. As well as configuration of the various plugins, viewing the health of the Ganchos system--things along those lines. Currently this is not yet available.
 
 ## How to use it?
-The following examples assume that Ganchos is [installed and running](https://github.com/Isopolito/Ganchos/blob/master/README.md#installing-and-running-ganchos)
+The following examples assume that Ganchos is [installed and running](https://github.com/Isopolito/Ganchos/blob/master/README.md#installing-and-running-ganchos).
+<br>When testing plugins, it's helpful to have a terminal up with a `tail -f` on today's log. If in production these would be in: `~/.ganchos/logs/DATE-plugin`.
+<br>*Note most file related activity in Ganchos is hot-loaded so no need to restart the app after creating these examples.*
+
+__Example 1: Create a plugin to wrap around the unix command `ls` that runs every minute__
+  1. Go to the default plugin directory
+     <br>`cd ~/.ganchos/plugins` 
+
+  2. Create the new plugin using the stubbed out bash script template. *Note that the template already uses `ls` command as an example.*
+     <br>`ganchos --template bashwrapper > newPlugin.sh`
+
+  3. Create meta file for new plugin
+     <br>`ganchos --template meta > newPlugin.meta`
+  
+  4. Configure it. For this example make sure to set:
+     * `putDataInEnvironment`: true 
+     * `execFilePath`: "newPlugin.sh"
+     * `isEligibleForSchedule`: true
+     * `defaultConfig`: { "runEveryXMinutes": 1 }
 
 ---
 
@@ -21,7 +39,8 @@ A plugin has two parts: the file to execute and the meta file. All the directori
 2. __Event Type__ (string): You can see the options [here](engine/src/shared/plugins/EventType.ts). Will be 'none' if the plugin is called because of something other than an event.
 3. __Event Data__ (JSON string): A serialized instance of [this](engine/src/shared/plugins/EventData.ts). Will be empty if executed because of something other than an event.
 
-If however the meta file setting `putDataInEnvironment` is true, the above data will be placed into the environment the plugin executes in. See below _Optional Meta File Properties_ for details.
+If however the meta file setting `putDataInEnvironment` is true, the data for each of the above parameters will be split up into variables and placed 
+into the environment the plugin executes in. See below _Optional Meta File Properties_ for details.
 
 #### The file to execute
 This should be a script or a binary file. Ganchos looks at the file extension to determine what type of file it is and how to run it. Files ending in `.js` will be ran with node.js. Other types of files should have execute permissions. When using an existing program as a Ganchos plugin, this file can be a script that takes the input data from Ganchos and calls the program passing in the data in the form it needs. The script can get fancy and download the program if it doesn't exist, or compile it if the source code is provided with the plugin. A plugin and its files can be in a separate directory inside of `pluginPaths`, which helps in organizing plugins since there can be many files as part of a plugin.

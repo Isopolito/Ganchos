@@ -18,7 +18,7 @@ const processPluginChanges = async (event: EventType, filePath: string): Promise
     if (!fileUtil.doesPathExist(filePath)) return;
 
     await pluginConfig.ensurePluginConfigExists(filePath);
-    if (event === `add`) scheduleSinglePluginIfNeeded(filePath);
+    if (event === `add` || event === 'change') scheduleSinglePluginIfNeeded(filePath);
 }
 
 const shutdown = async (): Promise<void> => {
