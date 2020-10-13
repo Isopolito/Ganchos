@@ -2,24 +2,31 @@ import { CommandLineOptions } from 'command-line-args'
 import { default as templateFinder } from './templates/finder'
 
 const availableCommandLineOptions = [
-  { name: `template`, alias: `t`, type: String }
+  { name: `template`, alias: `t`, type: String },
+  { name: `version`, alias: `v`, type: Boolean }
 ]
 
-const handleTemplate = (templateType: string): void => {
-    if (!templateType) return;
-    let shouldExit = false;
+const handleVersion = (): void => {
+    console.log("Ganchos version 0.1.2\nhttps://github.com/Isopolito/Ganchos");
+    process.exit(0);
+}
 
-    const template = templateFinder(templateType);
-    if (template) {
-        console.log(template.body);
-        shouldExit = true;
+const handleTemplate = (templateType: string): void => {
+    if (!templateType) {
+        console.log("Must provide template type");
+    } else {
+        const template = templateFinder(templateType);
+        if (template) {
+            console.log(template.body);
+        }
     }
 
-    if (shouldExit) process.exit(0);
+    process.exit(0);
 } 
 
 const executeCommandLineArgumentHandlers = (selectedOptions: CommandLineOptions) => {
     if (selectedOptions.template) handleTemplate(selectedOptions.template);
+    if (selectedOptions.version) handleVersion();
 }
 
 export {

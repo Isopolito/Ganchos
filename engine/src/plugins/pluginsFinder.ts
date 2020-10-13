@@ -22,13 +22,14 @@ const createPluginFromMetaFile = async (pluginPath: string): Promise<Plugin> => 
     if (!pluginPath.endsWith(config.pluginMetaExtension)) {
         // If this isn't the meta file, check in the same directory to see if one is there
         pluginPath = `${pluginPath.replace(/\.[^/.]+$/, ``)}.${config.pluginMetaExtension}`;
-        if (!fileUtil.doesPathExist) {
+        if (!fileUtil.doesPathExist(pluginPath)) {
             generalLogger.write(SeverityEnum.debug, `${logArea} - ${createPluginFromMetaFile.name}`,
                 `${path.basename(pluginPath)} is not a meta file. One was searched for in the same directory, but not found. Skipping plugin creation from meta file`);
             return null;
         }
     }
 
+    if (!fileUtil.doesPathExist(pluginPath)) return null;
     const rawData = await fs.readFile(pluginPath);
     const plugin = validationUtil.parseAndValidateJson(rawData.toString(), true);
     if (!plugin) {

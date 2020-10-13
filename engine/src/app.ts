@@ -10,6 +10,20 @@ import { start as startInetWatch, stop as stopInetWatch } from './eventListening
 
 const logArea = `main`;
 
+const printBanner = () => {
+    console.log(`
+ ------------------------------------------------------
+    #####                                             
+   #     #   ##   #    #  ####  #    #  ####   ####  
+   #        #  #  ##   # #    # #    # #    # #      
+   #  #### #    # # #  # #      ###### #    #  ####  
+   #     # ###### #  # # #      #    # #    #      # 
+   #     # #    # #   ## #    # #    # #    # #    # 
+    #####  #    # #    #  ####  #    #  ####   ####
+ ------------------------------------------------------
+`);
+}
+
 const refreshListenersIfWatchPathChanges = async (diffs: string[]|null): Promise<void> => {
     if (diffs && diffs.includes('watchPaths')) await stopStartFsEventListener();
 }
@@ -34,6 +48,8 @@ const shutdown = async (): Promise<void> => {
     await stopInetWatch();
 
     generalLogger.write(SeverityEnum.info, logArea, `Goodbye`, true);
+
+    process.exit(0);
 }
 
 const handleGeneralConfigChanges = async (diffs: string[] | null): Promise<void> => {
@@ -56,6 +72,8 @@ const handleGeneralConfigChanges = async (diffs: string[] | null): Promise<void>
         commandLineArgs.executeCommandLineArgumentHandlers(commandLineOptions);
 
         const tasks = [];
+
+        printBanner();
 
         generalLogger.write(SeverityEnum.info, logArea, `Started File System Event Listener`, true);
         tasks.push(stopStartFsEventListener());

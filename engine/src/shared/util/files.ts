@@ -4,7 +4,6 @@ import * as sh from 'shelljs';
 import recursive from 'recursive-readdir';
 
 import * as generalConstants from '../constants/names';
-import * as pathConstants from '../constants/paths';
 
 const touch = (configPath: string): void => {
     if (sh.test('-e', configPath)) return;
@@ -18,12 +17,14 @@ const makeAllDirInPath = (filePath: string): void => {
 }
 
 const getEnvBasedAppName = (): string => {
-    const env = process.env.NODE_ENV || 'dev';
+    const env = process.env.NODE_ENV || 'prod';
     return env === 'prod' ? generalConstants.AppDir : `${generalConstants.AppDir}-${env}`;
 }
 
 const doesPathExist = (pathToCheck: string): boolean => {
     const interpolatedPath = interpolateHomeTilde(pathToCheck) as string;
+    if (!interpolatedPath) return false;
+
     return interpolatedPath && sh.test('-f', interpolatedPath) || sh.test('-d', interpolatedPath);
 }
 

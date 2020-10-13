@@ -1,15 +1,33 @@
 {
   "name": "ganchos",
-  "version": "1.0.0",
-  "description": "",
-  "main": "dist/index.js",
+  "version": "0.1.2",
+  "description": "Event based cross-platform automation using custom plugins",
+  "homepage": "https://github.com/Isopolito/Ganchos",
+  "main": "dist/app.js",
+  "author": "Isopolito",
+  "license": "ISC",
+  "files": [ "../README.md", "dist/**/*"],
+  "bin": {
+    "ganchos": "./bin/ganchos"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Isopolito/Ganchos.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Isopolito/Ganchos/issues"
+  },
   "scripts": {
+    "prepare" : "npm run build",
+    "build": "tsc",
     "start": "tsc && node dist/app.js",
     "test": "NODE_ENV=test mocha -s 800 -r ts-node/register src/**/*.spec.ts"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "automation",
+    "node",
+    "plugins"
+  ],
   "devDependencies": {
     "@types/chai": "^4.2.12",
     "@types/command-line-args": "^5.0.0",

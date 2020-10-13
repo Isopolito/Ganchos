@@ -36,7 +36,9 @@ __Example 1: Create a plugin to wrap around the unix command `ls` that runs ever
 ---
 
 ## What is a plugin in Ganchos?
-A plugin has two parts: the file to execute and the meta file. All the directories in [general config's](https://github.com/Isopolito/Ganchos#general-settings) `pluginPaths` will be monitored for plugins. Restarting Ganchos is not necessary when a plugin has been added, deleted, or modified. When it's time to run a plugin, by default Ganchos will pass in the data as parameters to the execution file in the following order:
+Located: All directories listed in [general config's](https://github.com/Isopolito/Ganchos#general-settings) `pluginPaths` setting
+
+A plugin has two parts: the file to execute and the meta file. . Restarting Ganchos is not necessary when a plugin has been added, deleted, or modified. When it's time to run a plugin, by default Ganchos will pass in the data as parameters to the execution file in the following order:
 
 1. __Plugin Configuration__ (JSON string): This is the [plugin configuration](https://github.com/Isopolito/Ganchos#plugin-configuration-files) file that lives in `~/.ganchos/config/plugins/PLUGIN_NAME`. 
 2. __Event Type__ (string): You can see the options [here](engine/src/shared/plugins/EventType.ts). Will be 'none' if the plugin is called because of something other than an event.
@@ -120,6 +122,7 @@ These are the [configuration settings](engine/src/shared/config/GeneralConfig.ts
 -t, --template: Print out a template. Takes a value that specifies what type of template to generate
    * meta: A standard plugin meta file.
    * bashwrapper: A bash script file stubbed out to wrap around an existing program to use a Ganchos plugin.
+-v, --version: Print out version of ganchos and exit.
 
 ## Logs
 Located: `~/.ganchos/logs`
@@ -129,11 +132,8 @@ Logs are split into two files: general and plugins. Each log file is named with 
 Ganchos will take all plugin output from stderr and will mark it with a severity of `pluginError`. Stdout will be logged as `pluginInfo`. There's an area field in the log output, this can be useful for pinpointing exactly where the message is coming from. If Ganchos detects a `|*|` separator in the plugin output (stderr and stdout) it will split the message on it and the first part will be the log area, the second part will be the message itself.
 
 ## Installing and Running Ganchos
-This will be improved in the future but for now:
-
-* Install [pm2](https://www.npmjs.com/package/pm2) if needed.
-* Download ganchos code
-* Run like this: `NODE_ENV=prod pm2 start --name ganchos ${GANCHOS_DIRECTORY}/engine/dist/app.js`
+* `npm i ganchos`
+* `ganchos` 
 * Ganchos plugins will automatically be available. Drop plugins into one of the plugin directories configured in the ganchos general config file `~/.ganchos/config/general`
 
 ## Goals
