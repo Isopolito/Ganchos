@@ -7,7 +7,7 @@ const availableCommandLineOptions = [
 ]
 
 const handleVersion = (): void => {
-    console.log("Ganchos version 0.1.2\nhttps://github.com/Isopolito/Ganchos");
+    console.log("Ganchos version 0.1.3\nhttps://github.com/Isopolito/Ganchos");
     process.exit(0);
 }
 
