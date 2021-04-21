@@ -137,9 +137,9 @@ Ganchos will take all plugin output from stderr and will mark it with a severity
 * Ganchos plugins will automatically be available. Drop plugins into one of the plugin directories configured in the ganchos general config file `~/.ganchos/config/general`
 
 ## Goals
-* Make this rock solid and performant so that it can be used reliably in any environment for important work. The only concern of the end user should be ensuring that their plugins are working correctly. Ganchos should be robust enough to not fail through any fault of its own, gracefully handle bad plugins and expose any potential problems via clear logging so that in the case of a plugin with a bug, the developer can easily track down and fix the issues. 
-* Get UI developed so that it can provide an easy and intuitive way to manage everything.
-* Make it work on other operating systems. Currently only tested on Linux.
+* Continue to improve performance
+* Get UI developed so that it can provide an easy way to manage everything.
+* Make it work on other operating systems (maybe not imporant). Currently only tested on Linux.
 * Build in the ability to chain multiple plugins together. A crude version of this can be implemented via delay configuration, but it's not an ideal solution.
 * Continue to add logic for detecting events. Key presses, more events for networking activity, etc. 
 
