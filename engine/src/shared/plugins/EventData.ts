@@ -1,5 +1,4 @@
 export type EventData = {
-    filePath?: string;
-    oldIpAddress?: string;
-    newIpAddress?: string;
+    dataType: string;
+    data: string;
 };

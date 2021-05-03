@@ -219,7 +219,7 @@ const shouldPluginExecute = (plugin: Plugin, configObj: any, event: EventType, e
 
 const execute = async (plugin: Plugin, event: EventType, eventData: EventData): Promise<void> => {
     try {
-        if (!eventData) eventData = {};
+        if (!eventData) eventData = {dataType: "unknown", data: ``};
 
         let configObj = await pluginConfig.get(plugin.name);
         if (!configObj) configObj = JSON.parse(plugin.defaultConfig);

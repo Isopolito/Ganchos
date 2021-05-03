@@ -20,7 +20,7 @@ const watchPaths = async (pathsToWatch: string[]): Promise<void> => {
         ignoreInitial: true,
     });
 
-    watcher.on('all', (event: string, filePath: string) => dispatch(event as EventType, {filePath: filePath}));
+    watcher.on('all', (event: string, filePath: string) => dispatch(event as EventType, {dataType: `fs`, data: filePath}));
     watcher.on('error', async error => generalLogger.write(SeverityEnum.error, logArea, `Error in watcher: ${error}`));
 };
 
