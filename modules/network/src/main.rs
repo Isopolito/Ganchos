@@ -42,22 +42,36 @@ fn main() {
     let stdin_channel = spawn_stdin_channel();
 	let mut counter: u8 = 0;
     loop {
-		if counter == 10 {
+		if counter == 100 {
+			// TODO: Write out some events for test purposes
+			let event_data = gmcp::EventData {
+				data_type: "test payload",
+				data: "payload",
+			};
+			let event = gmcp::Event {
+				event_type: "test event",
+				data: event_data,
+			};
+
 			match stdin_channel.try_recv() {
 				Ok(key) => println!("Received: {}", key),
-				Err(TryRecvError::Empty) => println!("Channel empty"),
+				Err(TryRecvError::Empty) => {},
 				Err(TryRecvError::Disconnected) => panic!("Channel disconnected"),
 			}
 			
+			io::stdout().write_all(event.to_json().as_bytes()).expect("ganchos network module: unable to write to stdout");
+
 			counter = 0;
 		}
 		counter += 1;
 
         match rx.next() {
             Ok(packet) => {
-                let event_data = handle_ethernet_frame(&interface, &EthernetPacket::new(packet).unwrap());
+				if counter == 50 {
+					let event_data = handle_ethernet_frame(&interface, &EthernetPacket::new(packet).unwrap());
+				}
 			}
-            Err(e) => panic!("packetdump: unable to receive packet: {}", e),
+            Err(e) => panic!("ganchos network module: unable to receive packet: {}", e),
 		}
     }
 }

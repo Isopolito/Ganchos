@@ -9,35 +9,35 @@ pub const MESSAGE_TAG_CLOSE: &str = "<</GMCP>>";
 
 pub struct MessageType;
 impl MessageType {
-	const EVENT: &'static str = "event";
-	const GENERAL_LOG: &'static str = "generalLog";
-	const COMMAND: &'static str = "command";
+	pub const EVENT: &'static str = "event";
+	pub const GENERAL_LOG: &'static str = "generalLog";
+	pub const COMMAND: &'static str = "command";
 }
 
 pub struct Message<'a> {
-	message_type: &'a str,
-	data: String,
+	pub message_type: &'a str,
+	pub data: String,
 }
 impl Message<'_> {
-	fn create_event_message(&self, event: &Event) -> Message {
+	pub fn create_event_message<'a>(event: &Event) -> Message<'a> {
 		Message {
 			message_type: MessageType::EVENT,
 			data: event.to_json()
 		}
 	}
-	fn create_general_log_message(&self, log: &GeneralLog) -> Message {
+	pub fn create_general_log_message<'a>(log: &GeneralLog) -> Message<'a> {
 		Message {
 			message_type: MessageType::GENERAL_LOG,
 			data: log.to_json()
 		}
 	}
-	fn create_command_message(&self, command: &Command) -> Message {
+	pub fn create_command_message<'a>(command: &Command) -> Message<'a> {
 		Message {
 			message_type: MessageType::COMMAND,
 			data: command.to_json()
 		}
 	}
-	fn to_json(&self) -> String {
+	pub fn to_json(&self) -> String {
 		format!(r#"{}{{"type": "{}", "data": "{}"}}{}"#,
 			MESSAGE_TAG_OPEN,
 			self.message_type,
@@ -50,35 +50,35 @@ impl Message<'_> {
 // events
 pub struct EventType;
 impl EventType {
-	const ADD_FILE: &'static str = "addFile";
-	const ADD_DIR: &'static str = "addDir";
-	const CHANGE_FILE: &'static str = "changeFile";
-	const UNLINK_FILE: &'static str = "unlinkFile";
-	const UNLINK_DIR: &'static str = "unlinkDir";
-	const INET_UP: &'static str = "inetUp";
-	const INET_DOWN: &'static str = "inetDown";
-	const IP_CHANGE: &'static str = "ipChange";
-	const PACKET_MATCH: &'static str = "packetMatch";
-	const NONE: &'static str = "none";
+	pub const ADD_FILE: &'static str = "addFile";
+	pub const ADD_DIR: &'static str = "addDir";
+	pub const CHANGE_FILE: &'static str = "changeFile";
+	pub const UNLINK_FILE: &'static str = "unlinkFile";
+	pub const UNLINK_DIR: &'static str = "unlinkDir";
+	pub const INET_UP: &'static str = "inetUp";
+	pub const INET_DOWN: &'static str = "inetDown";
+	pub const IP_CHANGE: &'static str = "ipChange";
+	pub const PACKET_MATCH: &'static str = "packetMatch";
+	pub const NONE: &'static str = "none";
 }
 
 pub struct EventData<'a> {
-	data_type: &'a str,
-	data: &'a str,
+	pub data_type: &'a str,
+	pub data: &'a str,
 }
 impl EventData<'_> {
-	fn to_json(&self) -> String {
+	pub fn to_json(&self) -> String {
 		format!(r#"{{"type": "{}", "data": "{}"}}"#,
 				self.data_type, self.data)
 	}
 }
 
 pub struct Event<'a> {
-	event_type: &'a str,
-	data: EventData<'a>,
+	pub event_type: &'a str,
+	pub data: EventData<'a>,
 }
 impl Event<'_> {
-	fn to_json(&self) -> String {
+	pub fn to_json(&self) -> String {
 		format!(r#"{{"type": "{}", "data": "{}"}}"#,
 				&self.event_type, &self.data.to_json())
 	}
@@ -86,16 +86,16 @@ impl Event<'_> {
 
 // logging
 pub struct GeneralLog<'a> {
-	severity: &'a str,
-	area: &'a str,
-	message: &'a str,
-	timestamp: DateTime<Utc>,
+	pub severity: &'a str,
+	pub area: &'a str,
+	pub message: &'a str,
+	pub timestamp: DateTime<Utc>,
 }
 impl GeneralLog<'_> {
-	fn to_json(&self) -> String {
+	pub fn to_json(&self) -> String {
 		// TODO: debug this logic and figure out what an uninitialized DateTime<Utc> looks like
 		//self.timestamp = if self.timestamp { self.timestamp } else { Utc::now() };
-		format!(r#"{{"severity": "{}", "area": "{}", "timestamp": {}, "message": "{}"}}"#,
+		format!(r#"{{"severity": "{}", "area": "{}", "timestamp": "{}", "message": "{}"}}"#,
 				&self.severity, 
 				&self.area,
 				self.timestamp.to_rfc3339(),
@@ -106,19 +106,19 @@ impl GeneralLog<'_> {
 // commands
 pub struct CommandType;
 impl CommandType {
-	const START: &'static str = "start";
-	const STOP: &'static str = "stop";
-	const PAUSE: &'static str = "pause";
-	const THROTTLE: &'static str = "throttle";
-	const UPDATE_CONFIG: &'static str = "updateConfig";
+	pub const START: &'static str = "start";
+	pub const STOP: &'static str = "stop";
+	pub const PAUSE: &'static str = "pause";
+	pub const THROTTLE: &'static str = "throttle";
+	pub const UPDATE_CONFIG: &'static str = "updateConfig";
 }
 
 pub struct Command<'a> {
-	command_type: &'a str,
-	data: &'a str,
+	pub command_type: &'a str,
+	pub data: &'a str,
 }
 impl Command<'_> {
-	fn to_json(&self) -> String {
+	pub fn to_json(&self) -> String {
 		format!(r#"{{"type": "{}", "data": "{}"}}"#,
 				self.command_type, self.data)
 	}
@@ -126,7 +126,6 @@ impl Command<'_> {
 
 #[cfg(test)]
 mod tests {
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
     #[test]
@@ -135,7 +134,7 @@ mod tests {
 			command_type: CommandType::THROTTLE,
 			data: "20"
 		};
-        assert_eq!(command.to_json() , r#"{"type": "throttle", "data": "20"}"#);
+        assert_eq!(command.to_json(), r#"{"type": "throttle", "data": "20"}"#);
     }
 
     #[test]
@@ -149,6 +148,34 @@ mod tests {
 			event_type: EventType::PACKET_MATCH,
 			data: event_data,
 		};
-        assert_eq!(event.to_json() , r#"{"type": "packetMatch", "data": "{"type": "packet info", "data": "information"}"}"#);
+        assert_eq!(event.to_json(), r#"{"type": "packetMatch", "data": "{"type": "packet info", "data": "information"}"}"#);
     }
+
+   #[test]
+    fn serialize_general_log() {
+		let now_time = Utc::now();
+		let log_message = GeneralLog {
+			severity: "error",
+			area: "area",
+			message: "log message",
+			timestamp: now_time,
+		};
+
+		let serialized_baseline = format!(r#"{{"severity": "error", "area": "area", "timestamp": "{}", "message": "log message"}}"#,
+										now_time.to_rfc3339());
+        assert_eq!(log_message.to_json(), serialized_baseline);
+    }
+
+    #[test]
+    fn serialize_message() {
+		let command = Command {
+			command_type: CommandType::THROTTLE,
+			data: "90"
+		};
+
+		let message = Message::create_command_message(&command);
+
+        assert_eq!(message.to_json(), r#"<<GMCP>>{"type": "command", "data": "{"type": "throttle", "data": "90"}"}<</GMCP>>"#);
+    }
+
 }
