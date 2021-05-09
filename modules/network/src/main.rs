@@ -10,7 +10,9 @@ use pnet::datalink::{self, NetworkInterface};
 use pnet::packet::ethernet::{EthernetPacket};
 mod packethandler;
 use packethandler::handle_ethernet_frame;
+
 mod gmcp;
+use gmcp::Serialization;
 
 fn main() {
     use pnet::datalink::Channel::Ethernet;
@@ -43,7 +45,6 @@ fn main() {
 	let mut counter: u8 = 0;
     loop {
 		if counter == 100 {
-			// TODO: Write out some events for test purposes
 			let event_data = gmcp::EventData {
 				data_type: "test payload",
 				data: "payload",

@@ -3,6 +3,13 @@
 
 use chrono::{DateTime, Utc};
 
+pub mod read;
+
+
+pub trait Serialization {
+	fn to_json(&self) -> String;
+}
+
 // message (outer most layer of all communication)
 pub const MESSAGE_TAG_OPEN: &str = "<<GMCP>>";
 pub const MESSAGE_TAG_CLOSE: &str = "<</GMCP>>";
@@ -37,7 +44,9 @@ impl Message<'_> {
 			data: command.to_json()
 		}
 	}
-	pub fn to_json(&self) -> String {
+}
+impl Serialization for Message<'_> {
+	fn to_json(&self) -> String {
 		format!(r#"{}{{"type": "{}", "data": "{}"}}{}"#,
 			MESSAGE_TAG_OPEN,
 			self.message_type,
@@ -66,8 +75,8 @@ pub struct EventData<'a> {
 	pub data_type: &'a str,
 	pub data: &'a str,
 }
-impl EventData<'_> {
-	pub fn to_json(&self) -> String {
+impl Serialization for EventData<'_> {
+	fn to_json(&self) -> String {
 		format!(r#"{{"type": "{}", "data": "{}"}}"#,
 				self.data_type, self.data)
 	}
@@ -77,8 +86,8 @@ pub struct Event<'a> {
 	pub event_type: &'a str,
 	pub data: EventData<'a>,
 }
-impl Event<'_> {
-	pub fn to_json(&self) -> String {
+impl Serialization for Event<'_>{
+	fn to_json(&self) -> String {
 		format!(r#"{{"type": "{}", "data": "{}"}}"#,
 				&self.event_type, &self.data.to_json())
 	}
@@ -91,10 +100,8 @@ pub struct GeneralLog<'a> {
 	pub message: &'a str,
 	pub timestamp: DateTime<Utc>,
 }
-impl GeneralLog<'_> {
-	pub fn to_json(&self) -> String {
-		// TODO: debug this logic and figure out what an uninitialized DateTime<Utc> looks like
-		//self.timestamp = if self.timestamp { self.timestamp } else { Utc::now() };
+impl Serialization for GeneralLog<'_> {
+	fn to_json(&self) -> String {
 		format!(r#"{{"severity": "{}", "area": "{}", "timestamp": "{}", "message": "{}"}}"#,
 				&self.severity, 
 				&self.area,
@@ -127,6 +134,17 @@ impl Command<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+//    #[test]
+//    fn print_command_message() {
+//
+//		let command = Command {
+//			command_type: CommandType::START,
+//			data: ""
+//		};
+//		let message = Message::create_command_message(&command);
+//		assert_eq!("{}", message.to_json());
+//    }
 
     #[test]
     fn serialize_command() {
