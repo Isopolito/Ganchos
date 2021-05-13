@@ -47,7 +47,7 @@ fn main() {
 		if counter == 100 {
 			let event_data = gmcp::EventData {
 				data_type: "test payload",
-				data: "payload",
+				data: String::from("payload"),
 			};
 			let event = gmcp::Event {
 				event_type: "test event",

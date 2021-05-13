@@ -2,6 +2,7 @@
 #![allow(dead_code)]
 
 use chrono::{DateTime, Utc};
+use serde::{Deserialize};
 
 pub mod read;
 
@@ -21,31 +22,34 @@ impl MessageType {
 	pub const COMMAND: &'static str = "command";
 }
 
-pub struct Message<'a> {
-	pub message_type: &'a str,
+#[derive(Deserialize)]
+pub struct Message {
+	#[serde(alias = "type")] 
+	pub message_type: String,
+
 	pub data: String,
 }
-impl Message<'_> {
-	pub fn create_event_message<'a>(event: &Event) -> Message<'a> {
+impl Message {
+	pub fn create_event_message<'a>(event: &Event) -> Message {
 		Message {
-			message_type: MessageType::EVENT,
+			message_type: String::from(MessageType::EVENT),
 			data: event.to_json()
 		}
 	}
-	pub fn create_general_log_message<'a>(log: &GeneralLog) -> Message<'a> {
+	pub fn create_general_log_message<'a>(log: &GeneralLog) -> Message {
 		Message {
-			message_type: MessageType::GENERAL_LOG,
+			message_type: String::from(MessageType::GENERAL_LOG),
 			data: log.to_json()
 		}
 	}
-	pub fn create_command_message<'a>(command: &Command) -> Message<'a> {
+	pub fn create_command_message<'a>(command: &Command) -> Message {
 		Message {
-			message_type: MessageType::COMMAND,
+			message_type: String::from(MessageType::COMMAND),
 			data: command.to_json()
 		}
 	}
 }
-impl Serialization for Message<'_> {
+impl Serialization for Message {
 	fn to_json(&self) -> String {
 		format!(r#"{}{{"type": "{}", "data": "{}"}}{}"#,
 			MESSAGE_TAG_OPEN,
@@ -71,9 +75,12 @@ impl EventType {
 	pub const NONE: &'static str = "none";
 }
 
+#[derive(Deserialize)]
 pub struct EventData<'a> {
+	#[serde(alias = "type")] 
 	pub data_type: &'a str,
-	pub data: &'a str,
+
+	pub data: String,
 }
 impl Serialization for EventData<'_> {
 	fn to_json(&self) -> String {
@@ -82,8 +89,11 @@ impl Serialization for EventData<'_> {
 	}
 }
 
+#[derive(Deserialize)]
 pub struct Event<'a> {
+	#[serde(alias = "type")] 
 	pub event_type: &'a str,
+
 	pub data: EventData<'a>,
 }
 impl Serialization for Event<'_>{
@@ -94,13 +104,13 @@ impl Serialization for Event<'_>{
 }
 
 // logging
-pub struct GeneralLog<'a> {
-	pub severity: &'a str,
-	pub area: &'a str,
-	pub message: &'a str,
+pub struct GeneralLog {
+	pub severity: String,
+	pub area: String,
+	pub message: String,
 	pub timestamp: DateTime<Utc>,
 }
-impl Serialization for GeneralLog<'_> {
+impl Serialization for GeneralLog {
 	fn to_json(&self) -> String {
 		format!(r#"{{"severity": "{}", "area": "{}", "timestamp": "{}", "message": "{}"}}"#,
 				&self.severity, 
@@ -120,11 +130,14 @@ impl CommandType {
 	pub const UPDATE_CONFIG: &'static str = "updateConfig";
 }
 
-pub struct Command<'a> {
-	pub command_type: &'a str,
-	pub data: &'a str,
+#[derive(Deserialize)]
+pub struct Command {
+	#[serde(alias = "type")] 
+	pub command_type: String,
+
+	pub data: String,
 }
-impl Command<'_> {
+impl Command {
 	pub fn to_json(&self) -> String {
 		format!(r#"{{"type": "{}", "data": "{}"}}"#,
 				self.command_type, self.data)
@@ -135,22 +148,22 @@ impl Command<'_> {
 mod tests {
     use super::*;
 
-//    #[test]
-//    fn print_command_message() {
-//
-//		let command = Command {
-//			command_type: CommandType::START,
-//			data: ""
-//		};
-//		let message = Message::create_command_message(&command);
-//		assert_eq!("{}", message.to_json());
-//    }
+	//    #[test]
+	//    fn print_command_message() {
+	//
+	//		let command = Command {
+	//			command_type: CommandType::START,
+	//			data: ""
+	//		};
+	//		let message = Message::create_command_message(&command);
+	//		assert_eq!("{}", message.to_json());
+	//    }
 
     #[test]
     fn serialize_command() {
 		let command = Command {
-			command_type: CommandType::THROTTLE,
-			data: "20"
+			command_type: String::from(CommandType::THROTTLE),
+			data: String::from("20")
 		};
         assert_eq!(command.to_json(), r#"{"type": "throttle", "data": "20"}"#);
     }
@@ -159,7 +172,7 @@ mod tests {
     fn serialize_event() {
 		let event_data = EventData {
 			data_type: "packet info",
-			data: "information"
+			data: String::from("information")
 		};
 
 		let event = Event {
@@ -173,9 +186,9 @@ mod tests {
     fn serialize_general_log() {
 		let now_time = Utc::now();
 		let log_message = GeneralLog {
-			severity: "error",
-			area: "area",
-			message: "log message",
+			severity: String::from("error"),
+			area: String::from("area"),
+			message: String::from("log message"),
 			timestamp: now_time,
 		};
 
@@ -187,13 +200,12 @@ mod tests {
     #[test]
     fn serialize_message() {
 		let command = Command {
-			command_type: CommandType::THROTTLE,
-			data: "90"
+			command_type: String::from(CommandType::THROTTLE),
+			data: String::from("90")
 		};
 
 		let message = Message::create_command_message(&command);
 
         assert_eq!(message.to_json(), r#"<<GMCP>>{"type": "command", "data": "{"type": "throttle", "data": "90"}"}<</GMCP>>"#);
     }
-
 }
