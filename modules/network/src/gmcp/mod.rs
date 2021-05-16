@@ -1,11 +1,12 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
+use std::io;
+use std::io::Write;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize};
 
 pub mod read;
-
 
 pub trait Serialization {
 	fn to_json(&self) -> String;
@@ -76,13 +77,13 @@ impl EventType {
 }
 
 #[derive(Deserialize)]
-pub struct EventData<'a> {
+pub struct EventData  {
 	#[serde(alias = "type")] 
-	pub data_type: &'a str,
+	pub data_type: String,
 
 	pub data: String,
 }
-impl Serialization for EventData<'_> {
+impl Serialization for EventData{
 	fn to_json(&self) -> String {
 		format!(r#"{{"type": "{}", "data": "{}"}}"#,
 				self.data_type, self.data)
@@ -90,13 +91,20 @@ impl Serialization for EventData<'_> {
 }
 
 #[derive(Deserialize)]
-pub struct Event<'a> {
+pub struct Event {
 	#[serde(alias = "type")] 
-	pub event_type: &'a str,
+	pub event_type: String,
 
-	pub data: EventData<'a>,
+	pub data: EventData,
 }
-impl Serialization for Event<'_>{
+impl Event {
+	pub fn push_out(&self) {
+		io::stdout()
+			.write_all(self.to_json().as_bytes())
+			.expect("gmcp: unable to write to stdout");
+	}
+}
+impl Serialization for Event {
 	fn to_json(&self) -> String {
 		format!(r#"{{"type": "{}", "data": "{}"}}"#,
 				&self.event_type, &self.data.to_json())
