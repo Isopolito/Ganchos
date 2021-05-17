@@ -1,4 +1,4 @@
-// The majority of this code is taken from libpnet packet dump example: https://github.com/libpnet/libpnet/blob/master/examples/packetdump.rs
+// The foundation of this code is taken from libpnet packet dump example: https://github.com/libpnet/libpnet/blob/master/examples/packetdump.rs
 extern crate pnet;
 
 use pnet::datalink::NetworkInterface;

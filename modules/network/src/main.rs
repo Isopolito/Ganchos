@@ -1,30 +1,18 @@
-use std::io;
-use std::env;
-use std::process;
-use std::io::Write;
-use std::{thread, time};
-use std::sync::mpsc::TryRecvError;
-use std::sync::mpsc::Receiver;
 use pnet::datalink::{self, NetworkInterface};
 use pnet::packet::ethernet::EthernetPacket;
+use std::env;
+use std::io;
+use std::io::Write;
+use std::process;
+use std::sync::mpsc::Receiver;
+use std::sync::mpsc::TryRecvError;
+use std::{thread, time};
 
-mod packethandler;
-use packethandler::handle_ethernet_frame;
+mod packet_handler;
+use packet_handler::handle_ethernet_frame;
 
+mod event_loop;
 mod gmcp;
-
-struct EventLoopParams {
-	iteration_sleep_ms: u64,
-	should_exit: bool,
-}
-
-fn convert_command_to_params(input_container: &gmcp::read::InputContainer) -> EventLoopParams {
-	// write logic to convert commands to params. Handle update configs, throttles, kills, etc
-	EventLoopParams {
-		iteration_sleep_ms: 0,
-		should_exit: false,
-	}
-}
 
 fn main() {
 	use pnet::datalink::Channel::Ethernet;
@@ -53,54 +41,60 @@ fn main() {
 		Err(e) => panic!("ganchos network module: unable to create channel: {}", e),
 	};
 
-	let mut params = EventLoopParams {
-		iteration_sleep_ms: 0,
-		should_exit: false,
-	};
-
+	let mut params = event_loop::Params::new_with_defaults();
 	let stdin_channel = gmcp::read::spawn_stdin_channel();
 
 	loop {
-		let new_commands = run_event_loop(&interface, &mut net_rx, &stdin_channel, &params);
-		params = convert_command_to_params(&new_commands);
-		if params.should_exit { 
+		let new_input_container = run_event_loop(&interface, &mut net_rx, &stdin_channel, &params);
+		params = event_loop::Params::new(&new_input_container.commands);
+		if params.should_exit {
 			println!("Shutting down gracefully, goodbye");
 			process::exit(0);
 		}
 	}
 }
 
-fn run_event_loop(interface: &datalink::NetworkInterface, 
-		      net_rx: &mut std::boxed::Box<dyn datalink::DataLinkReceiver>, 
-			  stdin_channel: &Receiver<String>,
-			  params: &EventLoopParams) -> gmcp::read::InputContainer {
-
+fn run_event_loop(
+	interface: &datalink::NetworkInterface,
+	net_rx: &mut std::boxed::Box<dyn datalink::DataLinkReceiver>,
+	stdin_channel: &Receiver<String>,
+	params: &event_loop::Params,
+) -> gmcp::read::InputContainer {
 	let sleep_time = time::Duration::from_millis(params.iteration_sleep_ms);
 
+	let mut counter: u8 = 0;
 	loop {
-		match stdin_channel.try_recv() {
-			Ok(message) => {
-				// New command came in, exit out of event loop so it can restart w/ new parameters
-				let input_container = gmcp::read::InputContainer::new(&message);
-				if input_container.commands.len() > 0 {return input_container;}
+		// No need to check stdin for commands every iteration of loop
+		if counter == 25 {
+			counter = 0;
+			match stdin_channel.try_recv() {
+				Ok(message) => {
+					let input_container = gmcp::read::InputContainer::new(&message);
+					if input_container.commands.len() > 0 {
+						// New command came in, exit out of event loop so it can restart w/ new parameters
+						return input_container;
+					}
+				}
+				Err(TryRecvError::Empty) => {}
+				Err(TryRecvError::Disconnected) => panic!("Channel disconnected"),
 			}
-			Err(TryRecvError::Empty) => {},
-			Err(TryRecvError::Disconnected) => panic!("Channel disconnected"),
 		}
+		counter += 1;
 
 		match net_rx.next() {
 			Ok(packet) => {
 				match handle_ethernet_frame(&interface, &EthernetPacket::new(packet).unwrap()) {
 					Some(event_data) => gmcp::Event {
-							event_type: String::from(gmcp::EventType::PACKET_MATCH),
-							data: event_data
-						}.push_out(),
-					None => {},
+						event_type: String::from(gmcp::EventType::PACKET_MATCH),
+						data: event_data,
+					}
+					.push_out(),
+					None => {}
 				}
 			}
 			Err(e) => panic!("ganchos network module: unable to receive packet: {}", e),
 		}
 
-		thread::sleep(sleep_time);
+		if params.iteration_sleep_ms > 0 { thread::sleep(sleep_time); }
 	}
 }
