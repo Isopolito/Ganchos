@@ -9,14 +9,6 @@ use regex::Regex;
 
 use crate::gmcp;
 
-pub trait EventLoopArgs {
-	fn get_command(&self) -> gmcp::Command;
-	fn set_command(&self, new_command: gmcp::Command);
-	fn should_exit(&self) -> bool;
-	fn set_is_ready_to_exit(&self, is_ready_to_exit: bool);
-	fn get_poll_interval_ms(&self) -> u64;
-}
-
 pub fn spawn_stdin_channel() -> Receiver<String> {
 	let (tx, rx) = mpsc::channel::<String>();
 	thread::spawn(move || loop {

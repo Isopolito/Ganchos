@@ -136,6 +136,8 @@ impl CommandType {
 	pub const PAUSE: &'static str = "pause";
 	pub const THROTTLE: &'static str = "throttle";
 	pub const UPDATE_CONFIG: &'static str = "updateConfig";
+	pub const SHOW_DEFAULT_CONFIG: &'static str = "showDefaultConfig";
+	pub const SHOW_EXAMPLE_CONFIG: &'static str = "showExampleConfig";
 }
 
 #[derive(Deserialize)]

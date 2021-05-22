@@ -1,3 +1,5 @@
 <<GMCP>>{"type": "command", "data": "{\"type\": \"start\", \"data\": \"\"}"}<</GMCP>>
 
 <<GMCP>>{"type": "command", "data": "{\"type\": \"throttle\", \"data\": \"20\"}"}<</GMCP>>
+
+<<GMCP>>{"type": "command", "data": "{\"type\": \"showDefaultConfig\", \"data\": \"\"}"}<</GMCP>>

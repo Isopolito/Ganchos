@@ -21,13 +21,14 @@ fn handle_udp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, 
 
 	if let Some(udp) = udp {
 		println!(
-			"[{}]: UDP Packet: {}:{} > {}:{}; length: {}",
+			"[{}]: UDP Packet: {}:{} > {}:{}; length: {}, payload: {}",
 			interface_name,
 			source,
 			udp.get_source(),
 			destination,
 			udp.get_destination(),
-			udp.get_length()
+			udp.get_length(),
+			String::from_utf8_lossy(udp.payload()),
 		);
 	} else {
 		println!("[{}]: Malformed UDP Packet", interface_name);
@@ -92,13 +93,14 @@ fn handle_tcp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, 
 	let tcp = TcpPacket::new(packet);
 	if let Some(tcp) = tcp {
 		println!(
-			"[{}]: TCP Packet: {}:{} > {}:{}; length: {}",
+			"[{}]: TCP Packet: {}:{} > {}:{}; length: {}, payload: {}",
 			interface_name,
 			source,
 			tcp.get_source(),
 			destination,
 			tcp.get_destination(),
-			packet.len()
+			packet.len(),
+			String::from_utf8_lossy(tcp.payload()),
 		);
 	} else {
 		println!("[{}]: Malformed TCP Packet", interface_name);
