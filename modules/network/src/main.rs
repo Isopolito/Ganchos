@@ -12,6 +12,7 @@ use packet_handler::handle_ethernet_frame;
 
 mod config;
 mod gmcp;
+use config::Config;
 
 fn main() {
 	use pnet::datalink::Channel::Ethernet;
@@ -42,21 +43,32 @@ fn main() {
 
 	let mut params = gmcp::event_loop::Params::new_with_defaults();
 	let stdin_channel = gmcp::read::spawn_stdin_channel();
-
+	let mut config = config::Config::make_default();
 	loop {
-		let input_container = run_event_loop_until_new_command(&interface, &mut net_rx, &stdin_channel, &params);
+		let input_container = run_event_loop_until_new_command(
+			&interface,
+			&mut net_rx,
+			&stdin_channel,
+			&params,
+			&config,
+		);
 		params = gmcp::event_loop::Params::new(&input_container.commands);
+
+		if !params.config_json.is_empty() {
+			config = Config::make_from_json(&params.config_json);
+			params.config_json = String::new();
+		}
 
 		if params.should_show_default_config {
 			params.should_show_default_config = false;
-			let default_config = config::Config::make_default();
+			let default_config = Config::make_default();
 			let config_json = serde_json::to_string(&default_config).unwrap();
 			println!("{}", config_json);
 		}
 
 		if params.should_show_example_config {
 			params.should_show_example_config = false;
-			let ex_config = config::Config::make_example();
+			let ex_config = Config::make_example();
 			let ex_json = serde_json::to_string(&ex_config).unwrap();
 			println!("{}", ex_json);
 		}
@@ -73,6 +85,7 @@ fn run_event_loop_until_new_command(
 	net_rx: &mut std::boxed::Box<dyn datalink::DataLinkReceiver>,
 	stdin_channel: &Receiver<String>,
 	params: &gmcp::event_loop::Params,
+	config: &Config,
 ) -> gmcp::read::InputContainer {
 	let sleep_time = time::Duration::from_millis(params.iteration_sleep_ms);
 	let pause_sleep_time = time::Duration::from_millis(10);
@@ -101,7 +114,7 @@ fn run_event_loop_until_new_command(
 			// up commands (I think). This could be a problem if network is not active
 			match net_rx.next() {
 				Ok(packet) => {
-					match handle_ethernet_frame(&interface, &EthernetPacket::new(packet).unwrap()) {
+					match handle_ethernet_frame(&interface, &EthernetPacket::new(packet).unwrap(), &config) {
 						Some(event_data) => gmcp::Event {
 							event_type: String::from(gmcp::EventType::PACKET_MATCH),
 							data: event_data,

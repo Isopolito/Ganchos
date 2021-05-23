@@ -15,8 +15,9 @@ use pnet::packet::Packet;
 use std::net::IpAddr;
 
 use crate::gmcp;
+use crate::config;
 
-fn handle_udp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, packet: &[u8]) {
+fn handle_udp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, packet: &[u8], config: &config::Config) {
 	let udp = UdpPacket::new(packet);
 
 	if let Some(udp) = udp {
@@ -35,7 +36,7 @@ fn handle_udp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, 
 	}
 }
 
-fn handle_icmp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, packet: &[u8]) {
+fn handle_icmp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, packet: &[u8], config: &config::Config) {
 	let icmp_packet = IcmpPacket::new(packet);
 	if let Some(icmp_packet) = icmp_packet {
 		match icmp_packet.get_icmp_type() {
@@ -74,7 +75,7 @@ fn handle_icmp_packet(interface_name: &str, source: IpAddr, destination: IpAddr,
 	}
 }
 
-fn handle_icmpv6_packet(interface_name: &str, source: IpAddr, destination: IpAddr, packet: &[u8]) {
+fn handle_icmpv6_packet(interface_name: &str, source: IpAddr, destination: IpAddr, packet: &[u8], config: &config::Config) {
 	let icmpv6_packet = Icmpv6Packet::new(packet);
 	if let Some(icmpv6_packet) = icmpv6_packet {
 		println!(
@@ -89,7 +90,7 @@ fn handle_icmpv6_packet(interface_name: &str, source: IpAddr, destination: IpAdd
 	}
 }
 
-fn handle_tcp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, packet: &[u8]) {
+fn handle_tcp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, packet: &[u8], config: &config::Config) {
 	let tcp = TcpPacket::new(packet);
 	if let Some(tcp) = tcp {
 		println!(
@@ -113,12 +114,13 @@ fn handle_transport_protocol(
 	destination: IpAddr,
 	protocol: IpNextHeaderProtocol,
 	packet: &[u8],
+	config: &config::Config
 ) {
 	match protocol {
-		IpNextHeaderProtocols::Udp => handle_udp_packet(interface_name, source, destination, packet),
-		IpNextHeaderProtocols::Tcp => handle_tcp_packet(interface_name, source, destination, packet),
-		IpNextHeaderProtocols::Icmp => handle_icmp_packet(interface_name, source, destination, packet),
-		IpNextHeaderProtocols::Icmpv6 => handle_icmpv6_packet(interface_name, source, destination, packet),
+		IpNextHeaderProtocols::Udp => handle_udp_packet(interface_name, source, destination, packet, config),
+		IpNextHeaderProtocols::Tcp => handle_tcp_packet(interface_name, source, destination, packet, config),
+		IpNextHeaderProtocols::Icmp => handle_icmp_packet(interface_name, source, destination, packet, config),
+		IpNextHeaderProtocols::Icmpv6 => handle_icmpv6_packet(interface_name, source, destination, packet, config),
 		_ => println!(
 			"[{}]: Unknown {} packet: {} > {}; protocol: {:?} length: {}",
 			interface_name,
@@ -134,7 +136,7 @@ fn handle_transport_protocol(
 	}
 }
 
-fn handle_ipv4_packet(interface_name: &str, ethernet: &EthernetPacket) -> Option<gmcp::EventData> {
+fn handle_ipv4_packet(interface_name: &str, ethernet: &EthernetPacket, config: &config::Config) -> Option<gmcp::EventData> {
 	let header = Ipv4Packet::new(ethernet.payload());
 	if let Some(header) = header {
 		handle_transport_protocol(
@@ -143,6 +145,7 @@ fn handle_ipv4_packet(interface_name: &str, ethernet: &EthernetPacket) -> Option
 			IpAddr::V4(header.get_destination()),
 			header.get_next_level_protocol(),
 			header.payload(),
+			config,
 		);
 	} else {
 		println!("[{}]: Malformed IPv4 Packet", interface_name);
@@ -155,7 +158,7 @@ fn handle_ipv4_packet(interface_name: &str, ethernet: &EthernetPacket) -> Option
 	})
 }
 
-fn handle_ipv6_packet(interface_name: &str, ethernet: &EthernetPacket) -> Option<gmcp::EventData> {
+fn handle_ipv6_packet(interface_name: &str, ethernet: &EthernetPacket, config: &config::Config) -> Option<gmcp::EventData> {
 	let header = Ipv6Packet::new(ethernet.payload());
 	if let Some(header) = header {
 		handle_transport_protocol(
@@ -164,6 +167,7 @@ fn handle_ipv6_packet(interface_name: &str, ethernet: &EthernetPacket) -> Option
 			IpAddr::V6(header.get_destination()),
 			header.get_next_header(),
 			header.payload(),
+			config
 		);
 	} else {
 		println!("[{}]: Malformed IPv6 Packet", interface_name);
@@ -176,7 +180,7 @@ fn handle_ipv6_packet(interface_name: &str, ethernet: &EthernetPacket) -> Option
 	})
 }
 
-fn handle_arp_packet(interface_name: &str, ethernet: &EthernetPacket) -> Option<gmcp::EventData> {
+fn handle_arp_packet(interface_name: &str, ethernet: &EthernetPacket, config: &config::Config) -> Option<gmcp::EventData> {
 	let header = ArpPacket::new(ethernet.payload());
 	if let Some(header) = header {
 		println!(
@@ -203,12 +207,13 @@ fn handle_arp_packet(interface_name: &str, ethernet: &EthernetPacket) -> Option<
 pub fn handle_ethernet_frame(
 	interface: &NetworkInterface,
 	ethernet: &EthernetPacket,
+	config: &config::Config,
 ) -> Option<gmcp::EventData> {
 	let interface_name = &interface.name[..];
 	match ethernet.get_ethertype() {
-		EtherTypes::Ipv4 => return handle_ipv4_packet(interface_name, ethernet),
-		EtherTypes::Ipv6 => return handle_ipv6_packet(interface_name, ethernet),
-		EtherTypes::Arp => return handle_arp_packet(interface_name, ethernet),
+		EtherTypes::Ipv4 => return handle_ipv4_packet(interface_name, ethernet, &config),
+		EtherTypes::Ipv6 => return handle_ipv6_packet(interface_name, ethernet, &config),
+		EtherTypes::Arp => return handle_arp_packet(interface_name, ethernet, &config),
 		_ => {
 			println!(
 				"[{}]: Unknown packet: {} > {}; ethertype: {:?} length: {}",

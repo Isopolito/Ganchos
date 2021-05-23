@@ -1,6 +1,7 @@
-use serde::{Serialize};
+use serde::{Serialize, Deserialize};
+use serde_json::Result;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct RegexFilter {
 	pub protocol: String,
 	pub source_ip: String,
@@ -8,11 +9,18 @@ pub struct RegexFilter {
 	pub payload: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Config {
 	pub regex_filters: Vec<RegexFilter>,
 }
 impl Config {
+	pub fn make_from_json(json: &str) -> Config {
+		match serde_json::from_str(json) as Result<Config> {
+			Ok(config) => config,
+			Err(_) => Config::make_default(),
+		}
+	}
+
 	pub fn make_default() -> Config {
 		Config {
 			regex_filters: vec![],
