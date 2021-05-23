@@ -1,5 +1,6 @@
 use crate::gmcp;
 
+// Convert commands into parameter structure that can be used in a programs event loop
 pub struct Params {
 	pub iteration_sleep_ms: u64,
 	pub should_exit: bool,

@@ -7,6 +7,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize};
 
 pub mod read;
+pub mod event_loop;
 
 pub trait Serialization {
 	fn to_json(&self) -> String;

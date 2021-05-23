@@ -7,25 +7,11 @@ use std::process;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::TryRecvError;
 use std::{thread, time};
-use serde::{Serialize};
 mod packet_handler;
 use packet_handler::handle_ethernet_frame;
 
-mod event_loop;
+mod config;
 mod gmcp;
-
-#[derive(Serialize)]
-struct RegexFilter {
-	protocol: String,
-	source_ip: String,
-	dest_ip: String,
-	payload: String,
-}
-
-#[derive(Serialize)]
-struct Config {
-	regex_filters: Vec<RegexFilter> ,
-}
 
 fn main() {
 	use pnet::datalink::Channel::Ethernet;
@@ -54,36 +40,25 @@ fn main() {
 		Err(e) => panic!("ganchos network module: unable to create channel: {}", e),
 	};
 
-	let mut params = event_loop::Params::new_with_defaults();
+	let mut params = gmcp::event_loop::Params::new_with_defaults();
 	let stdin_channel = gmcp::read::spawn_stdin_channel();
-	let default_config = Config{
-		regex_filters: vec![RegexFilter {
-			protocol: String::from("ip4"),
-			source_ip: String::from("32.232.232.323"),
-			dest_ip: String::from("192.*"),
-			payload: String::from(""),
-		}],
-	};
-	let config_json = serde_json::to_string(&default_config).unwrap();
 
 	loop {
-		let input_container = run_event_loop(&interface, &mut net_rx, &stdin_channel, &params);
-		params = event_loop::Params::new(&input_container.commands);
-		
+		let input_container = run_event_loop_until_new_command(&interface, &mut net_rx, &stdin_channel, &params);
+		params = gmcp::event_loop::Params::new(&input_container.commands);
+
 		if params.should_show_default_config {
 			params.should_show_default_config = false;
+			let default_config = config::Config::make_default();
+			let config_json = serde_json::to_string(&default_config).unwrap();
 			println!("{}", config_json);
-			//io::stdout()
-			//.write_all(config_json.as_bytes())
-			//.expect("gmcp: unable to write to stdout");
 		}
 
 		if params.should_show_example_config {
 			params.should_show_example_config = false;
-			println!("{}", config_json);
-			//io::stdout()
-			//.write_all(config_json.as_bytes())
-			//.expect("gmcp: unable to write to stdout");
+			let ex_config = config::Config::make_example();
+			let ex_json = serde_json::to_string(&ex_config).unwrap();
+			println!("{}", ex_json);
 		}
 
 		if params.should_exit {
@@ -93,11 +68,11 @@ fn main() {
 	}
 }
 
-fn run_event_loop(
+fn run_event_loop_until_new_command(
 	interface: &datalink::NetworkInterface,
 	net_rx: &mut std::boxed::Box<dyn datalink::DataLinkReceiver>,
 	stdin_channel: &Receiver<String>,
-	params: &event_loop::Params,
+	params: &gmcp::event_loop::Params,
 ) -> gmcp::read::InputContainer {
 	let sleep_time = time::Duration::from_millis(params.iteration_sleep_ms);
 	let pause_sleep_time = time::Duration::from_millis(10);
@@ -121,28 +96,28 @@ fn run_event_loop(
 		}
 		counter += 1;
 
-
 		if !params.should_pause {
-			// NOTE: If packets don't come in, the code will be sitting here waiting, and not picking 
+			// NOTE: If packets don't come in, the code will be sitting here waiting, and not picking
 			// up commands (I think). This could be a problem if network is not active
-			//match net_rx.next() {
-			//	Ok(packet) => {
-			//		match handle_ethernet_frame(&interface, &EthernetPacket::new(packet).unwrap()) {
-			//			Some(event_data) => gmcp::Event {
-			//				event_type: String::from(gmcp::EventType::PACKET_MATCH),
-			//				data: event_data,
-			//			}
-			//			.push_out(),
-			//			None => {}
-			//		}
-			//	}
-			//	Err(e) => panic!("ganchos network module: unable to receive packet: {}", e),
-			//}
+			match net_rx.next() {
+				Ok(packet) => {
+					match handle_ethernet_frame(&interface, &EthernetPacket::new(packet).unwrap()) {
+						Some(event_data) => gmcp::Event {
+							event_type: String::from(gmcp::EventType::PACKET_MATCH),
+							data: event_data,
+						}
+						.push_out(),
+						None => {}
+					}
+				}
+				Err(e) => panic!("ganchos network module: unable to receive packet: {}", e),
+			}
 		}
 
 		if params.iteration_sleep_ms > 0 {
 			thread::sleep(sleep_time);
 		} else if params.should_pause {
+			// If paused, add some sleep time each loop iteration to free up cycles
 			thread::sleep(pause_sleep_time);
 		}
 	}
