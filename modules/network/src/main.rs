@@ -12,6 +12,7 @@ use packet_handler::handle_ethernet_frame;
 
 mod config;
 mod gmcp;
+mod filters;
 use config::Config;
 
 fn main() {
@@ -43,7 +44,7 @@ fn main() {
 
 	let mut params = gmcp::event_loop::Params::new_with_defaults();
 	let stdin_channel = gmcp::read::spawn_stdin_channel();
-	let mut config = config::Config::make_default();
+	let mut config = Config::make_default();
 	loop {
 		let input_container = run_event_loop_until_new_command(
 			&interface,

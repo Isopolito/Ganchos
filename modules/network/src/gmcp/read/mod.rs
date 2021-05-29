@@ -23,8 +23,7 @@ fn parse_and_return_command_messages(data: &str) -> InputContainer {
 	let mut commands: Vec<gmcp::Command> = Vec::new();
 	let mut errors: Vec<String> = Vec::new();
 
-	// TODO: Figure out how to move reg ex creation out of this function for performance reasons.
-	// Or lazy load a static global variable so it only happens once
+	// TODO: Implement lazy load tactic from here: https://docs.rs/regex/1.5.4/regex/
 	let command_message_re: String = format!(r#"{}\s*(\{{\s*["']type["']\s*:\s*["']command["'].*\}})\s*{}"#, 
 		gmcp::MESSAGE_TAG_OPEN, gmcp::MESSAGE_TAG_CLOSE);
 	let re = Regex::new(&command_message_re).unwrap();

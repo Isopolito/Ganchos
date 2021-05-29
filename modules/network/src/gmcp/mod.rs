@@ -159,17 +159,6 @@ impl Command {
 mod tests {
     use super::*;
 
-	//    #[test]
-	//    fn print_command_message() {
-	//
-	//		let command = Command {
-	//			command_type: CommandType::START,
-	//			data: ""
-	//		};
-	//		let message = Message::create_command_message(&command);
-	//		assert_eq!("{}", message.to_json());
-	//    }
-
     #[test]
     fn serialize_command() {
 		let command = Command {
@@ -182,12 +171,12 @@ mod tests {
     #[test]
     fn serialize_event() {
 		let event_data = EventData {
-			data_type: "packet info",
+			data_type: String::from("packet info"),
 			data: String::from("information")
 		};
 
 		let event = Event {
-			event_type: EventType::PACKET_MATCH,
+			event_type: String::from(EventType::PACKET_MATCH),
 			data: event_data,
 		};
         assert_eq!(event.to_json(), r#"{"type": "packetMatch", "data": "{"type": "packet info", "data": "information"}"}"#);

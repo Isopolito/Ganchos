@@ -1,17 +1,11 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Result;
 
-#[derive(Serialize, Deserialize)]
-pub struct RegexFilter {
-	pub protocol: String,
-	pub source_ip: String,
-	pub dest_ip: String,
-	pub payload: String,
-}
+use crate::filters::{Filter, RegexFilter};
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
-	pub regex_filters: Vec<RegexFilter>,
+	pub filters: Vec<Filter>,
 }
 impl Config {
 	pub fn make_from_json(json: &str) -> Config {
@@ -23,18 +17,36 @@ impl Config {
 
 	pub fn make_default() -> Config {
 		Config {
-			regex_filters: vec![],
+			filters: vec![],
 		}
 	}
 
 	pub fn make_example() -> Config {
 		Config {
-			regex_filters: vec![RegexFilter {
-				protocol: String::from("ip4"),
-				source_ip: String::from("32.232.232.323"),
-				dest_ip: String::from("192.*"),
-				payload: String::from(""),
-			}],
+			filters: vec![
+				Filter {
+					protocol: String::from("ip4"),
+					min_size: 10,
+					max_size: 100,
+					port: 0,
+					regex_filter: RegexFilter::new(
+						"32.232.232.323",
+						"192.*",
+						"",
+					),
+				},
+				Filter {
+					protocol: String::from("udp"),
+					min_size: 0,
+					max_size: 0,
+					port: 1169,
+					regex_filter: RegexFilter::new(
+						"*",
+						"92.158.29.191",
+						".*hello.*",
+					),
+				}
+			],
 		}
 	}
 }
