@@ -47,6 +47,8 @@ impl Filter {
 		size: u64,
 		payload: &str,
 	) -> bool {
+
+		// Factor this into a function
 		if self.min_size > 0 && self.max_size > 0 && size > self.min_size && size < self.max_size {
 			return true;
 		} else if self.min_size > 0 && self.max_size == 0 && size > self.min_size {

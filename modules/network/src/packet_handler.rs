@@ -14,97 +14,158 @@ use pnet::packet::udp::UdpPacket;
 use pnet::packet::Packet;
 use std::net::IpAddr;
 
-use crate::gmcp;
 use crate::config;
+use crate::gmcp::EventData;
 
-fn handle_udp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, packet: &[u8], config: &config::Config) {
+fn handle_udp_packet(
+	interface_name: &str,
+	source: IpAddr,
+	destination: IpAddr,
+	packet: &[u8],
+	config: &config::Config,
+) -> Option<EventData> {
 	let udp = UdpPacket::new(packet);
 
 	if let Some(udp) = udp {
-		println!(
-			"[{}]: UDP Packet: {}:{} > {}:{}; length: {}, payload: {}",
-			interface_name,
-			source,
-			udp.get_source(),
-			destination,
-			udp.get_destination(),
-			udp.get_length(),
-			String::from_utf8_lossy(udp.payload()),
-		);
+		Some(EventData {
+			data_type: String::from("udp"),
+			data: format!(
+				r#"{{ "interfaceName": "{}", 
+						"sourceIp": "{}", 
+						"sourcePort": {}, 
+						"destIp": "{}", 
+						"destPort": {}, 
+						"size": {}, 
+						"payload": "{}", 
+					}}"#,
+				interface_name,
+				format!("{}", source),
+				udp.get_source(),
+				format!("{}", destination), // TODO: find better way
+				udp.get_destination(),
+				udp.get_length(),
+				&String::from_utf8_lossy(udp.payload()),
+			),
+		})
 	} else {
-		println!("[{}]: Malformed UDP Packet", interface_name);
+		None
 	}
 }
 
-fn handle_icmp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, packet: &[u8], config: &config::Config) {
+fn handle_icmp_packet(
+	interface_name: &str,
+	source: IpAddr,
+	destination: IpAddr,
+	packet: &[u8],
+	config: &config::Config,
+) -> Option<EventData> {
 	let icmp_packet = IcmpPacket::new(packet);
 	if let Some(icmp_packet) = icmp_packet {
 		match icmp_packet.get_icmp_type() {
 			IcmpTypes::EchoReply => {
 				let echo_reply_packet = echo_reply::EchoReplyPacket::new(packet).unwrap();
-				println!(
-					"[{}]: ICMP echo reply {} -> {} (seq={:?}, id={:?})",
-					interface_name,
-					source,
-					destination,
-					echo_reply_packet.get_sequence_number(),
-					echo_reply_packet.get_identifier()
-				);
+				return Some(EventData {
+					data_type: String::from("echoReply"),
+					data: format!(
+						r#"{{ "interfaceName": "{}", 
+								"sourceIp": "{}", 
+								"destIp": "{}", 
+								"seqNumber": "{}", 
+								"identifier": "{}", 
+							}}"#,
+						interface_name,
+						source,
+						destination,
+						echo_reply_packet.get_sequence_number(),
+						echo_reply_packet.get_identifier()
+					),
+				});
 			}
 			IcmpTypes::EchoRequest => {
 				let echo_request_packet = echo_request::EchoRequestPacket::new(packet).unwrap();
-				println!(
-					"[{}]: ICMP echo request {} -> {} (seq={:?}, id={:?})",
-					interface_name,
-					source,
-					destination,
-					echo_request_packet.get_sequence_number(),
-					echo_request_packet.get_identifier()
-				);
+				return Some(EventData {
+					data_type: String::from("echoRequest"),
+					data: format!(
+						r#"{{ "interfaceName": "{}", 
+								"sourceIp": "{}", 
+								"destIp": "{}", 
+								"seqNumber": "{}", 
+								"identifier": "{}", 
+							}}"#,
+						interface_name,
+						source,
+						destination,
+						echo_request_packet.get_sequence_number(),
+						echo_request_packet.get_identifier()
+					),
+				});
 			}
-			_ => println!(
-				"[{}]: ICMP packet {} -> {} (type={:?})",
+			_ => None,
+		}
+	} else {
+		None
+	}
+}
+
+fn handle_icmpv6_packet(
+	interface_name: &str,
+	source: IpAddr,
+	destination: IpAddr,
+	packet: &[u8],
+	config: &config::Config,
+) -> Option<EventData> {
+	let icmpv6_packet = Icmpv6Packet::new(packet);
+	if let Some(icmpv6_packet) = icmpv6_packet {
+		Some(EventData {
+			data_type: String::from("icmpv6"),
+			data: format!(
+				r#"{{ "interfaceName": "{}", 
+						"sourceIp": "{}", 
+						"destIp": "{}", 
+						"type": "(type={:?})", 
+					}}"#,
 				interface_name,
 				source,
 				destination,
-				icmp_packet.get_icmp_type()
+				icmpv6_packet.get_icmpv6_type()
 			),
-		}
+		})
 	} else {
-		println!("[{}]: Malformed ICMP Packet", interface_name);
+		None
 	}
 }
 
-fn handle_icmpv6_packet(interface_name: &str, source: IpAddr, destination: IpAddr, packet: &[u8], config: &config::Config) {
-	let icmpv6_packet = Icmpv6Packet::new(packet);
-	if let Some(icmpv6_packet) = icmpv6_packet {
-		println!(
-			"[{}]: ICMPv6 packet {} -> {} (type={:?})",
-			interface_name,
-			source,
-			destination,
-			icmpv6_packet.get_icmpv6_type()
-		)
-	} else {
-		println!("[{}]: Malformed ICMPv6 Packet", interface_name);
-	}
-}
-
-fn handle_tcp_packet(interface_name: &str, source: IpAddr, destination: IpAddr, packet: &[u8], config: &config::Config) {
+fn handle_tcp_packet(
+	interface_name: &str,
+	source: IpAddr,
+	destination: IpAddr,
+	packet: &[u8],
+	config: &config::Config,
+) -> Option<EventData> {
 	let tcp = TcpPacket::new(packet);
 	if let Some(tcp) = tcp {
-		println!(
-			"[{}]: TCP Packet: {}:{} > {}:{}; length: {}, payload: {}",
-			interface_name,
-			source,
-			tcp.get_source(),
-			destination,
-			tcp.get_destination(),
-			packet.len(),
-			String::from_utf8_lossy(tcp.payload()),
-		);
+		Some(EventData {
+			data_type: String::from("tcp"),
+			data: format!(
+				r#"{{ "interfaceName": "{}", 
+				  "sourceIp": "{}", 
+				  "sourcePort": {}, 
+				  "destIp": "{}", 
+				  "destPort": {}, 
+				  "size": {}, 
+				  "payload": "{}", 
+			}}"#,
+				interface_name,
+				source,
+				tcp.get_source(),
+				destination,
+				tcp.get_destination(),
+				packet.len(),
+				String::from_utf8_lossy(tcp.payload()),
+			),
+		})
 	} else {
-		println!("[{}]: Malformed TCP Packet", interface_name);
+		None
 	}
 }
 
@@ -114,29 +175,30 @@ fn handle_transport_protocol(
 	destination: IpAddr,
 	protocol: IpNextHeaderProtocol,
 	packet: &[u8],
-	config: &config::Config
-) {
-	match protocol {
-		IpNextHeaderProtocols::Udp => handle_udp_packet(interface_name, source, destination, packet, config),
-		IpNextHeaderProtocols::Tcp => handle_tcp_packet(interface_name, source, destination, packet, config),
-		IpNextHeaderProtocols::Icmp => handle_icmp_packet(interface_name, source, destination, packet, config),
-		IpNextHeaderProtocols::Icmpv6 => handle_icmpv6_packet(interface_name, source, destination, packet, config),
-		_ => println!(
-			"[{}]: Unknown {} packet: {} > {}; protocol: {:?} length: {}",
-			interface_name,
-			match source {
-				IpAddr::V4(..) => "IPv4",
-				_ => "IPv6",
-			},
-			source,
-			destination,
-			protocol,
-			packet.len()
-		),
-	}
+	config: &config::Config,
+) -> Option<EventData> {
+	return match protocol {
+		IpNextHeaderProtocols::Udp => {
+			handle_udp_packet(interface_name, source, destination, packet, config)
+		}
+		IpNextHeaderProtocols::Tcp => {
+			handle_tcp_packet(interface_name, source, destination, packet, config)
+		}
+		IpNextHeaderProtocols::Icmp => {
+			handle_icmp_packet(interface_name, source, destination, packet, config)
+		}
+		IpNextHeaderProtocols::Icmpv6 => {
+			handle_icmpv6_packet(interface_name, source, destination, packet, config)
+		}
+		_ => None,
+	};
 }
 
-fn handle_ipv4_packet(interface_name: &str, ethernet: &EthernetPacket, config: &config::Config) -> Option<gmcp::EventData> {
+fn handle_ipv4_packet(
+	interface_name: &str,
+	ethernet: &EthernetPacket,
+	config: &config::Config,
+) -> Option<EventData> {
 	let header = Ipv4Packet::new(ethernet.payload());
 	if let Some(header) = header {
 		handle_transport_protocol(
@@ -146,19 +208,17 @@ fn handle_ipv4_packet(interface_name: &str, ethernet: &EthernetPacket, config: &
 			header.get_next_level_protocol(),
 			header.payload(),
 			config,
-		);
+		)
 	} else {
-		println!("[{}]: Malformed IPv4 Packet", interface_name);
-		return None;
+		None
 	}
-
-	Some(gmcp::EventData {
-		data_type: String::from("ipv4"),
-		data: String::from("packet info goes here"),
-	})
 }
 
-fn handle_ipv6_packet(interface_name: &str, ethernet: &EthernetPacket, config: &config::Config) -> Option<gmcp::EventData> {
+fn handle_ipv6_packet(
+	interface_name: &str,
+	ethernet: &EthernetPacket,
+	config: &config::Config,
+) -> Option<EventData> {
 	let header = Ipv6Packet::new(ethernet.payload());
 	if let Some(header) = header {
 		handle_transport_protocol(
@@ -167,20 +227,18 @@ fn handle_ipv6_packet(interface_name: &str, ethernet: &EthernetPacket, config: &
 			IpAddr::V6(header.get_destination()),
 			header.get_next_header(),
 			header.payload(),
-			config
-		);
+			config,
+		)
 	} else {
-		println!("[{}]: Malformed IPv6 Packet", interface_name);
-		return None;
+		None
 	}
-
-	Some(gmcp::EventData {
-		data_type: String::from("ipv6"),
-		data: String::from("packet info goes here"),
-	})
 }
 
-fn handle_arp_packet(interface_name: &str, ethernet: &EthernetPacket, config: &config::Config) -> Option<gmcp::EventData> {
+fn handle_arp_packet(
+	interface_name: &str,
+	ethernet: &EthernetPacket,
+	config: &config::Config,
+) -> Option<EventData> {
 	let header = ArpPacket::new(ethernet.payload());
 	if let Some(header) = header {
 		println!(
@@ -196,7 +254,7 @@ fn handle_arp_packet(interface_name: &str, ethernet: &EthernetPacket, config: &c
 		println!("[{}]: Malformed ARP Packet", interface_name);
 		return None;
 	}
-	Some(gmcp::EventData {
+	Some(EventData {
 		data_type: String::from("arp"),
 		data: String::from("packet info goes here"),
 	})
@@ -208,7 +266,7 @@ pub fn handle_ethernet_frame(
 	interface: &NetworkInterface,
 	ethernet: &EthernetPacket,
 	config: &config::Config,
-) -> Option<gmcp::EventData> {
+) -> Option<EventData> {
 	let interface_name = &interface.name[..];
 	match ethernet.get_ethertype() {
 		EtherTypes::Ipv4 => return handle_ipv4_packet(interface_name, ethernet, &config),
