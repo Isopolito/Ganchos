@@ -41,7 +41,7 @@ impl Config {
 					max_size: 0,
 					port: 1169,
 					regex_filter: RegexFilter::new(
-						"*",
+						".*",
 						"92.158.29.191",
 						".*hello.*",
 					),

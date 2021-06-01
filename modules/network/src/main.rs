@@ -44,14 +44,14 @@ fn main() {
 
 	let mut params = gmcp::event_loop::Params::new_with_defaults();
 	let stdin_channel = gmcp::read::spawn_stdin_channel();
-	let mut config = Config::make_default();
+	let mut config = Config::make_example();
 	loop {
 		let input_container = run_event_loop_until_new_command(
 			&interface,
 			&mut net_rx,
 			&stdin_channel,
 			&params,
-			&config,
+			&mut config,
 		);
 		params = gmcp::event_loop::Params::new(&input_container.commands);
 
@@ -86,7 +86,7 @@ fn run_event_loop_until_new_command(
 	net_rx: &mut std::boxed::Box<dyn datalink::DataLinkReceiver>,
 	stdin_channel: &Receiver<String>,
 	params: &gmcp::event_loop::Params,
-	config: &Config,
+	config: &mut Config,
 ) -> gmcp::read::InputContainer {
 	let sleep_time = time::Duration::from_millis(params.iteration_sleep_ms);
 	let pause_sleep_time = time::Duration::from_millis(10);
@@ -115,7 +115,7 @@ fn run_event_loop_until_new_command(
 			// up commands (I think). This could be a problem if network is not active
 			match net_rx.next() {
 				Ok(packet) => {
-					match handle_ethernet_frame(&interface, &EthernetPacket::new(packet).unwrap(), &config) {
+					match handle_ethernet_frame(&interface, &EthernetPacket::new(packet).unwrap(), config) {
 						Some(event_data) => gmcp::Event {
 							event_type: String::from(gmcp::EventType::PACKET_MATCH),
 							data: event_data,

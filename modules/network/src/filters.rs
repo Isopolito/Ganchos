@@ -34,17 +34,17 @@ pub struct Filter {
 	pub protocol: String,
 	pub regex_filter: RegexFilter,
 	pub port: u16,     // 0 to ignore
-	pub min_size: u64, // 0 to ignore
-	pub max_size: u64, // 0 to ignore
+	pub min_size: u16, // 0 to ignore
+	pub max_size: u16, // 0 to ignore
 }
 impl Filter {
 	pub fn is_match(
-		mut self,
+		&mut self,
 		source_ip: &str,
 		source_port: u16,
 		dest_ip: &str,
 		dest_port: u16,
-		size: u64,
+		size: u16,
 		payload: &str,
 	) -> bool {
 
@@ -74,7 +74,7 @@ impl Filter {
 				}
 				Some(_) => (),
 			};
-			if self.regex_filter.source_ip_re.unwrap().is_match(&source_ip) {
+			if self.regex_filter.source_ip_re.as_ref().unwrap().is_match(&source_ip) {
 				return true;
 			}
 		}
@@ -88,7 +88,7 @@ impl Filter {
 				}
 				Some(_) => (),
 			};
-			if self.regex_filter.dest_ip_re.unwrap().is_match(&dest_ip) {
+			if self.regex_filter.dest_ip_re.as_ref().unwrap().is_match(&dest_ip) {
 				return true;
 			}
 		}
@@ -102,7 +102,7 @@ impl Filter {
 				}
 				Some(_) => (),
 			};
-			if self.regex_filter.payload_re.unwrap().is_match(&payload) {
+			if self.regex_filter.payload_re.as_ref().unwrap().is_match(&payload) {
 				return true;
 			}
 		}
@@ -117,7 +117,7 @@ mod tests {
 
 	#[test]
 	fn test_source_port_is_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 69,
 			min_size: 0,
@@ -125,14 +125,14 @@ mod tests {
 			regex_filter: RegexFilter::new("", "", ""),
 		};
 
-		let is_match = filter.is_match("", 69, "", 0, 0, "");
+		let is_match = &filter.is_match("", 69, "", 0, 0, "");
 
-		assert_eq!(is_match, true);
+		assert_eq!(is_match, &true);
 	}
 
 	#[test]
 	fn test_source_port_is_not_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 70,
 			min_size: 0,
@@ -140,14 +140,14 @@ mod tests {
 			regex_filter: RegexFilter::new("", "", ""),
 		};
 
-		let is_match = filter.is_match("", 69, "", 0, 0, "");
+		let is_match = &filter.is_match("", 69, "", 0, 0, "");
 
-		assert_eq!(is_match, false);
+		assert_eq!(is_match, &false);
 	}
 
 	#[test]
 	fn test_dest_port_is_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 69,
 			min_size: 0,
@@ -155,14 +155,14 @@ mod tests {
 			regex_filter: RegexFilter::new("", "", ""),
 		};
 
-		let is_match = filter.is_match("", 0, "", 69, 0, "");
+		let is_match = &filter.is_match("", 0, "", 69, 0, "");
 
-		assert_eq!(is_match, true);
+		assert_eq!(is_match, &true);
 	}
 
 	#[test]
 	fn test_dest_port_is_not_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 70,
 			min_size: 0,
@@ -170,14 +170,14 @@ mod tests {
 			regex_filter: RegexFilter::new("", "", ""),
 		};
 
-		let is_match = filter.is_match("", 0, "", 69, 0, "");
+		let is_match = &filter.is_match("", 0, "", 69, 0, "");
 
-		assert_eq!(is_match, false);
+		assert_eq!(is_match, &false);
 	}
 
 	#[test]
 	fn test_min_size_is_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 0,
 			min_size: 5,
@@ -185,14 +185,14 @@ mod tests {
 			regex_filter: RegexFilter::new("", "", ""),
 		};
 
-		let is_match = filter.is_match("", 0, "", 0, 9, "");
+		let is_match = &filter.is_match("", 0, "", 0, 9, "");
 
-		assert_eq!(is_match, true);
+		assert_eq!(is_match, &true);
 	}
 
 	#[test]
 	fn test_min_size_is_not_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 0,
 			min_size: 5,
@@ -200,14 +200,14 @@ mod tests {
 			regex_filter: RegexFilter::new("", "", ""),
 		};
 
-		let is_match = filter.is_match("", 0, "", 0, 2, "");
+		let is_match = &filter.is_match("", 0, "", 0, 2, "");
 
-		assert_eq!(is_match, false);
+		assert_eq!(is_match, &false);
 	}
 
 	#[test]
 	fn test_max_size_is_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 0,
 			min_size: 0,
@@ -215,14 +215,14 @@ mod tests {
 			regex_filter: RegexFilter::new("", "", ""),
 		};
 
-		let is_match = filter.is_match("", 0, "", 0, 9, "");
+		let is_match = &filter.is_match("", 0, "", 0, 9, "");
 
-		assert_eq!(is_match, true);
+		assert_eq!(is_match, &true);
 	}
 
 	#[test]
 	fn test_max_size_is_not_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 0,
 			min_size: 0,
@@ -230,13 +230,14 @@ mod tests {
 			regex_filter: RegexFilter::new("", "", ""),
 		};
 
-		let is_match = filter.is_match("", 0, "", 0, 12, "");
+		let is_match = &filter.is_match("", 0, "", 0, 12, "");
 
-		assert_eq!(is_match, false);
+		assert_eq!(is_match, &false);
 	}
+
 	#[test]
 	fn test_min_max_size_is_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 0,
 			min_size: 5,
@@ -244,14 +245,14 @@ mod tests {
 			regex_filter: RegexFilter::new("", "", ""),
 		};
 
-		let is_match = filter.is_match("", 0, "", 0, 7, "");
+		let is_match = &filter.is_match("", 0, "", 0, 7, "");
 
-		assert_eq!(is_match, true);
+		assert_eq!(is_match, &true);
 	}
 
 	#[test]
 	fn test_min_max_size_is_not_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 0,
 			min_size: 5,
@@ -259,14 +260,14 @@ mod tests {
 			regex_filter: RegexFilter::new("", "", ""),
 		};
 
-		let is_match = filter.is_match("", 0, "", 0, 12, "");
+		let is_match = &filter.is_match("", 0, "", 0, 12, "");
 
-		assert_eq!(is_match, false);
+		assert_eq!(is_match, &false);
 	}
 
 	#[test]
 	fn test_source_ip_regex_is_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 0,
 			min_size: 0,
@@ -274,14 +275,14 @@ mod tests {
 			regex_filter: RegexFilter::new("198.2.+", "", ""),
 		};
 
-		let is_match = filter.is_match("198.2.132.5", 0, "", 0, 12, "");
+		let is_match = &filter.is_match("198.2.132.5", 0, "", 0, 12, "");
 
-		assert_eq!(is_match, true);
+		assert_eq!(is_match, &true);
 	}
 
 	#[test]
 	fn test_source_ip_regex_is_not_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 0,
 			min_size: 0,
@@ -289,14 +290,14 @@ mod tests {
 			regex_filter: RegexFilter::new("198.3.*", "", ""),
 		};
 
-		let is_match = filter.is_match("198.2.132.5", 0, "", 0, 12, "");
+		let is_match = &filter.is_match("198.2.132.5", 0, "", 0, 12, "");
 
-		assert_eq!(is_match, false);
+		assert_eq!(is_match, &false);
 	}
 
 	#[test]
 	fn test_dest_ip_regex_is_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 0,
 			min_size: 0,
@@ -304,14 +305,14 @@ mod tests {
 			regex_filter: RegexFilter::new("", "198.2.+", ""),
 		};
 
-		let is_match = filter.is_match("", 0, "198.2.132.5", 0, 12, "");
+		let is_match = &filter.is_match("", 0, "198.2.132.5", 0, 12, "");
 
-		assert_eq!(is_match, true);
+		assert_eq!(is_match, &true);
 	}
 
 	#[test]
 	fn test_dest_ip_regex_is_not_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 0,
 			min_size: 0,
@@ -319,14 +320,14 @@ mod tests {
 			regex_filter: RegexFilter::new("", "198.3.*", ""),
 		};
 
-		let is_match = filter.is_match("", 0, "198.2.132.5", 0, 12, "");
+		let is_match = &filter.is_match("", 0, "198.2.132.5", 0, 12, "");
 
-		assert_eq!(is_match, false);
+		assert_eq!(is_match, &false);
 	}
 
 	#[test]
 	fn test_payload_regex_is_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 0,
 			min_size: 0,
@@ -334,14 +335,14 @@ mod tests {
 			regex_filter: RegexFilter::new("", "", ".+hello world$"),
 		};
 
-		let is_match = filter.is_match("", 0, "", 0, 0, "blah hello world");
+		let is_match = &filter.is_match("", 0, "", 0, 0, "blah hello world");
 
-		assert_eq!(is_match, true);
+		assert_eq!(is_match, &true);
 	}
 
 	#[test]
 	fn test_payload_regex_is_not_match() {
-		let filter = Filter {
+		let mut filter = Filter {
 			protocol: String::from("ip4"),
 			port: 0,
 			min_size: 0,
@@ -349,8 +350,8 @@ mod tests {
 			regex_filter: RegexFilter::new("", "", ".*hello world$"),
 		};
 
-		let is_match = filter.is_match("", 0, "", 0, 0, "hello world blah");
+		let is_match = &filter.is_match("", 0, "", 0, 0, "hello world blah");
 
-		assert_eq!(is_match, false);
+		assert_eq!(is_match, &false);
 	}
 }
