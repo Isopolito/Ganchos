@@ -1,0 +1,8 @@
+  [
+    {
+    "name": "network",
+    "path": "./modules/network/network",
+    "shouldStart": true,
+    "params": ["wlp0s20f3"]
+  }
+]

@@ -12,6 +12,7 @@ import { makeAllDirInPath, touch, doesPathExist, getGeneralConfigPath, getAppBas
 const defaultConfig: GeneralConfig = {
     heartBeatPollIntervalInSeconds: 5,
     pluginPaths: [path.join(getAppBaseDir(), 'plugins')],
+    moduleConfigPath: path.join(getAppBaseDir(), `config`, `moduleConfig.json`),
     pluginMetaExtension: 'meta',
     pluginScheduleIntervalFloorInMinutes: 0.5,
 

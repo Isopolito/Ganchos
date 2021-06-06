@@ -16,6 +16,7 @@ describe('** General Config **', () => {
         config = {
             pluginPaths: ['/home/user/foo'],
             heartBeatPollIntervalInSeconds: 5,
+            moduleConfigPath: '/home/user/moduleConfig.json',
             pluginScheduleIntervalFloorInMinutes: 0.5,
             pluginMetaExtension: 'foo',
             eventQueuePluginExecutionTimeout: 0, 
