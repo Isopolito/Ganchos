@@ -11,6 +11,7 @@ const loadSingle = async (moduleConfig: ModuleConfig): Promise<LoadedModule> => 
         isInError: false,
         config: moduleConfig,
         process: null,
+        isStarted: false,
     };
 
     if (!fileUtil.doesPathExist(moduleConfig.path)) {
@@ -19,7 +20,12 @@ const loadSingle = async (moduleConfig: ModuleConfig): Promise<LoadedModule> => 
     } else if (moduleConfig.shouldStart) {
         try {
             loadedModule.process = spawn(moduleConfig.path, moduleConfig.params);
-            loadedModule.process.on('error', (err) => loadedModule.isInError = true);
+            loadedModule.isStarted = true;
+            loadedModule.process.on('close', () => loadedModule.isStarted = false);
+            loadedModule.process.on('error', (_) => {
+                loadedModule.isInError = true;
+                loadedModule.isStarted = false;
+            });
         } catch (e) {
             loadedModule.isInError = true;
         }

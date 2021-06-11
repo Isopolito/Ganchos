@@ -4,7 +4,9 @@ import { promises as fs } from 'fs';
 import { expect } from 'chai'
 import * as sh from 'shelljs'
 
-import { fileUtil, GeneralConfig } from '../shared'
+import { fileUtil, GeneralConfig, systemUtil } from '../shared'
+import { ModuleConfig } from './ModuleConfig'
+import * as moduleLoader from './moduleLoader'
 
 const makeModuleConfigFile = (moduleConfigPath: string): Promise<void> => {
     const json = `
@@ -30,7 +32,7 @@ const makeModuleConfigFile = (moduleConfigPath: string): Promise<void> => {
     ]
     `;
 
-	return fs.writeFile(moduleConfigPath, json);
+    return fs.writeFile(moduleConfigPath, json);
 }
 
 describe('** Module Loader **', () => {
@@ -40,6 +42,7 @@ describe('** Module Loader **', () => {
     before(async () => {
         const testDir = fileUtil.getAppBaseDir();
         if (testDir.endsWith('test')) sh.rm('-rf', testDir);
+        fileUtil.makeAllDirInPath(testDir);
 
         moduleConfigPath = path.join(testDir, `moduleConfig.json`);
         await makeModuleConfigFile(moduleConfigPath);
@@ -50,7 +53,7 @@ describe('** Module Loader **', () => {
             moduleConfigPath: moduleConfigPath,
             pluginScheduleIntervalFloorInMinutes: 0.5,
             pluginMetaExtension: 'foo',
-            eventQueuePluginExecutionTimeout: 0, 
+            eventQueuePluginExecutionTimeout: 0,
             eventQueuePluginExecutionConcurrency: 3,
             enableDebug: true,
             ipChangePollingIntervalInMinutes: 1,
@@ -60,51 +63,84 @@ describe('** Module Loader **', () => {
 
     describe('Loading a single module from a Module Config', () => {
         it('should start immediately when shouldStart is true', async () => {
-            // setup 
+            // arrange 
+            const config: ModuleConfig = {
+                name: "test",
+                path: "/usr/bin/sleep", // TODO: make os independent
+                shouldStart: true,
+                params: ["5"],
+            }
 
-            // execute
+            // act
+            const loadedModule = await moduleLoader.loadSingle(config)
 
-            // assert
-            expect().to.be.true;
+            expect(loadedModule.isInError, `is in error`).to.be.false;
+            expect(loadedModule.isStarted, `is started`).to.be.true;
         });
 
         it('should NOT start when shouldStart is false', async () => {
-            // setup 
+            // arrange 
+            const config: ModuleConfig = {
+                name: "test",
+                path: "/usr/bin/dir", // TODO: make os independent
+                shouldStart: false,
+                params: [],
+            }
 
-            // execute
+            // act
+            const loadedModule = await moduleLoader.loadSingle(config)
 
-            // assert
-            expect().to.be.true;
+            expect(loadedModule.isInError, `is in error`).to.be.false;
+            expect(loadedModule.isStarted, `is started`).to.be.false;
         });
 
         it('should output to stdout when started', async () => {
-            // setup 
+            // arrange 
+            const config: ModuleConfig = {
+                name: "test",
+                path: "/usr/bin/echo", // TODO: make os independent
+                shouldStart: true,
+                params: ["Hello World"],
+            }
 
-            // execute
+            // act
+            const loadedModule = await moduleLoader.loadSingle(config)
+            loadedModule.process.on('data', (data) => {
+                // assert
+                expect(data, `output should be captured`).to.equal("Hello World");
+            });
 
             // assert
-            expect().to.be.true;
+            expect(loadedModule.isStarted, `is started`).to.be.true;
+            //await systemUtil.waitInSeconds(0.1);
         });
 
         it('should be in an error state if module command can not be found', async () => {
-            // setup 
+            // arrange 
+            const config: ModuleConfig = {
+                name: "test",
+                path: "dskjfasdksdfjksdfkjs",
+                shouldStart: true,
+                params: [],
+            }
 
-            // execute
+            // act
+            const loadedModule = await moduleLoader.loadSingle(config)
 
             // assert
-            expect().to.be.true;
+            expect(loadedModule.isInError).to.be.true;
+            expect(loadedModule.isStarted).to.be.false;
         });
 
-        describe('Loading multiple modules from a Module Config list', () => {
-        }
+        //describe('Loading multiple modules from a Module Config list', () => {
+        //}
 
-        describe('Loading multiple modules when explicitly providing a module config file', () => {
-        }
+        //describe('Loading multiple modules when explicitly providing a module config file', () => {
+        //}
 
-        describe('Loading multiple modules from config specified in ganchos general configuration', () => {
-        }
-
-    }
+        //describe('Loading multiple modules from config specified in ganchos general configuration', () => {
+        //}
+    });
 
     after(() => {
         const testDir = fileUtil.getAppBaseDir();
